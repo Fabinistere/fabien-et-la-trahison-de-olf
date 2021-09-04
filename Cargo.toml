@@ -1,6 +1,7 @@
 [package]
 name = "fabien-et-la-trahison-de-olf"
 version = "0.1.0"
+authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "WaBtey", "Grassouille la Fripouille", "Sombre Roi René"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
