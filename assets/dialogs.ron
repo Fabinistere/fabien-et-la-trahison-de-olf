@@ -1,0 +1,17 @@
+{
+    MenuTitle01: {
+        Francais: "FABIEN",
+        English: "FABIEN",
+        FabienAncien: "FABIEN",
+    },
+    MenuTitle02: {
+        Francais: "et la trahison de Olf",
+        English: "and Olf's treason",
+        FabienAncien: "Fab Fabo Olf Fabine",
+    },
+    MenuPlay: {
+        Francais: "Appuyez sur n'importe quelle touche pour jouer",
+        English: "Press any key to play",
+        FabienAncien: "Fabi Fabo, Fabire Fab Faboso",
+    },
+}
