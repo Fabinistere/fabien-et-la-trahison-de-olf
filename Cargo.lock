@@ -1241,6 +1241,8 @@ name = "fabien-et-la-trahison-de-olf"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "ron",
+ "serde",
 ]
 
 [[package]]
