@@ -23,8 +23,8 @@ impl Plugin for MenuPlugin {
 }
 
 struct Menu;
+struct LanguageChangedEvent;
 struct Selected(bool);
-struct LanguageChangedEvent(Language);
 
 struct LanguagesButtonColors {
     normal: Color,
@@ -49,6 +49,7 @@ fn setup_menu(
     asset_server: Res<AssetServer>,
     dialogs: Res<Dialogs>,
     languages_button_colors: Res<LanguagesButtonColors>,
+    language: Res<Language>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let font = asset_server.load("fonts/FiraSans-Bold.ttf");
@@ -57,7 +58,7 @@ fn setup_menu(
         text: Text {
             sections: vec![
                 TextSection {
-                    value: format!("{}\n", dialogs.get(DialogId::MenuTitle01, Language::default())),
+                    value: format!("{}\n", dialogs.get(DialogId::MenuTitle01, *language)),
                     style: TextStyle {
                         font: font.clone(),
                         font_size: 100.0,
@@ -65,7 +66,7 @@ fn setup_menu(
                     }
                 },
                 TextSection {
-                    value: dialogs.get(DialogId::MenuTitle02, Language::default()),
+                    value: dialogs.get(DialogId::MenuTitle02, *language),
                     style: TextStyle {
                         font: font.clone(),
                         font_size: 60.0,
@@ -92,7 +93,7 @@ fn setup_menu(
             ..Style::default()
         },
         text: Text::with_section(
-            dialogs.get(DialogId::MenuPlay, Language::default()),
+            dialogs.get(DialogId::MenuPlay, *language),
             TextStyle {
                 font: font.clone(),
                 font_size: 30.0,
@@ -126,7 +127,7 @@ fn setup_menu(
                 TextStyle {
                     font: font.clone(),
                     font_size: 20.0,
-                    color: if Language::default() == language {
+                    color: if language == language {
                         languages_button_colors.selected
                     } else {
                         languages_button_colors.normal
@@ -183,6 +184,7 @@ fn game_start(
 
 fn language_button_interactions(
     button_colors: Res<LanguagesButtonColors>,
+    mut language: ResMut<Language>,
     mut buttons_query: QuerySet<(
         Query<
             (&Interaction, &mut Selected, &Children, &Language),
@@ -215,7 +217,8 @@ fn language_button_interactions(
             Interaction::Clicked => {
                 selected.0 = true;
                 text.sections[0].style.color = button_colors.selected;
-                language_event_writer.send(LanguageChangedEvent(*button_language));
+                *language = *button_language;
+                language_event_writer.send(LanguageChangedEvent);
             },
             Interaction::Hovered => {
                 if selected.0 {
@@ -237,16 +240,17 @@ fn language_button_interactions(
 
 fn language_changed(
     mut language_event: EventReader<LanguageChangedEvent>,
+    language: Res<Language>,
     dialogs: Res<Dialogs>,
     mut text_query: Query<(&mut Text, &DialogId)>,
 ) {
-    for LanguageChangedEvent(new_language) in language_event.iter() {
+    for _ in language_event.iter() {
         for (mut text, dialog_id) in text_query.iter_mut() {
             if *dialog_id == DialogId::MenuTitle {
-                text.sections[0].value = format!("{}\n", dialogs.get(DialogId::MenuTitle01, *new_language));
-                text.sections[1].value = dialogs.get(DialogId::MenuTitle02, *new_language);
+                text.sections[0].value = format!("{}\n", dialogs.get(DialogId::MenuTitle01, *language));
+                text.sections[1].value = dialogs.get(DialogId::MenuTitle02, *language);
             } else {
-                text.sections[0].value = dialogs.get(*dialog_id, *new_language);
+                text.sections[0].value = dialogs.get(*dialog_id, *language);
             }
         }
     }
