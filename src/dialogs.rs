@@ -1,6 +1,7 @@
-use std::{ fs, collections::HashMap };
+use std::{ fs, fmt, collections::HashMap };
 use serde::Deserialize;
 use bevy::prelude::*;
+use strum_macros::EnumIter;
 
 pub struct DialogsPlugin;
 
@@ -11,23 +12,33 @@ impl Plugin for DialogsPlugin {
     }
 }
 
-#[derive(Deserialize, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Language {
     Francais,
     English,
     FabienAncien,
 }
 
+impl fmt::Display for Language {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Language::FabienAncien => write!(f, "Fabien Ancien"),
+            _ => write!(f, "{:?}", self),
+        }
+    }
+}
+
 impl Default for Language {
     fn default() -> Self {
-        Language::FabienAncien
+        Language::Francais
     }
 }
 
 pub type Dialog = HashMap<Language, String>;
 
-#[derive(Deserialize, Debug, Eq, PartialEq, Hash)]
+#[derive(Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum DialogId {
+    MenuTitle,
     MenuTitle01,
     MenuTitle02,
     MenuPlay,
