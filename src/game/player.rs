@@ -148,7 +148,6 @@ fn set_player_movement(
         }
 
         if restart_animation {
-            info!("{:?}", player_animation.animation_type_queue);
             if let Some(animation_type) = player_animation.animation_type_queue.get(0) {
                 let animation_data = &player_animations_data.0[animation_type];
                 sprite.index = animation_data.start_index;
@@ -173,8 +172,8 @@ fn player_movement(
         let x_axis = -(left as i8) + right as i8;
         let y_axis = -(down as i8) + up as i8;
 
-        let mut delta_x = x_axis as f32 * speed.0;
-        let mut delta_y = y_axis as f32 * speed.0;
+        let mut delta_x = x_axis as f32 * speed.0 * time.delta().as_secs_f32();
+        let mut delta_y = y_axis as f32 * speed.0 * time.delta().as_secs_f32();
 
         if x_axis != 0 && y_axis != 0 {
             let distance = (delta_x.powf(2.0) + delta_y.powf(2.0)).sqrt();
@@ -182,7 +181,7 @@ fn player_movement(
             delta_y -= delta_y / distance;
         }
 
-        transform.translation += Vec3::new(delta_x, delta_y, 0.0) * time.delta().as_secs_f32();
+        transform.translation += Vec3::new(delta_x, delta_y, 0.0);
     }
 }
 
