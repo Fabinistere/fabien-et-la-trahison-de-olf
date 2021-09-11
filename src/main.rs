@@ -1,5 +1,6 @@
 pub mod dialogs;
 mod menu;
+mod game;
 
 use bevy::prelude::*;
 
@@ -18,11 +19,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(dialogs::DialogsPlugin)
         .add_plugin(menu::MenuPlugin)
-        .add_state(GameState::Menu)
-        .add_startup_system(setup.system())
+        .add_plugin(game::GamePlugin)
+        .add_state(GameState::Playing)
         .run();
-}
-
-fn setup(mut commands: Commands) {
-    commands.spawn_bundle(UiCameraBundle::default());
 }

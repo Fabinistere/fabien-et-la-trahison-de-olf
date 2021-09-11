@@ -1,4 +1,4 @@
-use std::{ fs, fmt, collections::HashMap };
+use std::{ fmt, collections::HashMap };
 use serde::Deserialize;
 use bevy::prelude::*;
 use strum_macros::EnumIter;
@@ -7,7 +7,10 @@ pub struct DialogsPlugin;
 
 impl Plugin for DialogsPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<Dialogs>()
+        app.insert_resource(
+            Dialogs(ron::de::from_bytes(include_bytes!(
+                concat!(env!("CARGO_MANIFEST_DIR"), "/data/dialogs.ron")
+            )).unwrap()))
             .init_resource::<Language>();
     }
 }
@@ -55,12 +58,5 @@ impl Dialogs {
             .get(&language)
             .unwrap()
             .clone()
-    }
-}
-
-impl Default for Dialogs {
-    fn default() -> Self {
-        let dialogs_str = fs::read_to_string("assets/dialogs.ron").unwrap();
-        Dialogs(ron::from_str(&dialogs_str).unwrap())
     }
 }

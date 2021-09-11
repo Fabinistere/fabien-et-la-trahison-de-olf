@@ -52,6 +52,10 @@ fn setup_menu(
     language: Res<Language>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    commands
+        .spawn_bundle(UiCameraBundle::default())
+        .insert(Menu);
+
     let font = asset_server.load("fonts/FiraSans-Bold.ttf");
 
     let title = TextBundle {
