@@ -106,6 +106,7 @@ fn set_player_movement(
         if keyboard_input.just_released(key_bindings.right.0)
             || keyboard_input.just_released(key_bindings.right.1)
         {
+            // player_animation.animation_type_queue.retain(|t| t.is_idle());
             player_animation.animation_type_queue.retain(|t| *t != PlayerAnimationType::RightRun);
             player_animation.animation_type_queue.push_back(PlayerAnimationType::RightIdle);
             restart_animation = true;
@@ -113,6 +114,7 @@ fn set_player_movement(
             || keyboard_input.just_released(key_bindings.left.1)
         {
             player_animation.animation_type_queue.retain(|t| *t != PlayerAnimationType::LeftRun);
+            // player_animation.animation_type_queue.retain(|t| t.is_idle());
             player_animation.animation_type_queue.push_back(PlayerAnimationType::LeftIdle);
             restart_animation = true;
         } else if keyboard_input.just_pressed(key_bindings.up.0)
@@ -150,7 +152,7 @@ fn set_player_movement(
         if restart_animation {
             if let Some(animation_type) = player_animation.animation_type_queue.get(0) {
                 let animation_data = &player_animations_data.0[animation_type];
-                sprite.index = animation_data.start_index;
+                sprite.index = animation_data.start_index + 1;
                 player_animation.timer = Timer::from_seconds(animation_data.delta, true);
             }
         }
