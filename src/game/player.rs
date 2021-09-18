@@ -102,6 +102,7 @@ fn set_player_movement(
 ) {
     for (mut player_animation, mut sprite) in query.iter_mut() {
         let mut restart_animation = false;
+        let start_anim_type = player_animation.animation_type_queue[0];
 
         if keyboard_input.just_released(key_bindings.right.0)
             || keyboard_input.just_released(key_bindings.right.1)
@@ -149,12 +150,10 @@ fn set_player_movement(
             restart_animation = true;
         }
 
-        if restart_animation {
-            if let Some(animation_type) = player_animation.animation_type_queue.get(0) {
-                let animation_data = &player_animations_data.0[animation_type];
-                sprite.index = animation_data.start_index + 1;
-                player_animation.timer = Timer::from_seconds(animation_data.delta, true);
-            }
+        if restart_animation && start_anim_type != player_animation.animation_type_queue[0] {
+            let animation_data = &player_animations_data.0[&player_animation.animation_type_queue[0]];
+            sprite.index = animation_data.start_index + 1;
+            player_animation.timer = Timer::from_seconds(animation_data.delta, true);
         }
     }
 }
@@ -178,9 +177,8 @@ fn player_movement(
         let mut delta_y = y_axis as f32 * speed.0 * time.delta().as_secs_f32();
 
         if x_axis != 0 && y_axis != 0 {
-            let distance = (delta_x.powf(2.0) + delta_y.powf(2.0)).sqrt();
-            delta_x -= delta_x / distance;
-            delta_y -= delta_y / distance;
+            delta_x *= (std::f32::consts::PI / 4.0).cos();
+            delta_y *= (std::f32::consts::PI / 4.0).cos();
         }
 
         transform.translation += Vec3::new(delta_x, delta_y, 0.0);
@@ -195,7 +193,7 @@ fn spawn_player(
 ) {
     const STARTING_ANIMATION: PlayerAnimationType = PlayerAnimationType::RightIdle;
 
-    let texture_handle = asset_server.load("sprites/fabien_info_spritesheet.png");
+    let texture_handle = asset_server.load("textures/fabien_info_spritesheet.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(12.0, 15.0), 4, 4);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 

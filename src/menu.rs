@@ -17,7 +17,7 @@ impl Plugin for MenuPlugin {
                     .with_system(destroy_menu.system())
             )
             .add_system(language_button_interactions.system())
-            .add_system(game_start.system())
+            // .add_system(game_start.system())
             .add_system(language_changed.system());
     }
 }
@@ -56,7 +56,18 @@ fn setup_menu(
         .spawn_bundle(UiCameraBundle::default())
         .insert(Menu);
 
-    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+    let font = asset_server.load("fonts/dpcomic.ttf");
+
+    let background_image = ImageBundle {
+        style: Style {
+            position_type: PositionType::Absolute,
+            position: Rect::all(Val::Px(0.0)),
+            aspect_ratio: Some(10.0 / 9.0),
+            ..Style::default()
+        },
+        material: materials.add(asset_server.load("textures/Monkey_ULTIME.png").into()),
+        ..ImageBundle::default()
+    };
 
     let title = TextBundle {
         text: Text {
@@ -143,6 +154,7 @@ fn setup_menu(
         }, Language::default() == language, language));
     }
 
+    commands.spawn_bundle(background_image);
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
@@ -154,6 +166,7 @@ fn setup_menu(
             material: materials.add(Color::NONE.into()),
             ..NodeBundle::default()
         })
+        // .with_children(|parent| { parent.spawn_bundle(background_image); })
         .with_children(|parent| { parent.spawn_bundle(title).insert(DialogId::MenuTitle); })
         .with_children(|parent| {
             for (button, text, selected, language) in languages_buttons.into_iter() {
