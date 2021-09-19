@@ -5,7 +5,11 @@ mod game;
 use bevy::prelude::*;
 
 pub use crate::{
-    dialogs::{ Dialogs, DialogId, Language },
+    dialogs::{
+        Dialogs,
+        DialogId,
+        language::Language,
+    },
 };
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
