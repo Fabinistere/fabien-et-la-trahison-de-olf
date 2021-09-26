@@ -6,6 +6,7 @@ use strum_macros::EnumIter;
 use serde::Deserialize;
 use bevy::prelude::*;
 use language::Language;
+use crate::GameState;
 
 pub struct DialogsPlugin;
 
@@ -15,7 +16,14 @@ impl Plugin for DialogsPlugin {
             Dialogs(ron::de::from_bytes(include_bytes!(
                 concat!(env!("CARGO_MANIFEST_DIR"), "/data/dialogs.ron")
             )).unwrap()))
-            .init_resource::<Language>();
+            .init_resource::<Language>()
+            .add_system_set(
+                SystemSet::on_enter(GameState::Playing)
+                    .with_system(dialog_box::create_dialog_box_on_key_press.system())
+            )
+            .add_system(dialog_box::update_dialog_box.system())
+            .add_system(dialog_box::create_dialog_box_on_key_press.system())
+            .add_system(dialog_box::destroy_dialog_box.system());
     }
 }
 

@@ -1,7 +1,10 @@
 use bevy::prelude::*;
+use bevy::render::camera::Camera;
 use crate::GameState;
 use std::collections::{ HashMap, VecDeque };
 use serde::Deserialize;
+
+const PLAYER_Z: f32 = 5.0;
 
 pub struct PlayerPlugin;
 
@@ -162,9 +165,14 @@ fn player_movement(
     time: Res<Time>,
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(&Speed, &mut Transform), With<Player>>,
+    mut query: QuerySet<(
+        Query<(&Speed, &mut Transform), With<Player>>,
+        Query<&mut Transform, With<Camera>>,
+    )>,
 ) {
-    for (speed, mut transform) in player_query.iter_mut() {
+    let mut translation = Vec3::default();
+
+    for (speed, mut transform) in query.q0_mut().iter_mut() {
         let up = keyboard_input.pressed(key_bindings.up.0) || keyboard_input.pressed(key_bindings.up.1);
         let down = keyboard_input.pressed(key_bindings.down.0) || keyboard_input.pressed(key_bindings.down.1);
         let left = keyboard_input.pressed(key_bindings.left.0) || keyboard_input.pressed(key_bindings.left.1);
@@ -181,7 +189,12 @@ fn player_movement(
             delta_y *= (std::f32::consts::PI / 4.0).cos();
         }
 
-        transform.translation += Vec3::new(delta_x, delta_y, 0.0);
+        translation = Vec3::new(delta_x, delta_y, 0.0);
+        transform.translation += translation;
+    }
+
+    for mut camera_transform in query.q1_mut().iter_mut() {
+        camera_transform.translation += translation;
     }
 }
 
@@ -202,7 +215,13 @@ fn spawn_player(
         .spawn()
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
-            transform: Transform::from_scale(Vec3::splat(10.0)),
+            transform: Transform::from_matrix(
+                Mat4::from_scale_rotation_translation(
+                    Vec3::splat(10.0),
+                    Quat::default(),
+                    Vec3::new(0.0, 0.0, PLAYER_Z),
+                )
+            ),
             ..SpriteSheetBundle::default()
         })
         .insert(PlayerAnimation {

@@ -32,6 +32,6 @@ fn main() {
         .add_plugin(dialogs::DialogsPlugin)
         .add_plugin(menu::MenuPlugin)
         .add_plugin(game::GamePlugin)
-        .add_state(GameState::Menu)
+        .add_state(GameState::Playing)
         .run();
 }

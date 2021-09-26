@@ -1,1 +1,114 @@
-struct DialogBox;
+use bevy::prelude::*;
+
+pub struct DialogBox {
+    text: String,
+    progress: usize,
+    finished: bool,
+    update_timer: Timer,
+}
+
+pub struct DialogBoxText;
+pub struct UiCamera;
+
+const DIALOG_BOX_UPDATE_DELTA: f32 = 0.08;
+
+pub fn create_dialog_box_on_key_press(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut keyboard_input: Res<Input<KeyCode>>,
+) {
+    if keyboard_input.pressed(KeyCode::O) {
+        create_dialog_box(commands, asset_server, materials, "Bonjour Florian\nComment vas-tu ?\nJ'ai faim.".to_string());
+    }
+}
+
+pub fn destroy_dialog_box(
+    mut commands: Commands,
+    query: QuerySet<(
+        Query<Entity, With<DialogBox>>,
+        Query<Entity, With<UiCamera>>,
+    )>,
+    mut keyboard_input: Res<Input<KeyCode>>,
+) {
+    if keyboard_input.pressed(KeyCode::E) {
+        for entity in query.q0().iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+
+        for entity in query.q1().iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+    } 
+}
+
+pub fn create_dialog_box(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    dialog: String
+) {
+    commands.spawn_bundle(UiCameraBundle::default()).insert(UiCamera);
+    commands
+        .spawn_bundle(ImageBundle {
+            material: materials.add(asset_server.load("textures/dialog_box.png").into()),
+            style: Style {
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Px(10.0),
+                    left: Val::Px(10.0),
+                    right: Val::Px(10.0),
+                    bottom: Val::Auto,
+                },
+                size: Size::new(Val::Auto, Val::Px(400.0)),
+                ..Style::default()
+            },
+            ..ImageBundle::default()
+        })
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        "",
+                        TextStyle {
+                            font: asset_server.load("fonts/dpcomic.ttf"),
+                            font_size: 50.0,
+                            color: Color::BLACK,
+                        },
+                        TextAlignment {
+                            vertical: VerticalAlign::Center,
+                            horizontal: HorizontalAlign::Center,
+                        },
+                    ),
+                    ..TextBundle::default()
+                });
+        })
+        .insert(DialogBox {
+            text: dialog,
+            progress: 0,
+            finished: false,
+            update_timer: Timer::from_seconds(DIALOG_BOX_UPDATE_DELTA, true),
+        });
+}
+
+pub fn update_dialog_box(
+    time: Res<Time>,
+    mut dialog_box_query: Query<(&mut DialogBox, &Children)>,
+    mut text_query: Query<&mut Text>,
+) {
+    if let Ok((mut dialog_box, children)) = dialog_box_query.single_mut() {
+        dialog_box.update_timer.tick(time.delta());
+
+        if dialog_box.update_timer.finished() && !dialog_box.finished {
+            let mut text = text_query.get_mut(children[0]).unwrap();
+            let next_letter = dialog_box.text.chars().nth(dialog_box.progress).unwrap();
+            text.sections[0].value.push(next_letter);
+            dialog_box.progress += 1;
+            if dialog_box.progress >= dialog_box.text.len() {
+                dialog_box.finished = true;
+            }
+        }
+    }
+}
