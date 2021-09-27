@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+#[derive(Debug)]
 pub struct DialogBox {
     text: String,
     progress: usize,
@@ -39,7 +40,7 @@ pub fn destroy_dialog_box(
         for entity in query.q1().iter() {
             commands.entity(entity).despawn_recursive();
         }
-    } 
+    }
 }
 
 pub fn create_dialog_box(
@@ -48,7 +49,6 @@ pub fn create_dialog_box(
     mut materials: ResMut<Assets<ColorMaterial>>,
     dialog: String
 ) {
-    commands.spawn_bundle(UiCameraBundle::default()).insert(UiCamera);
     commands
         .spawn_bundle(ImageBundle {
             material: materials.add(asset_server.load("textures/dialog_box.png").into()),
@@ -65,6 +65,7 @@ pub fn create_dialog_box(
                 size: Size::new(Val::Auto, Val::Px(400.0)),
                 ..Style::default()
             },
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 5.0)),
             ..ImageBundle::default()
         })
         .with_children(|parent| {
@@ -82,6 +83,7 @@ pub fn create_dialog_box(
                             horizontal: HorizontalAlign::Center,
                         },
                     ),
+                    transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
                     ..TextBundle::default()
                 });
         })
@@ -91,6 +93,8 @@ pub fn create_dialog_box(
             finished: false,
             update_timer: Timer::from_seconds(DIALOG_BOX_UPDATE_DELTA, true),
         });
+
+    commands.spawn_bundle(UiCameraBundle::default()).insert(UiCamera);
 }
 
 pub fn update_dialog_box(
@@ -105,6 +109,7 @@ pub fn update_dialog_box(
             let mut text = text_query.get_mut(children[0]).unwrap();
             let next_letter = dialog_box.text.chars().nth(dialog_box.progress).unwrap();
             text.sections[0].value.push(next_letter);
+
             dialog_box.progress += 1;
             if dialog_box.progress >= dialog_box.text.len() {
                 dialog_box.finished = true;
