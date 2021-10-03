@@ -1,10 +1,12 @@
-use bevy::prelude::*;
-use bevy::render::camera::Camera;
+use bevy::{
+    prelude::*,
+    render::camera::Camera,
+};
+use bevy_rapier2d::prelude::*;
+use super::PlayerCamera;
 use crate::GameState;
 use std::collections::{ HashMap, VecDeque };
 use serde::Deserialize;
-
-const PLAYER_Z: f32 = 5.0;
 
 pub struct PlayerPlugin;
 
@@ -34,6 +36,7 @@ impl Plugin for PlayerPlugin {
 
 struct Player;
 struct Speed(f32);
+struct Immobilized;
 
 #[derive(Deserialize, Debug)]
 pub struct SpriteSheetAnimation {
@@ -76,7 +79,7 @@ fn animate_player(
     player_animations_data: Res<PlayerAnimationData>,
     mut query: Query<
         (&mut PlayerAnimation, &mut TextureAtlasSprite),
-        With<Player>,
+        (With<Player>, Without<Immobilized>),
     >,
 ) {
     for (mut player_animation, mut sprite) in query.iter_mut() {
@@ -100,7 +103,7 @@ fn set_player_movement(
     player_animations_data: Res<PlayerAnimationData>,
     mut query: Query<
         (&mut PlayerAnimation, &mut TextureAtlasSprite),
-        With<Player>,
+        (With<Player>, Without<Immobilized>),
     >,
 ) {
     for (mut player_animation, mut sprite) in query.iter_mut() {
@@ -162,17 +165,13 @@ fn set_player_movement(
 }
 
 fn player_movement(
-    time: Res<Time>,
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: QuerySet<(
-        Query<(&Speed, &mut Transform), With<Player>>,
-        Query<&mut Transform, With<Camera>>,
-    )>,
+    rapier_config: Res<RapierConfiguration>,
+    mut player_query: Query<(&Speed, &mut RigidBodyVelocity, &GlobalTransform), (With<Player>, Without<Immobilized>)>,
+    mut camera_query: Query<&mut Transform, With<PlayerCamera>>,
 ) {
-    let mut translation = Vec3::default();
-
-    for (speed, mut transform) in query.q0_mut().iter_mut() {
+    for (speed, mut rb_vel, player_transform) in player_query.iter_mut() {
         let up = keyboard_input.pressed(key_bindings.up.0) || keyboard_input.pressed(key_bindings.up.1);
         let down = keyboard_input.pressed(key_bindings.down.0) || keyboard_input.pressed(key_bindings.down.1);
         let left = keyboard_input.pressed(key_bindings.left.0) || keyboard_input.pressed(key_bindings.left.1);
@@ -181,20 +180,20 @@ fn player_movement(
         let x_axis = -(left as i8) + right as i8;
         let y_axis = -(down as i8) + up as i8;
 
-        let mut delta_x = x_axis as f32 * speed.0 * time.delta().as_secs_f32();
-        let mut delta_y = y_axis as f32 * speed.0 * time.delta().as_secs_f32();
+        let mut vel_x = x_axis as f32 * speed.0 * rapier_config.scale;
+        let mut vel_y = y_axis as f32 * speed.0 * rapier_config.scale;
 
         if x_axis != 0 && y_axis != 0 {
-            delta_x *= (std::f32::consts::PI / 4.0).cos();
-            delta_y *= (std::f32::consts::PI / 4.0).cos();
+            vel_x *= (std::f32::consts::PI / 4.0).cos();
+            vel_y *= (std::f32::consts::PI / 4.0).cos();
         }
 
-        translation = Vec3::new(delta_x, delta_y, 0.0);
-        transform.translation += translation;
-    }
+        rb_vel.linvel.x = vel_x;
+        rb_vel.linvel.y = vel_y;
 
-    for mut camera_transform in query.q1_mut().iter_mut() {
-        camera_transform.translation += translation;
+        for mut camera_transform in camera_query.iter_mut() {
+            camera_transform.translation = player_transform.translation;
+        }
     }
 }
 
@@ -205,19 +204,22 @@ fn spawn_player(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     const STARTING_ANIMATION: PlayerAnimationType = PlayerAnimationType::RightIdle;
+    const PLAYER_WIDTH: f32 = 12.0;
+    const PLAYER_HEIGHT: f32 = 15.0;
+    const PLAYER_SCALE: f32 = 6.0;
+    const PLAYER_Z: f32 = 5.0;
 
     let texture_handle = asset_server.load("textures/fabien_info_spritesheet.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(12.0, 15.0), 4, 4);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT), 4, 4);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands
         .spawn()
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
             transform: Transform::from_matrix(
                 Mat4::from_scale_rotation_translation(
-                    Vec3::splat(10.0),
+                    Vec3::splat(PLAYER_SCALE),
                     Quat::default(),
                     Vec3::new(0.0, 0.0, PLAYER_Z),
                 )
@@ -231,6 +233,27 @@ fn spawn_player(
             ),
             animation_type_queue: vec![STARTING_ANIMATION].into(),
         })
-        .insert(Player)
-        .insert(Speed(200.0));
+        .insert_bundle(RigidBodyBundle {
+            body_type: RigidBodyType::Dynamic,
+            mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+            position: Vec2::new(0.0, 0.0).into(),
+            ..RigidBodyBundle::default()
+        })
+        .insert_bundle((
+                RigidBodyPositionSync::Discrete,
+                Player,
+                Speed(2.0),
+        ))
+        .with_children(|parent| {
+            parent.spawn().insert_bundle(ColliderBundle {
+                shape: ColliderShape::cuboid(3.5, 2.0),
+                position: Vec2::new(0.0, -3.0).into(),
+                material: ColliderMaterial {
+                    friction: 0.0,
+                    restitution: 0.0,
+                    ..ColliderMaterial::default()
+                },
+                ..ColliderBundle::default()
+            });
+        });
 }
