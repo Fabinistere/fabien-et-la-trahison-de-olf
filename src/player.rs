@@ -1,12 +1,12 @@
-use bevy::{
-    prelude::*,
-    render::camera::Camera,
-};
+use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use super::PlayerCamera;
-use crate::GameState;
-use std::collections::{ HashMap, VecDeque };
+use crate::{
+    GameState,
+    constants::player::*,
+};
 use serde::Deserialize;
+use std::collections::{ HashMap, VecDeque };
 
 pub struct PlayerPlugin;
 
@@ -34,7 +34,7 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-struct Player;
+pub struct Player;
 struct Speed(f32);
 struct Immobilized;
 
@@ -46,7 +46,7 @@ pub struct SpriteSheetAnimation {
 }
 
 #[derive(Deserialize, Copy, Clone, PartialEq, Eq, Debug, Hash)]
-enum PlayerAnimationType {
+pub enum PlayerAnimationType {
     RightIdle,
     LeftIdle,
     RightRun,
@@ -203,12 +203,6 @@ fn spawn_player(
     player_animations_data: Res<PlayerAnimationData>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    const STARTING_ANIMATION: PlayerAnimationType = PlayerAnimationType::RightIdle;
-    const PLAYER_WIDTH: f32 = 12.0;
-    const PLAYER_HEIGHT: f32 = 15.0;
-    const PLAYER_SCALE: f32 = 6.0;
-    const PLAYER_Z: f32 = 5.0;
-
     let texture_handle = asset_server.load("textures/fabien_info_spritesheet.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT), 4, 4);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);

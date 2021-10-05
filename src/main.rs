@@ -1,7 +1,9 @@
 pub mod dialogs;
+pub mod constants;
+pub mod player;
 mod menu;
-mod game;
 mod debug;
+mod locations;
 
 use bevy::prelude::*;
 use bevy_prototype_debug_lines::*;
@@ -21,6 +23,8 @@ pub enum GameState {
     Playing,
 }
 
+struct PlayerCamera;
+
 fn main() {
     App::build()
         .insert_resource(WindowDescriptor {
@@ -36,8 +40,25 @@ fn main() {
         .add_plugin(DebugLinesPlugin)
         .add_plugin(dialogs::DialogsPlugin)
         .add_plugin(menu::MenuPlugin)
-        .add_plugin(game::GamePlugin)
         .add_state(GameState::Playing)
         .add_system(debug::collider_debug_lines_system.system())
+        .add_plugin(player::PlayerPlugin)
+        .add_plugin(locations::LocationsPlugin)
+        .add_system_set(
+            SystemSet::on_enter(GameState::Playing)
+                .with_system(game_setup.system())
+        )
         .run();
+}
+
+fn game_setup(
+    mut commands: Commands,
+    mut rapier_config: ResMut<RapierConfiguration>,
+) {
+    rapier_config.gravity = Vector::zeros();
+    rapier_config.scale = 10.0;
+
+    commands
+        .spawn_bundle(OrthographicCameraBundle::new_2d())
+        .insert(PlayerCamera);
 }
