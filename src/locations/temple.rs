@@ -4,7 +4,7 @@ use crate::{
     player::Player,
     constants::locations::temple::*,
 };
-use super::{ Location, spawn_collision_cuboid, spawn_child_collision_cuboid };
+use super::Location;
 
 pub struct TemplePlugin;
 
@@ -14,9 +14,9 @@ impl Plugin for TemplePlugin {
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
                     .with_system(setup_temple.system())
-                    // .with_system(setup_hitboxes.system())
             )
-            .add_system(pillars_position.system());
+            .add_system(pillars_position.system())
+            .add_system(curtains_animation.system());
     }
 }
 
@@ -25,15 +25,23 @@ struct Pillar;
 
 fn pillars_position(
     player_query: Query<&GlobalTransform, With<Player>>,
-    mut pillars_query: Query<&mut Children, With<Pillar>>,
-    mut collider_pos_query: Query<&mut ColliderPosition>,
+    mut pillars_query: Query<(&mut Transform, &RigidBodyPosition), With<Pillar>>,
 ) {
     if let Ok(player_transform) = player_query.single() {
-        for children in pillars_query.iter_mut() {
-            let pos = collider_pos_query.get_mut(children[0]);
-            info!("{:?}::{:?}", player_transform.translation, pos);
+        for (mut pillar_transform, rb_pos) in pillars_query.iter_mut() {
+            if player_transform.translation.y - 60.0 > rb_pos.position.translation.y {
+                pillar_transform.translation.z = PILLARS_Z_FRONT;
+            } else {
+                pillar_transform.translation.z = PILLARS_Z_BACK;
+            }
         }
     }
+}
+
+fn curtains_animation(
+
+) {
+
 }
 
 fn setup_temple(
@@ -41,67 +49,46 @@ fn setup_temple(
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let empty_temple = asset_server.load("textures/temple/empty_temple.png");
-    // let pillars = asset_server.load("textures/temple/pillars_and_curtains.png");
+    let background = asset_server.load("textures/temple/background.png");
+    let main_room = asset_server.load("textures/temple/main_room.png");
+    let pillar = asset_server.load("textures/temple/pillar_int.png");
+    let stones = asset_server.load("textures/temple/stones.png");
 
     commands.spawn_bundle(SpriteBundle {
-        material: materials.add(empty_temple.into()),
-        transform: Transform::from_matrix(
-            Mat4::from_scale_rotation_translation(
-                Vec3::splat(TEMPLE_SCALE),
-                Quat::default(),
-                Vec3::new(0.0, 0.0, TEMPLE_Z),
-            )
-        ),
+        material: materials.add(background.into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, BACKGROUND_Z)),
         ..SpriteBundle::default()
     }).insert(Temple);
 
-    // commands.spawn_bundle(SpriteBundle {
-    //     material: materials.add(pillars.into()),
-    //     transform: Transform::from_matrix(
-    //         Mat4::from_scale_rotation_translation(
-    //             Vec3::splat(TEMPLE_SCALE),
-    //             Quat::default(),
-    //             Vec3::new(0.0, 0.0, COLUMNS_Z_BACK),
-    //         )
-    //     ),
-    //     ..SpriteBundle::default()
-    // }).insert(Pillar);
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(main_room.into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, TEMPLE_Z)),
+        ..SpriteBundle::default()
+    }).insert(Temple);
 
-    let pillar = asset_server.load("textures/temple/pillar.png");
-    let pillar_positions = vec![
-        Vec3::new(-15.0 * TEMPLE_SCALE, 5.0 * TEMPLE_SCALE, COLUMNS_Z_BACK),
-        Vec3::new(15.0 * TEMPLE_SCALE, 5.0 * TEMPLE_SCALE, COLUMNS_Z_BACK),
-        Vec3::new(-15.0 * TEMPLE_SCALE, -18.0 * TEMPLE_SCALE, COLUMNS_Z_BACK),
-        Vec3::new(15.0 * TEMPLE_SCALE, -18.0 * TEMPLE_SCALE, COLUMNS_Z_BACK),
-    ];
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(stones.into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, STONES_Z)),
+        ..SpriteBundle::default()
+    }).insert(Temple);
 
-    for pos in pillar_positions {
+    for pos in PILLAR_POSITIONS {
         commands
             .spawn_bundle(SpriteBundle {
                 material: materials.add(pillar.clone().into()),
-                transform: Transform::from_matrix(
-                    Mat4::from_scale_rotation_translation(
-                        Vec3::splat(TEMPLE_SCALE),
-                        Quat::default(),
-                        pos
-                    )
-                ),
+                transform: Transform::from_translation(pos.into()),
                 ..SpriteBundle::default()
             })
             .insert_bundle(RigidBodyBundle {
                 body_type: RigidBodyType::Static,
                 mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
-                position: Vec2::new(0.0, 0.0).into(),
+                position: Vec2::new(pos.0, pos.1 - 110.0).into(),
                 ..RigidBodyBundle::default()
             })
-            // .insert_bundle((
-            //     RigidBodyPositionSync::Discrete,
-            // ))
             .with_children(|parent| {
                 parent.spawn_bundle(ColliderBundle {
-                    shape: ColliderShape::cuboid(8.0, 3.0),
-                    position: Vec2::new(pos.x / (TEMPLE_SCALE / 2.0), pos.y / (TEMPLE_SCALE / 2.0) - 12.0).into(),
+                    shape: ColliderShape::cuboid(60.0, 20.0),
+                    position: Vec2::new(0.0, 0.0).into(),
                     material: ColliderMaterial {
                         friction: 0.0,
                         restitution: 0.0,
@@ -111,18 +98,5 @@ fn setup_temple(
                 });
             })
             .insert(Pillar);
-
-        // spawn_collision_cuboid(&mut commands, 22.0, 1.0, 4.5, 1.5);
     }
-}
-
-fn setup_hitboxes(mut commands: Commands) {
-    // Top-right pillar
-    spawn_collision_cuboid(&mut commands, 22.0, 1.0, 4.5, 1.5);
-    // Top-left pillar
-    spawn_collision_cuboid(&mut commands, -22.0, 1.0, 4.5, 1.5);
-    // Bottom-right pillar
-    spawn_collision_cuboid(&mut commands, 22.0, -33.5, 4.5, 1.5);
-    // Bottom-left pillar
-    spawn_collision_cuboid(&mut commands, -22.0, -33.5, 4.5, 1.5);
 }

@@ -56,7 +56,7 @@ fn game_setup(
     mut rapier_config: ResMut<RapierConfiguration>,
 ) {
     rapier_config.gravity = Vector::zeros();
-    rapier_config.scale = 10.0;
+    rapier_config.scale = 1.0;
 
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())

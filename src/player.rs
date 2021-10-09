@@ -167,7 +167,6 @@ fn set_player_movement(
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    rapier_config: Res<RapierConfiguration>,
     mut player_query: Query<(&Speed, &mut RigidBodyVelocity, &GlobalTransform), (With<Player>, Without<Immobilized>)>,
     mut camera_query: Query<&mut Transform, With<PlayerCamera>>,
 ) {
@@ -180,8 +179,8 @@ fn player_movement(
         let x_axis = -(left as i8) + right as i8;
         let y_axis = -(down as i8) + up as i8;
 
-        let mut vel_x = x_axis as f32 * speed.0 * rapier_config.scale;
-        let mut vel_y = y_axis as f32 * speed.0 * rapier_config.scale;
+        let mut vel_x = x_axis as f32 * speed.0;
+        let mut vel_y = y_axis as f32 * speed.0;
 
         if x_axis != 0 && y_axis != 0 {
             vel_x *= (std::f32::consts::PI / 4.0).cos();
@@ -192,7 +191,8 @@ fn player_movement(
         rb_vel.linvel.y = vel_y;
 
         for mut camera_transform in camera_query.iter_mut() {
-            camera_transform.translation = player_transform.translation;
+            camera_transform.translation.x = player_transform.translation.x;
+            camera_transform.translation.y = player_transform.translation.y;
         }
     }
 }
@@ -236,12 +236,12 @@ fn spawn_player(
         .insert_bundle((
                 RigidBodyPositionSync::Discrete,
                 Player,
-                Speed(2.0),
+                Speed(150.0),
         ))
         .with_children(|parent| {
             parent.spawn().insert_bundle(ColliderBundle {
-                shape: ColliderShape::cuboid(3.5, 2.0),
-                position: Vec2::new(0.0, -3.0).into(),
+                shape: ColliderShape::cuboid(35.0, 20.0),
+                position: Vec2::new(0.0, -30.0).into(),
                 material: ColliderMaterial {
                     friction: 0.0,
                     restitution: 0.0,
