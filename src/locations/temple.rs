@@ -17,12 +17,15 @@ impl Plugin for TemplePlugin {
                     .with_system(spawn_hitboxes.system())
             )
             .add_system(pillars_position.system())
-            .add_system(curtains_animation.system());
+            .add_system(curtains_animation.system())
+            .add_system(secret_room_detection.system())
+            .insert_resource(SecretRoomHidden(true));
     }
 }
 
 struct Temple;
 struct Pillar;
+struct SecretRoomHidden(bool);
 
 fn pillars_position(
     player_query: Query<&GlobalTransform, With<Player>>,
@@ -37,6 +40,42 @@ fn pillars_position(
             }
         }
     }
+}
+
+fn secret_room_detection(
+    query: Query<&Transform, With<Player>>,
+    mut secret_room_hidden: ResMut<SecretRoomHidden>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for transform in query.iter() {
+        if transform.translation.y >= 610.0 {
+            info!("hello");
+            secret_room_hidden.0 = false;
+        } else {
+            info!("{}", transform.translation.y);
+            secret_room_hidden.0 = true;
+        } 
+    }
+}
+
+fn spawn_secret_room(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let secret_room = asset_server.load("textures/temple/secret_room.png");
+
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(secret_room.into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, BACKGROUND_Z)),
+        ..SpriteBundle::default()
+    }).insert(Temple);
+}
+
+fn despawn_secret_room(mut commands: &Commands) {
+
 }
 
 fn curtains_animation(
