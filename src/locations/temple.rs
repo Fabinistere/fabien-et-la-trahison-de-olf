@@ -4,7 +4,7 @@ use crate::{
     player::Player,
     constants::locations::temple::*,
 };
-use super::Location;
+use super::{ Location, spawn_collision_cuboid };
 
 pub struct TemplePlugin;
 
@@ -14,6 +14,7 @@ impl Plugin for TemplePlugin {
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
                     .with_system(setup_temple.system())
+                    .with_system(spawn_hitboxes.system())
             )
             .add_system(pillars_position.system())
             .add_system(curtains_animation.system());
@@ -99,4 +100,19 @@ fn setup_temple(
             })
             .insert(Pillar);
     }
+}
+
+fn spawn_hitboxes(mut commands: Commands) {
+    // Left wall
+    spawn_collision_cuboid(&mut commands, -1080.0, -240.0, 10.0, 810.0);
+    // Right wall
+    spawn_collision_cuboid(&mut commands, 1080.0, -240.0, 10.0, 810.0);
+    // Left side of top wall
+    spawn_collision_cuboid(&mut commands, -655.0, 580.0, 415.0, 10.0);
+    // Right side of top wall
+    spawn_collision_cuboid(&mut commands, 455.0, 580.0, 615.0, 10.0);
+    // Left of hidden door
+    spawn_collision_cuboid(&mut commands, -150.0, 610.0, 10.0, 20.0);
+    // Right of hidden foor
+    spawn_collision_cuboid(&mut commands, -250.0, 610.0, 10.0, 20.0);
 }

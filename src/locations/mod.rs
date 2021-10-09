@@ -17,7 +17,6 @@ impl Plugin for LocationsPlugin {
     }
 }
 
-/*
 pub fn spawn_collision_cuboid(
     commands: &mut Commands,
     x: f32, y: f32,
@@ -63,4 +62,3 @@ pub fn spawn_child_collision_cuboid(
             ..ColliderBundle::default()
         });
 }
-*/

@@ -236,7 +236,7 @@ fn spawn_player(
         .insert_bundle((
                 RigidBodyPositionSync::Discrete,
                 Player,
-                Speed(150.0),
+                Speed(500.0),
         ))
         .with_children(|parent| {
             parent.spawn().insert_bundle(ColliderBundle {
