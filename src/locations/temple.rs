@@ -1,8 +1,9 @@
-use bevy::prelude::*;
+use bevy::{ prelude::*, utils::Duration };
 use bevy_rapier2d::prelude::*;
 use crate::{
     player::Player,
     constants::locations::temple::*,
+    animations::*,
 };
 use super::{ Location, spawn_collision_cuboid };
 
@@ -11,21 +12,38 @@ pub struct TemplePlugin;
 impl Plugin for TemplePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app
+            .add_state(PlayerLocation::Temple)
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
                     .with_system(setup_temple.system())
                     .with_system(spawn_hitboxes.system())
             )
+            .add_system_set(
+                SystemSet::on_enter(PlayerLocation::SecretRoom)
+                    .with_system(remove_secret_room_cover.system())
+            )
+            .add_system_set(
+                SystemSet::on_exit(PlayerLocation::SecretRoom)
+                    .with_system(add_secret_room_cover.system())
+            )
             .add_system(pillars_position.system())
             .add_system(curtains_animation.system())
-            .add_system(secret_room_detection.system())
-            .insert_resource(SecretRoomHidden(true));
+            .add_system(secret_room_enter.system());
     }
 }
 
+// Components
 struct Temple;
 struct Pillar;
-struct SecretRoomHidden(bool);
+struct SecretRoom;
+struct SecretRoomCover;
+
+// States
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+enum PlayerLocation {
+    Temple,
+    SecretRoom,
+}
 
 fn pillars_position(
     player_query: Query<&GlobalTransform, With<Player>>,
@@ -42,40 +60,73 @@ fn pillars_position(
     }
 }
 
-fn secret_room_detection(
-    query: Query<&Transform, With<Player>>,
-    mut secret_room_hidden: ResMut<SecretRoomHidden>,
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+fn secret_room_enter(
+    player_query: Query<&GlobalTransform, With<Player>>,
+    mut player_location: ResMut<State<PlayerLocation>>,
 ) {
-    for transform in query.iter() {
-        if transform.translation.y >= 610.0 {
-            info!("hello");
-            secret_room_hidden.0 = false;
-        } else {
-            info!("{}", transform.translation.y);
-            secret_room_hidden.0 = true;
-        } 
+    if let Ok(transform) = player_query.single() {
+        if transform.translation.y >= SECRET_ROOM_TRIGGER_Y
+            && player_location.current() == &PlayerLocation::Temple
+        {
+            player_location.set(PlayerLocation::SecretRoom).unwrap();
+        } else if transform.translation.y < SECRET_ROOM_TRIGGER_Y
+            && player_location.current() == &PlayerLocation::SecretRoom
+        {
+            player_location.set(PlayerLocation::Temple).unwrap();
+        }
     }
 }
 
-fn spawn_secret_room(
-    commands: &mut Commands,
-    asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    let secret_room = asset_server.load("textures/temple/secret_room.png");
+fn secret_room_cover_fade() {
 
-    commands.spawn_bundle(SpriteBundle {
-        material: materials.add(secret_room.into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, BACKGROUND_Z)),
-        ..SpriteBundle::default()
-    }).insert(Temple);
 }
 
-fn despawn_secret_room(mut commands: &Commands) {
+fn remove_secret_room_cover(
+    mut commands: Commands,
+    mut temple_query: Query<&mut Transform, With<Temple>>,
+    mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
+) {
+    if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.single_mut() {
+        if let Some(mut fade) = fade_opt {
+            fade.invert();
+        } else {
+            commands.entity(cover_entity).insert(Fade {
+                current_alpha: 1.0,
+                fade_type: FadeType::FadeIn,
+                total_duration: Duration::from_secs(1),
+                animation_fn: ease_in_sine,
+                ..Fade::default()
+            });
+        }
+    }
 
+    if let Ok(mut temple_transform) = temple_query.single_mut() {
+        temple_transform.translation.z = TEMPLE_Z_WHEN_IN_SECRET_ROOM;
+    }
+}
+
+fn add_secret_room_cover(
+    mut commands: Commands,
+    mut temple_query: Query<&mut Transform, With<Temple>>,
+    mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
+) {
+    if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.single_mut() {
+        if let Some(mut fade) = fade_opt {
+            fade.invert();
+        } else {
+            commands.entity(cover_entity).insert(Fade {
+                current_alpha: 0.0,
+                fade_type: FadeType::FadeOut,
+                total_duration: Duration::from_secs(1),
+                animation_fn: ease_out_sine,
+                ..Fade::default()
+            });
+        }
+    }
+
+    if let Ok(mut temple_transform) = temple_query.single_mut() {
+        temple_transform.translation.z = TEMPLE_Z;
+    }
 }
 
 fn curtains_animation(
@@ -91,26 +142,45 @@ fn setup_temple(
 ) {
     let background = asset_server.load("textures/temple/background.png");
     let main_room = asset_server.load("textures/temple/main_room.png");
+    let secret_room = asset_server.load("textures/temple/secret_room.png");
     let pillar = asset_server.load("textures/temple/pillar_int.png");
     let stones = asset_server.load("textures/temple/stones.png");
 
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(background.into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, BACKGROUND_Z)),
+        transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
         ..SpriteBundle::default()
-    }).insert(Temple);
+    });
 
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(main_room.into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, TEMPLE_Z)),
+        transform: Transform::from_xyz(0.0, 0.0, TEMPLE_Z),
         ..SpriteBundle::default()
     }).insert(Temple);
 
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(stones.into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, STONES_Z)),
+        transform: Transform::from_xyz(0.0, 0.0, STONES_Z),
         ..SpriteBundle::default()
-    }).insert(Temple);
+    });
+
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(secret_room.into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, SECRET_ROOM_Z)),
+        ..SpriteBundle::default()
+    }).insert(SecretRoom);
+
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(Color::Rgba {
+            red: 58.0 / 256.0,
+            green: 36.0 / 246.0,
+            blue: 48.0 / 256.0,
+            alpha: 1.0,
+        }.into()),
+        transform: Transform::from_xyz(0.0, 925.0, SECRET_ROOM_COVER_Z),
+        sprite: Sprite::new(Vec2::new(2420.0, 670.0)),
+        ..SpriteBundle::default()
+    }).insert(SecretRoomCover);
 
     for pos in PILLAR_POSITIONS {
         commands
@@ -143,15 +213,15 @@ fn setup_temple(
 
 fn spawn_hitboxes(mut commands: Commands) {
     // Left wall
-    spawn_collision_cuboid(&mut commands, -1080.0, -240.0, 10.0, 810.0);
+    spawn_collision_cuboid(&mut commands, -1080.0, -40.0, 10.0, 1010.0);
     // Right wall
-    spawn_collision_cuboid(&mut commands, 1080.0, -240.0, 10.0, 810.0);
+    spawn_collision_cuboid(&mut commands, 1080.0, -40.0, 10.0, 1010.0);
     // Left side of top wall
-    spawn_collision_cuboid(&mut commands, -655.0, 580.0, 415.0, 10.0);
+    spawn_collision_cuboid(&mut commands, -655.0, 600.0, 415.0, 30.0);
     // Right side of top wall
-    spawn_collision_cuboid(&mut commands, 455.0, 580.0, 615.0, 10.0);
-    // Left of hidden door
-    spawn_collision_cuboid(&mut commands, -150.0, 610.0, 10.0, 20.0);
-    // Right of hidden foor
-    spawn_collision_cuboid(&mut commands, -250.0, 610.0, 10.0, 20.0);
+    spawn_collision_cuboid(&mut commands, 455.0, 600.0, 615.0, 30.0);
+    // Bottom wall
+    spawn_collision_cuboid(&mut commands, 0.0, -1060.0, 1070.0, 10.0);
+    // Top wall of secret room
+    spawn_collision_cuboid(&mut commands, 0.0, 980.0, 1070.0, 10.0);
 }

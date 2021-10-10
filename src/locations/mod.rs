@@ -40,6 +40,7 @@ pub fn spawn_collision_cuboid(
         });
 }
 
+/*
 pub fn spawn_child_collision_cuboid(
     parent: &mut ChildBuilder,
     x: f32, y: f32,
@@ -62,3 +63,4 @@ pub fn spawn_child_collision_cuboid(
             ..ColliderBundle::default()
         });
 }
+*/

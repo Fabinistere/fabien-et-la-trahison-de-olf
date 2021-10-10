@@ -1,6 +1,7 @@
 pub mod dialogs;
 pub mod constants;
 pub mod player;
+pub mod animations;
 mod menu;
 mod debug;
 mod locations;
@@ -40,6 +41,7 @@ fn main() {
         .add_plugin(DebugLinesPlugin)
         .add_plugin(dialogs::DialogsPlugin)
         .add_plugin(menu::MenuPlugin)
+        .add_plugin(animations::AnimationPlugin)
         .add_state(GameState::Playing)
         .add_system(debug::collider_debug_lines_system.system())
         .add_plugin(player::PlayerPlugin)

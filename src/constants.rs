@@ -11,10 +11,11 @@ pub mod player {
 pub mod locations {
     pub mod temple {
         pub const BACKGROUND_Z: f32 = 0.0;
-        pub const TEMPLE_Z: f32 = 1.0;
+        pub const TEMPLE_Z: f32 = 2.0;
         pub const TEMPLE_Z_WHEN_IN_SECRET_ROOM: f32 = 6.0;
         pub const STONES_Z: f32 = 3.5;
-        pub const SECRET_ROOM_Z: f32 = 2.0;
+        pub const SECRET_ROOM_Z: f32 = 1.0;
+        pub const SECRET_ROOM_COVER_Z: f32 = 1.5;
         pub const PILLARS_Z_BACK: f32 = 3.0;
         pub const PILLARS_Z_FRONT: f32 = 6.0;
         pub const PILLAR_POSITIONS: [(f32, f32, f32); 12] = [
@@ -31,5 +32,6 @@ pub mod locations {
             (300.0, -680.0, PILLARS_Z_BACK),
             (900.0, -680.0, PILLARS_Z_BACK),
         ];
+        pub const SECRET_ROOM_TRIGGER_Y: f32 = 635.0;
     }
 }

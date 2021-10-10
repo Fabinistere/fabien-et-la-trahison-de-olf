@@ -211,13 +211,11 @@ fn spawn_player(
         .spawn()
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
-            transform: Transform::from_matrix(
-                Mat4::from_scale_rotation_translation(
-                    Vec3::splat(PLAYER_SCALE),
-                    Quat::default(),
-                    Vec3::new(0.0, 0.0, PLAYER_Z),
-                )
-            ),
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, PLAYER_Z),
+                rotation: Quat::default(),
+                scale: Vec3::splat(PLAYER_SCALE),
+            },
             ..SpriteSheetBundle::default()
         })
         .insert(PlayerAnimation {
@@ -236,7 +234,7 @@ fn spawn_player(
         .insert_bundle((
                 RigidBodyPositionSync::Discrete,
                 Player,
-                Speed(500.0),
+                Speed(200.0),
         ))
         .with_children(|parent| {
             parent.spawn().insert_bundle(ColliderBundle {
