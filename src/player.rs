@@ -39,7 +39,7 @@ struct Speed(f32);
 struct Immobilized;
 
 #[derive(Deserialize, Debug)]
-pub struct SpriteSheetAnimation {
+pub struct PlayerSpriteSheetAnimation {
     start_index: u32,
     end_index: u32,
     delta: f32,
@@ -60,7 +60,7 @@ impl PlayerAnimationType {
 }
 
 #[derive(Deserialize)]
-struct PlayerAnimationData(HashMap<PlayerAnimationType, SpriteSheetAnimation>);
+struct PlayerAnimationData(HashMap<PlayerAnimationType, PlayerSpriteSheetAnimation>);
 
 struct PlayerAnimation {
     timer: Timer,

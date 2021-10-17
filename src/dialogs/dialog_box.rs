@@ -14,10 +14,10 @@ pub struct UiCamera;
 const DIALOG_BOX_UPDATE_DELTA: f32 = 0.08;
 
 pub fn create_dialog_box_on_key_press(
-    mut commands: Commands,
+    commands: Commands,
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut keyboard_input: Res<Input<KeyCode>>,
+    materials: ResMut<Assets<ColorMaterial>>,
+    keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.pressed(KeyCode::O) {
         create_dialog_box(commands, asset_server, materials, "Bonjour Florian\nComment vas-tu ?\nJ'ai faim.".to_string());
@@ -30,7 +30,7 @@ pub fn destroy_dialog_box(
         Query<Entity, With<DialogBox>>,
         Query<Entity, With<UiCamera>>,
     )>,
-    mut keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.pressed(KeyCode::E) {
         for entity in query.q0().iter() {

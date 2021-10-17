@@ -13,25 +13,32 @@ pub mod locations {
         pub const BACKGROUND_Z: f32 = 0.0;
         pub const TEMPLE_Z: f32 = 2.0;
         pub const TEMPLE_Z_WHEN_IN_SECRET_ROOM: f32 = 6.0;
-        pub const STONES_Z: f32 = 3.5;
+        pub const GROUND_Z: f32 = 0.5;
+        pub const THRONE_Z_BACK: f32 = 3.0;
+        pub const THRONE_Z_FRONT: f32 = 6.0;
         pub const SECRET_ROOM_Z: f32 = 1.0;
         pub const SECRET_ROOM_COVER_Z: f32 = 1.5;
+        pub const CURTAINS_Z_BACK: f32 = 3.0; 
+        pub const CURTAINS_Z_FRONT: f32 = 7.0;
+        pub const CURTAINS_ANIMATION_DELTA: f32 = 0.1;
         pub const PILLARS_Z_BACK: f32 = 3.0;
         pub const PILLARS_Z_FRONT: f32 = 6.0;
         pub const PILLAR_POSITIONS: [(f32, f32, f32); 12] = [
-            (-900.0, 210.0, PILLARS_Z_BACK),
-            (-300.0, 210.0, PILLARS_Z_BACK),
-            (300.0, 210.0, PILLARS_Z_BACK),
-            (900.0, 210.0, PILLARS_Z_BACK),
-            (-900.0, -230.0, PILLARS_Z_BACK),
-            (-300.0, -230.0, PILLARS_Z_BACK),
-            (300.0, -230.0, PILLARS_Z_BACK),
-            (900.0, -230.0, PILLARS_Z_BACK),
-            (-900.0, -680.0, PILLARS_Z_BACK),
-            (-300.0, -680.0, PILLARS_Z_BACK),
-            (300.0, -680.0, PILLARS_Z_BACK),
-            (900.0, -680.0, PILLARS_Z_BACK),
+            (-900.0, 140.0, PILLARS_Z_BACK),
+            (-300.0, 140.0, PILLARS_Z_BACK),
+            (300.0, 140.0, PILLARS_Z_BACK),
+            (900.0, 140.0, PILLARS_Z_BACK),
+            (-900.0, -300.0, PILLARS_Z_BACK),
+            (-300.0, -300.0, PILLARS_Z_BACK),
+            (300.0, -300.0, PILLARS_Z_BACK),
+            (900.0, -300.0, PILLARS_Z_BACK),
+            (-900.0, -750.0, PILLARS_Z_BACK),
+            (-300.0, -750.0, PILLARS_Z_BACK),
+            (300.0, -750.0, PILLARS_Z_BACK),
+            (900.0, -750.0, PILLARS_Z_BACK),
         ];
-        pub const SECRET_ROOM_TRIGGER_Y: f32 = 635.0;
+        pub const SECRET_ROOM_TRIGGER_Y: f32 = 565.0;
+        pub const CURTAINS_TRIGGER_Y: f32 = 480.0;
+        pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.2;
     }
 }

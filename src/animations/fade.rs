@@ -1,14 +1,5 @@
 use bevy::{ prelude::*, utils::Duration, };
 
-pub struct AnimationPlugin;
-
-impl Plugin for AnimationPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app
-            .add_system(fade_animations.system());
-    }
-}
-
 pub enum FadeType {
     FadeIn,
     FadeOut,
@@ -62,7 +53,7 @@ pub fn ease_out_sine(t: f32) -> f32 {
     ((t * std::f32::consts::PI) / 2.0).sin()
 }
 
-fn fade_animations(
+pub fn fade_animations(
     mut commands: Commands,
     time: Res<Time>,
     mut materials: ResMut<Assets<ColorMaterial>>,

@@ -2,8 +2,17 @@ use bevy::{ prelude::*, utils::Duration };
 use bevy_rapier2d::prelude::*;
 use crate::{
     player::Player,
-    constants::locations::temple::*,
-    animations::*,
+    constants::{
+        locations::temple::*,
+        player::{ PLAYER_WIDTH, PLAYER_SCALE },
+    },
+    animations::{
+        fade::*,
+        sprite_sheet_animation::{
+            AnimationDuration,
+            SpriteSheetAnimation,
+        },
+    },
 };
 use super::{ Location, spawn_collision_cuboid };
 
@@ -13,6 +22,7 @@ impl Plugin for TemplePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app
             .add_state(PlayerLocation::Temple)
+            .add_state(PlayerCurtainsPosition::Below)
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
                     .with_system(setup_temple.system())
@@ -28,7 +38,8 @@ impl Plugin for TemplePlugin {
             )
             .add_system(pillars_position.system())
             .add_system(curtains_animation.system())
-            .add_system(secret_room_enter.system());
+            .add_system(secret_room_enter.system())
+            .add_system(curtains_z_position.system());
     }
 }
 
@@ -37,12 +48,20 @@ struct Temple;
 struct Pillar;
 struct SecretRoom;
 struct SecretRoomCover;
+struct Curtain;
+struct CurtainsZPositionTimer;
+struct Throne;
 
 // States
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 enum PlayerLocation {
     Temple,
     SecretRoom,
+}
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+enum PlayerCurtainsPosition {
+    Above,
+    Below,
 }
 
 fn pillars_position(
@@ -75,10 +94,6 @@ fn secret_room_enter(
             player_location.set(PlayerLocation::Temple).unwrap();
         }
     }
-}
-
-fn secret_room_cover_fade() {
-
 }
 
 fn remove_secret_room_cover(
@@ -130,21 +145,103 @@ fn add_secret_room_cover(
 }
 
 fn curtains_animation(
+    mut commands: Commands,
+    mut curtains_state: ResMut<State<PlayerCurtainsPosition>>,
+    mut curtain_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,
+    player_query: Query<&GlobalTransform, With<Player>>,
 
 ) {
+    if let Ok(player_transform) = player_query.single() {
+        for (curtain_entity, curtain_transform, mut sprite) in curtain_query.iter_mut() {
+            let range = PLAYER_WIDTH * PLAYER_SCALE;
+            let in_range_left = curtain_transform.translation.x < player_transform.translation.x + range;
+            let in_range_right = curtain_transform.translation.x > player_transform.translation.x - range;
 
+            let (start, end) = if player_transform.translation.x > curtain_transform.translation.x {
+                (0, 4)
+            } else {
+                (5, 9)
+            };
+
+            if player_transform.translation.y >= CURTAINS_TRIGGER_Y
+                && in_range_left && in_range_right 
+                && curtains_state.current() == &PlayerCurtainsPosition::Below
+            {
+                curtains_state.set(PlayerCurtainsPosition::Above).unwrap();
+
+                sprite.index = start;
+
+                commands
+                    .spawn()
+                    .insert(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, false))
+                    .insert(CURTAINS_Z_FRONT)
+                    .insert(CurtainsZPositionTimer);
+
+                commands.entity(curtain_entity).insert(SpriteSheetAnimation {
+                    start_index: start,
+                    end_index: end,
+                    timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+                    duration: AnimationDuration::Once,
+                });
+            } else if player_transform.translation.y < CURTAINS_TRIGGER_Y
+                && in_range_left && in_range_right
+                && curtains_state.current() == &PlayerCurtainsPosition::Above
+            {
+                curtains_state.set(PlayerCurtainsPosition::Below).unwrap(); 
+
+                sprite.index = start;
+
+                commands
+                    .spawn()
+                    .insert(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, false))
+                    .insert(CURTAINS_Z_BACK)
+                    .insert(CurtainsZPositionTimer);
+
+                commands.entity(curtain_entity).insert(SpriteSheetAnimation {
+                    start_index: start,
+                    end_index: end,
+                    timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+                    duration: AnimationDuration::Once,
+                });
+            }
+        }
+    }
+}
+
+fn curtains_z_position(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut timer_query: Query<(Entity, &mut Timer, &f32), With<CurtainsZPositionTimer>>,
+    mut curtains_query: Query<&mut Transform, With<Curtain>>,
+) {
+    for (entity, mut timer, z_pos) in timer_query.iter_mut() {
+        timer.tick(time.delta());
+
+        if timer.finished() {
+            commands.entity(entity).despawn();
+
+            for mut curtains_transform in curtains_query.iter_mut() {
+                curtains_transform.translation.z = *z_pos;
+            }
+        }
+    }
 }
 
 fn setup_temple(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let background = asset_server.load("textures/temple/background.png");
     let main_room = asset_server.load("textures/temple/main_room.png");
     let secret_room = asset_server.load("textures/temple/secret_room.png");
-    let pillar = asset_server.load("textures/temple/pillar_int.png");
-    let stones = asset_server.load("textures/temple/stones.png");
+    let pillar = asset_server.load("textures/temple/pillar.png");
+    let throne = asset_server.load("textures/temple/throne.png");
+    let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
+    let ground = asset_server.load("textures/temple/ground.png");
+    let left_curtains_texture_atlas = TextureAtlas::from_grid(curtains_spritesheet.clone(), Vec2::new(200.0, 360.0), 1, 10);
+    let right_curtains_texture_atlas = TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
 
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(background.into()),
@@ -159,14 +256,14 @@ fn setup_temple(
     }).insert(Temple);
 
     commands.spawn_bundle(SpriteBundle {
-        material: materials.add(stones.into()),
-        transform: Transform::from_xyz(0.0, 0.0, STONES_Z),
+        material: materials.add(ground.into()),
+        transform: Transform::from_xyz(0.0, 0.0, GROUND_Z),
         ..SpriteBundle::default()
     });
 
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(secret_room.into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, SECRET_ROOM_Z)),
+        transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
         ..SpriteBundle::default()
     }).insert(SecretRoom);
 
@@ -181,6 +278,26 @@ fn setup_temple(
         sprite: Sprite::new(Vec2::new(2420.0, 670.0)),
         ..SpriteBundle::default()
     }).insert(SecretRoomCover);
+
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(throne.into()),
+        transform: Transform::from_xyz(0.0, 450.0, THRONE_Z_BACK),
+        ..SpriteBundle::default()
+    }).insert(Throne);
+
+    // Left curtain
+    commands.spawn_bundle(SpriteSheetBundle {
+        texture_atlas: texture_atlases.add(left_curtains_texture_atlas),
+        transform: Transform::from_xyz(-200.0, 630.0, CURTAINS_Z_BACK),
+        ..SpriteSheetBundle::default()
+    }).insert(Curtain);
+
+    // Right curtain
+    commands.spawn_bundle(SpriteSheetBundle {
+        texture_atlas: texture_atlases.add(right_curtains_texture_atlas),
+        transform: Transform::from_xyz(200.0, 630.0, CURTAINS_Z_BACK),
+        ..SpriteSheetBundle::default()
+    }).insert(Curtain);
 
     for pos in PILLAR_POSITIONS {
         commands
@@ -213,15 +330,23 @@ fn setup_temple(
 
 fn spawn_hitboxes(mut commands: Commands) {
     // Left wall
-    spawn_collision_cuboid(&mut commands, -1080.0, -40.0, 10.0, 1010.0);
+    spawn_collision_cuboid(&mut commands, -1080.0, -40.0, 10.0, 1080.0);
     // Right wall
-    spawn_collision_cuboid(&mut commands, 1080.0, -40.0, 10.0, 1010.0);
+    spawn_collision_cuboid(&mut commands, 1080.0, -40.0, 10.0, 1080.0);
     // Left side of top wall
-    spawn_collision_cuboid(&mut commands, -655.0, 600.0, 415.0, 30.0);
+    spawn_collision_cuboid(&mut commands, -655.0, 530.0, 415.0, 30.0);
     // Right side of top wall
-    spawn_collision_cuboid(&mut commands, 455.0, 600.0, 615.0, 30.0);
+    spawn_collision_cuboid(&mut commands, 455.0, 530.0, 615.0, 30.0);
     // Bottom wall
-    spawn_collision_cuboid(&mut commands, 0.0, -1060.0, 1070.0, 10.0);
+    spawn_collision_cuboid(&mut commands, 0.0, -1130.0, 1070.0, 10.0);
     // Top wall of secret room
-    spawn_collision_cuboid(&mut commands, 0.0, 980.0, 1070.0, 10.0);
+    spawn_collision_cuboid(&mut commands, 0.0, 1050.0, 1070.0, 10.0);
+    // Middle wall of secret room
+    spawn_collision_cuboid(&mut commands, 160.0, 850.0, 140.0, 190.0);
+    // Throne seat
+    spawn_collision_cuboid(&mut commands, 0.0, 410.0, 70.0, 40.0);
+    // Throne front of seat
+    spawn_collision_cuboid(&mut commands, 0.0, 360.0, 50.0, 10.0);
+    // Throne front of front of seat
+    spawn_collision_cuboid(&mut commands, 0.0, 340.0, 30.0, 10.0);
 }
