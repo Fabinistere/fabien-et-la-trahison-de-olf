@@ -17,7 +17,7 @@ impl Plugin for MenuPlugin {
                     .with_system(destroy_menu.system())
             )
             .add_system(language_button_interactions.system())
-            // .add_system(game_start.system())
+            .add_system(game_start.system())
             .add_system(language_changed.system());
     }
 }

@@ -5,6 +5,7 @@ use crate::{
     constants::{
         locations::temple::*,
         player::{ PLAYER_WIDTH, PLAYER_SCALE },
+        BACKGROUND_COLOR,
     },
     animations::{
         fade::*,
@@ -164,7 +165,7 @@ fn curtains_animation(
             };
 
             if player_transform.translation.y >= CURTAINS_TRIGGER_Y
-                && in_range_left && in_range_right 
+                && in_range_left && in_range_right
                 && curtains_state.current() == &PlayerCurtainsPosition::Below
             {
                 curtains_state.set(PlayerCurtainsPosition::Above).unwrap();
@@ -187,7 +188,7 @@ fn curtains_animation(
                 && in_range_left && in_range_right
                 && curtains_state.current() == &PlayerCurtainsPosition::Above
             {
-                curtains_state.set(PlayerCurtainsPosition::Below).unwrap(); 
+                curtains_state.set(PlayerCurtainsPosition::Below).unwrap();
 
                 sprite.index = start;
 
@@ -268,12 +269,7 @@ fn setup_temple(
     }).insert(SecretRoom);
 
     commands.spawn_bundle(SpriteBundle {
-        material: materials.add(Color::Rgba {
-            red: 58.0 / 256.0,
-            green: 36.0 / 246.0,
-            blue: 48.0 / 256.0,
-            alpha: 1.0,
-        }.into()),
+        material: materials.add(BACKGROUND_COLOR.into()),
         transform: Transform::from_xyz(0.0, 925.0, SECRET_ROOM_COVER_Z),
         sprite: Sprite::new(Vec2::new(2420.0, 670.0)),
         ..SpriteBundle::default()
@@ -281,7 +277,7 @@ fn setup_temple(
 
     commands.spawn_bundle(SpriteBundle {
         material: materials.add(throne.into()),
-        transform: Transform::from_xyz(0.0, 450.0, THRONE_Z_BACK),
+         transform: Transform::from_xyz(0.0, 450.0, THRONE_Z_BACK),
         ..SpriteBundle::default()
     }).insert(Throne);
 

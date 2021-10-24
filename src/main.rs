@@ -16,6 +16,7 @@ pub use crate::{
         DialogId,
         language::Language,
     },
+    constants::BACKGROUND_COLOR,
 };
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -37,6 +38,7 @@ fn main() {
         // .add_plugin(bevy::diagnostic::LogDiagnosticsPlugin::default())
         // .add_plugin(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
         .add_plugins(DefaultPlugins)
+        .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(DebugLinesPlugin)
         .add_plugin(dialogs::DialogsPlugin)
@@ -55,6 +57,7 @@ fn main() {
 
 fn game_setup(
     mut commands: Commands,
+    mut windows: ResMut<Windows>,
     mut rapier_config: ResMut<RapierConfiguration>,
 ) {
     rapier_config.gravity = Vector::zeros();
@@ -63,4 +66,8 @@ fn game_setup(
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())
         .insert(PlayerCamera);
+
+    let window = windows.get_primary_mut().unwrap();
+    window.set_cursor_lock_mode(true);
+    window.set_cursor_visibility(false);
 }

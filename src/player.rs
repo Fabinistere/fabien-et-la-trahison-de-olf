@@ -30,7 +30,8 @@ impl Plugin for PlayerPlugin {
             )
             .add_system(animate_player.system())
             .add_system(set_player_movement.system())
-            .add_system(player_movement.system());
+            .add_system(player_movement.system())
+            .add_system(camera_follow.system());
     }
 }
 
@@ -167,10 +168,9 @@ fn set_player_movement(
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(&Speed, &mut RigidBodyVelocity, &GlobalTransform), (With<Player>, Without<Immobilized>)>,
-    mut camera_query: Query<&mut Transform, With<PlayerCamera>>,
+    mut player_query: Query<(&Speed, &mut RigidBodyVelocity), (With<Player>, Without<Immobilized>)>,
 ) {
-    for (speed, mut rb_vel, player_transform) in player_query.iter_mut() {
+    for (speed, mut rb_vel) in player_query.iter_mut() {
         let up = keyboard_input.pressed(key_bindings.up.0) || keyboard_input.pressed(key_bindings.up.1);
         let down = keyboard_input.pressed(key_bindings.down.0) || keyboard_input.pressed(key_bindings.down.1);
         let left = keyboard_input.pressed(key_bindings.left.0) || keyboard_input.pressed(key_bindings.left.1);
@@ -189,11 +189,30 @@ fn player_movement(
 
         rb_vel.linvel.x = vel_x;
         rb_vel.linvel.y = vel_y;
+    }
+}
 
-        for mut camera_transform in camera_query.iter_mut() {
-            camera_transform.translation.x = player_transform.translation.x;
-            camera_transform.translation.y = player_transform.translation.y;
-        }
+fn camera_follow(
+    mut query: QuerySet<(
+        Query<&Transform, With<Player>>,
+        Query<&mut Transform, With<PlayerCamera>>,
+    )>,
+) {
+    let player_transform = if let Ok(t) = query.q0().single() {
+        t.clone()
+    } else {
+        return;
+    };
+
+    if let Ok(mut camera_transform) = query.q1_mut().single_mut() {
+        camera_transform.translation = camera_transform.translation.lerp(
+            Vec3::new(
+                player_transform.translation.x,
+                player_transform.translation.y,
+                camera_transform.translation.z
+            ),
+            CAMERA_INTERPOLATION,
+        );
     }
 }
 
