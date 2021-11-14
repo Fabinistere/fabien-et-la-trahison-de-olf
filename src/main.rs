@@ -67,7 +67,9 @@ fn game_setup(
         .spawn_bundle(OrthographicCameraBundle::new_2d())
         .insert(PlayerCamera);
 
+    /*
     let window = windows.get_primary_mut().unwrap();
     window.set_cursor_lock_mode(true);
     window.set_cursor_visibility(false);
+    */
 }
