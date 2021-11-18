@@ -38,6 +38,7 @@ impl Plugin for TemplePlugin {
                     .with_system(add_secret_room_cover.system())
             )
             .add_system(pillars_position.system())
+            .add_system(throne_position.system())
             .add_system(curtains_animation.system())
             .add_system(secret_room_enter.system())
             .add_system(curtains_z_position.system())
@@ -77,6 +78,21 @@ fn pillars_position(
                 pillar_transform.translation.z = PILLARS_Z_FRONT;
             } else {
                 pillar_transform.translation.z = PILLARS_Z_BACK;
+            }
+        }
+    }
+}
+
+fn throne_position(
+    player_query: Query<&GlobalTransform, With<Player>>,
+    mut throne_query: Query<&mut Transform, With<Throne>>,
+) {
+    if let Ok(player_transform) = player_query.single() {
+        for mut throne_transform in throne_query.iter_mut() {
+            if player_transform.translation.y > throne_transform.translation.y  {
+                throne_transform.translation.z = THRONE_Z_FRONT;
+            } else {
+                throne_transform.translation.z = THRONE_Z_BACK;
             }
         }
     }
@@ -244,7 +260,7 @@ fn olf_cat_animation(
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
             sprite.index = ((sprite.index as usize + 1) % texture_atlas.textures.len()) as u32;
         }
-    } 
+    }
 }
 
 fn setup_temple(
@@ -296,12 +312,6 @@ fn setup_temple(
         ..SpriteBundle::default()
     }).insert(SecretRoomCover);
 
-    commands.spawn_bundle(SpriteBundle {
-        material: materials.add(throne.into()),
-         transform: Transform::from_xyz(0.0, 450.0, THRONE_Z_BACK),
-        ..SpriteBundle::default()
-    }).insert(Throne);
-
     // Left curtain
     commands.spawn_bundle(SpriteSheetBundle {
         texture_atlas: texture_atlases.add(left_curtains_texture_atlas),
@@ -327,6 +337,12 @@ fn setup_temple(
     })
     .insert(OlfCat)
     .insert(Timer::from_seconds(OLF_CAT_ANIMATION_DELTA, true));
+
+    commands.spawn_bundle(SpriteBundle {
+        material: materials.add(throne.into()),
+        transform: Transform::from_xyz(0.0, 450.0, THRONE_Z_BACK),
+        ..SpriteBundle::default()
+    }).insert(Throne);
 
     for pos in PILLAR_POSITIONS {
         commands
@@ -378,4 +394,20 @@ fn spawn_hitboxes(mut commands: Commands) {
     spawn_collision_cuboid(&mut commands, 0.0, 360.0, 50.0, 10.0);
     // Throne front of front of seat
     spawn_collision_cuboid(&mut commands, 0.0, 340.0, 30.0, 10.0);
+    // Throne bump left 1
+    spawn_collision_cuboid(&mut commands, -330.0, 440.0, 1.0, 60.0);
+    // Throne bump right 1
+    spawn_collision_cuboid(&mut commands, 330.0, 440.0, 1.0, 60.0);
+    // Throne bump left 2
+    spawn_collision_cuboid(&mut commands, -310.0, 350.0, 1.0, 30.0);
+    // Throne bump right 2
+    spawn_collision_cuboid(&mut commands, 310.0, 350.0, 1.0, 30.0);
+    // Throne bump left 3
+    spawn_collision_cuboid(&mut commands, -290.0, 290.0, 1.0, 30.0);
+    // Throne bump right 3
+    spawn_collision_cuboid(&mut commands, 290.0, 290.0, 1.0, 30.0);
+    // Throne bump left 4
+    spawn_collision_cuboid(&mut commands, -230.0, 215.0, 1.0, 45.0);
+    // Throne bump right 4
+    spawn_collision_cuboid(&mut commands, 230.0, 215.0, 1.0, 45.0);
 }

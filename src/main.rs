@@ -63,8 +63,15 @@ fn game_setup(
     rapier_config.gravity = Vector::zeros();
     rapier_config.scale = 1.0;
 
+    /*
+    let mut camera = OrthographicCameraBundle::new_2d();
+    info!("{:?}", camera.transform.translation);
+    camera.transform.translation += Vec3::new(0.0, 0.0, -800.0);
+    */
+
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())
+        // .spawn_bundle(camera)
         .insert(PlayerCamera);
 
     /*
