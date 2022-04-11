@@ -1,57 +1,60 @@
-use bevy::{ prelude::*, utils::Duration };
-use bevy_rapier2d::prelude::*;
+use super::{spawn_collision_cuboid, Location};
 use crate::{
-    player::Player,
-    constants::{
-        locations::temple::*,
-        player::{ PLAYER_WIDTH, PLAYER_SCALE },
-        BACKGROUND_COLOR,
-    },
     animations::{
         fade::*,
-        sprite_sheet_animation::{
-            AnimationDuration,
-            SpriteSheetAnimation,
-        },
+        sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     },
+    constants::{
+        locations::temple::*,
+        player::{PLAYER_SCALE, PLAYER_WIDTH},
+        BACKGROUND_COLOR,
+    },
+    player::Player,
 };
-use super::{ Location, spawn_collision_cuboid };
+use bevy::{prelude::*, utils::Duration};
+use bevy_rapier2d::prelude::*;
 
 pub struct TemplePlugin;
 
 impl Plugin for TemplePlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app
-            .add_state(PlayerLocation::Temple)
+    fn build(&self, app: &mut App) {
+        app.add_state(PlayerLocation::Temple)
             .add_state(PlayerCurtainsPosition::Below)
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
-                    .with_system(setup_temple.system())
-                    .with_system(spawn_hitboxes.system())
+                    .with_system(setup_temple)
+                    .with_system(spawn_hitboxes),
             )
             .add_system_set(
                 SystemSet::on_enter(PlayerLocation::SecretRoom)
-                    .with_system(remove_secret_room_cover.system())
+                    .with_system(remove_secret_room_cover),
             )
             .add_system_set(
-                SystemSet::on_exit(PlayerLocation::SecretRoom)
-                    .with_system(add_secret_room_cover.system())
+                SystemSet::on_exit(PlayerLocation::SecretRoom).with_system(add_secret_room_cover),
             )
-            .add_system(pillars_position.system())
-            .add_system(curtains_animation.system())
-            .add_system(secret_room_enter.system())
-            .add_system(curtains_z_position.system());
+            .add_system(pillars_position)
+            .add_system(curtains_animation)
+            .add_system(secret_room_enter)
+            .add_system(curtains_z_position);
     }
 }
 
-// Components
+#[derive(Component)]
 struct Temple;
+#[derive(Component)]
 struct Pillar;
+#[derive(Component)]
 struct SecretRoom;
+#[derive(Component)]
 struct SecretRoomCover;
+#[derive(Component)]
 struct Curtain;
+#[derive(Component)]
 struct CurtainsZPositionTimer;
+#[derive(Component)]
 struct Throne;
+#[derive(Component)]
+struct ZPosition(f32);
 
 // States
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -67,11 +70,11 @@ enum PlayerCurtainsPosition {
 
 fn pillars_position(
     player_query: Query<&GlobalTransform, With<Player>>,
-    mut pillars_query: Query<(&mut Transform, &RigidBodyPosition), With<Pillar>>,
+    mut pillars_query: Query<(&mut Transform, &RigidBodyPositionComponent), With<Pillar>>,
 ) {
-    if let Ok(player_transform) = player_query.single() {
+    if let Ok(player_transform) = player_query.get_single() {
         for (mut pillar_transform, rb_pos) in pillars_query.iter_mut() {
-            if player_transform.translation.y - 60.0 > rb_pos.position.translation.y {
+            if player_transform.translation.y - 60.0 > rb_pos.0.position.translation.y {
                 pillar_transform.translation.z = PILLARS_Z_FRONT;
             } else {
                 pillar_transform.translation.z = PILLARS_Z_BACK;
@@ -84,7 +87,7 @@ fn secret_room_enter(
     player_query: Query<&GlobalTransform, With<Player>>,
     mut player_location: ResMut<State<PlayerLocation>>,
 ) {
-    if let Ok(transform) = player_query.single() {
+    if let Ok(transform) = player_query.get_single() {
         if transform.translation.y >= SECRET_ROOM_TRIGGER_Y
             && player_location.current() == &PlayerLocation::Temple
         {
@@ -102,7 +105,7 @@ fn remove_secret_room_cover(
     mut temple_query: Query<&mut Transform, With<Temple>>,
     mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
 ) {
-    if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.single_mut() {
+    if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.get_single_mut() {
         if let Some(mut fade) = fade_opt {
             fade.invert();
         } else {
@@ -116,7 +119,7 @@ fn remove_secret_room_cover(
         }
     }
 
-    if let Ok(mut temple_transform) = temple_query.single_mut() {
+    if let Ok(mut temple_transform) = temple_query.get_single_mut() {
         temple_transform.translation.z = TEMPLE_Z_WHEN_IN_SECRET_ROOM;
     }
 }
@@ -126,7 +129,7 @@ fn add_secret_room_cover(
     mut temple_query: Query<&mut Transform, With<Temple>>,
     mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
 ) {
-    if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.single_mut() {
+    if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.get_single_mut() {
         if let Some(mut fade) = fade_opt {
             fade.invert();
         } else {
@@ -140,7 +143,7 @@ fn add_secret_room_cover(
         }
     }
 
-    if let Ok(mut temple_transform) = temple_query.single_mut() {
+    if let Ok(mut temple_transform) = temple_query.get_single_mut() {
         temple_transform.translation.z = TEMPLE_Z;
     }
 }
@@ -150,13 +153,14 @@ fn curtains_animation(
     mut curtains_state: ResMut<State<PlayerCurtainsPosition>>,
     mut curtain_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,
     player_query: Query<&GlobalTransform, With<Player>>,
-
 ) {
-    if let Ok(player_transform) = player_query.single() {
+    if let Ok(player_transform) = player_query.get_single() {
         for (curtain_entity, curtain_transform, mut sprite) in curtain_query.iter_mut() {
             let range = PLAYER_WIDTH * PLAYER_SCALE;
-            let in_range_left = curtain_transform.translation.x < player_transform.translation.x + range;
-            let in_range_right = curtain_transform.translation.x > player_transform.translation.x - range;
+            let in_range_left =
+                curtain_transform.translation.x < player_transform.translation.x + range;
+            let in_range_right =
+                curtain_transform.translation.x > player_transform.translation.x - range;
 
             let (start, end) = if player_transform.translation.x > curtain_transform.translation.x {
                 (0, 4)
@@ -165,7 +169,8 @@ fn curtains_animation(
             };
 
             if player_transform.translation.y >= CURTAINS_TRIGGER_Y
-                && in_range_left && in_range_right
+                && in_range_left
+                && in_range_right
                 && curtains_state.current() == &PlayerCurtainsPosition::Below
             {
                 curtains_state.set(PlayerCurtainsPosition::Above).unwrap();
@@ -175,17 +180,20 @@ fn curtains_animation(
                 commands
                     .spawn()
                     .insert(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, false))
-                    .insert(CURTAINS_Z_FRONT)
+                    .insert(ZPosition(CURTAINS_Z_FRONT))
                     .insert(CurtainsZPositionTimer);
 
-                commands.entity(curtain_entity).insert(SpriteSheetAnimation {
-                    start_index: start,
-                    end_index: end,
-                    timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
-                    duration: AnimationDuration::Once,
-                });
+                commands
+                    .entity(curtain_entity)
+                    .insert(SpriteSheetAnimation {
+                        start_index: start,
+                        end_index: end,
+                        timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+                        duration: AnimationDuration::Once,
+                    });
             } else if player_transform.translation.y < CURTAINS_TRIGGER_Y
-                && in_range_left && in_range_right
+                && in_range_left
+                && in_range_right
                 && curtains_state.current() == &PlayerCurtainsPosition::Above
             {
                 curtains_state.set(PlayerCurtainsPosition::Below).unwrap();
@@ -195,15 +203,17 @@ fn curtains_animation(
                 commands
                     .spawn()
                     .insert(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, false))
-                    .insert(CURTAINS_Z_BACK)
+                    .insert(ZPosition(CURTAINS_Z_BACK))
                     .insert(CurtainsZPositionTimer);
 
-                commands.entity(curtain_entity).insert(SpriteSheetAnimation {
-                    start_index: start,
-                    end_index: end,
-                    timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
-                    duration: AnimationDuration::Once,
-                });
+                commands
+                    .entity(curtain_entity)
+                    .insert(SpriteSheetAnimation {
+                        start_index: start,
+                        end_index: end,
+                        timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+                        duration: AnimationDuration::Once,
+                    });
             }
         }
     }
@@ -212,7 +222,7 @@ fn curtains_animation(
 fn curtains_z_position(
     mut commands: Commands,
     time: Res<Time>,
-    mut timer_query: Query<(Entity, &mut Timer, &f32), With<CurtainsZPositionTimer>>,
+    mut timer_query: Query<(Entity, &mut Timer, &ZPosition), With<CurtainsZPositionTimer>>,
     mut curtains_query: Query<&mut Transform, With<Curtain>>,
 ) {
     for (entity, mut timer, z_pos) in timer_query.iter_mut() {
@@ -222,7 +232,7 @@ fn curtains_z_position(
             commands.entity(entity).despawn();
 
             for mut curtains_transform in curtains_query.iter_mut() {
-                curtains_transform.translation.z = *z_pos;
+                curtains_transform.translation.z = z_pos.0;
             }
         }
     }
@@ -231,7 +241,6 @@ fn curtains_z_position(
 fn setup_temple(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let background = asset_server.load("textures/temple/background.png");
@@ -241,82 +250,101 @@ fn setup_temple(
     let throne = asset_server.load("textures/temple/throne.png");
     let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
     let ground = asset_server.load("textures/temple/ground.png");
-    let left_curtains_texture_atlas = TextureAtlas::from_grid(curtains_spritesheet.clone(), Vec2::new(200.0, 360.0), 1, 10);
-    let right_curtains_texture_atlas = TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
+    let left_curtains_texture_atlas =
+        TextureAtlas::from_grid(curtains_spritesheet.clone(), Vec2::new(200.0, 360.0), 1, 10);
+    let right_curtains_texture_atlas =
+        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
 
     commands.spawn_bundle(SpriteBundle {
-        material: materials.add(background.into()),
+        texture: background,
         transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
         ..SpriteBundle::default()
     });
 
-    commands.spawn_bundle(SpriteBundle {
-        material: materials.add(main_room.into()),
-        transform: Transform::from_xyz(0.0, 0.0, TEMPLE_Z),
-        ..SpriteBundle::default()
-    }).insert(Temple);
+    commands
+        .spawn_bundle(SpriteBundle {
+            texture: main_room,
+            transform: Transform::from_xyz(0.0, 0.0, TEMPLE_Z),
+            ..SpriteBundle::default()
+        })
+        .insert(Temple);
 
     commands.spawn_bundle(SpriteBundle {
-        material: materials.add(ground.into()),
+        texture: ground,
         transform: Transform::from_xyz(0.0, 0.0, GROUND_Z),
         ..SpriteBundle::default()
     });
 
-    commands.spawn_bundle(SpriteBundle {
-        material: materials.add(secret_room.into()),
-        transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
-        ..SpriteBundle::default()
-    }).insert(SecretRoom);
+    commands
+        .spawn_bundle(SpriteBundle {
+            texture: secret_room,
+            transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
+            ..SpriteBundle::default()
+        })
+        .insert(SecretRoom);
 
-    commands.spawn_bundle(SpriteBundle {
-        material: materials.add(BACKGROUND_COLOR.into()),
-        transform: Transform::from_xyz(0.0, 925.0, SECRET_ROOM_COVER_Z),
-        sprite: Sprite::new(Vec2::new(2420.0, 670.0)),
-        ..SpriteBundle::default()
-    }).insert(SecretRoomCover);
+    commands
+        .spawn_bundle(SpriteBundle {
+            transform: Transform::from_xyz(0.0, 925.0, SECRET_ROOM_COVER_Z),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(2420.0, 670.0)),
+                color: BACKGROUND_COLOR,
+                ..Sprite::default()
+            },
+            ..SpriteBundle::default()
+        })
+        .insert(SecretRoomCover);
 
-    commands.spawn_bundle(SpriteBundle {
-        material: materials.add(throne.into()),
-         transform: Transform::from_xyz(0.0, 450.0, THRONE_Z_BACK),
-        ..SpriteBundle::default()
-    }).insert(Throne);
+    commands
+        .spawn_bundle(SpriteBundle {
+            texture: throne,
+            transform: Transform::from_xyz(0.0, 450.0, THRONE_Z_BACK),
+            ..SpriteBundle::default()
+        })
+        .insert(Throne);
 
     // Left curtain
-    commands.spawn_bundle(SpriteSheetBundle {
-        texture_atlas: texture_atlases.add(left_curtains_texture_atlas),
-        transform: Transform::from_xyz(-200.0, 630.0, CURTAINS_Z_BACK),
-        ..SpriteSheetBundle::default()
-    }).insert(Curtain);
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.add(left_curtains_texture_atlas),
+            transform: Transform::from_xyz(-200.0, 630.0, CURTAINS_Z_BACK),
+            ..SpriteSheetBundle::default()
+        })
+        .insert(Curtain);
 
     // Right curtain
-    commands.spawn_bundle(SpriteSheetBundle {
-        texture_atlas: texture_atlases.add(right_curtains_texture_atlas),
-        transform: Transform::from_xyz(200.0, 630.0, CURTAINS_Z_BACK),
-        ..SpriteSheetBundle::default()
-    }).insert(Curtain);
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.add(right_curtains_texture_atlas),
+            transform: Transform::from_xyz(200.0, 630.0, CURTAINS_Z_BACK),
+            ..SpriteSheetBundle::default()
+        })
+        .insert(Curtain);
 
     for pos in PILLAR_POSITIONS {
         commands
             .spawn_bundle(SpriteBundle {
-                material: materials.add(pillar.clone().into()),
+                texture: pillar.clone(),
                 transform: Transform::from_translation(pos.into()),
                 ..SpriteBundle::default()
             })
             .insert_bundle(RigidBodyBundle {
-                body_type: RigidBodyType::Static,
-                mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+                body_type: RigidBodyTypeComponent(RigidBodyType::Static),
+                mass_properties: RigidBodyMassPropsComponent(
+                    RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+                ),
                 position: Vec2::new(pos.0, pos.1 - 110.0).into(),
                 ..RigidBodyBundle::default()
             })
             .with_children(|parent| {
                 parent.spawn_bundle(ColliderBundle {
-                    shape: ColliderShape::cuboid(60.0, 20.0),
+                    shape: ColliderShapeComponent(ColliderShape::cuboid(60.0, 20.0)),
                     position: Vec2::new(0.0, 0.0).into(),
-                    material: ColliderMaterial {
+                    material: ColliderMaterialComponent(ColliderMaterial {
                         friction: 0.0,
                         restitution: 0.0,
                         ..ColliderMaterial::default()
-                    },
+                    }),
                     ..ColliderBundle::default()
                 });
             })

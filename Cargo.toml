@@ -4,17 +4,20 @@ version = "0.1.0"
 authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "WaBtey", "Grassouille la Fripouille", "Sombre Roi René"]
 edition = "2018"
 
+[workspace]
+resolver = "2"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.5"
-bevy-inspector-egui = "0.6"
-bevy_rapier2d = { version = "0.11", features = ["simd-stable", "render"] }
-bevy_prototype_debug_lines = { git = "https://github.com/Toqozz/bevy_debug_lines"}
+bevy = "0.6"
+bevy-inspector-egui = { git = "https://github.com/jakobhellermann/bevy-inspector-egui" }
+bevy_rapier2d = { version = "0.12", features = ["simd-stable", "render"] }
+# bevy_prototype_debug_lines = { git = "https://github.com/Toqozz/bevy_debug_lines"}
 serde = "1.0"
-ron = "0.6"
-strum = "0.21"
-strum_macros = "0.21"
+ron = "0.7"
+strum = "0.24"
+strum_macros = "0.24"
 
 [profile.dev.package."*"]
 opt-level = 3

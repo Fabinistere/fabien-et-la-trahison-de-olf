@@ -1,10 +1,11 @@
-use bevy::{ prelude::*, utils::Duration, };
+use bevy::{prelude::*, utils::Duration};
 
 pub enum FadeType {
     FadeIn,
     FadeOut,
 }
 
+#[derive(Component)]
 pub struct Fade {
     pub current_alpha: f32,
     pub fade_type: FadeType,
@@ -56,10 +57,9 @@ pub fn ease_out_sine(t: f32) -> f32 {
 pub fn fade_animations(
     mut commands: Commands,
     time: Res<Time>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut query: Query<(&Handle<ColorMaterial>, &mut Fade, Entity)>,
+    mut query: Query<(&mut Sprite, &mut Fade, Entity)>,
 ) {
-    for (color_handle, mut fade_data, entity) in query.iter_mut() {
+    for (mut sprite, mut fade_data, entity) in query.iter_mut() {
         fade_data.elapsed += time.delta();
 
         let mut t = fade_data.elapsed.as_secs_f32() / fade_data.total_duration.as_secs_f32();
@@ -70,8 +70,7 @@ pub fn fade_animations(
 
         fade_data.current_alpha = (fade_data.animation_fn)(t);
 
-        let color_mat = materials.get_mut(color_handle).unwrap();
-        color_mat.color.set_a(fade_data.current_alpha);
+        sprite.color.set_a(fade_data.current_alpha);
 
         if fade_data.elapsed.as_secs_f32() >= fade_data.total_duration.as_secs_f32() {
             commands.entity(entity).remove::<Fade>();

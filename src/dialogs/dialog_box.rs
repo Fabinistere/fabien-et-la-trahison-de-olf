@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 pub struct DialogBox {
     text: String,
     progress: usize,
@@ -8,7 +8,9 @@ pub struct DialogBox {
     update_timer: Timer,
 }
 
+#[derive(Component)]
 pub struct DialogBoxText;
+#[derive(Component)]
 pub struct UiCamera;
 
 const DIALOG_BOX_UPDATE_DELTA: f32 = 0.08;
@@ -16,19 +18,22 @@ const DIALOG_BOX_UPDATE_DELTA: f32 = 0.08;
 pub fn create_dialog_box_on_key_press(
     commands: Commands,
     asset_server: Res<AssetServer>,
-    materials: ResMut<Assets<ColorMaterial>>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.pressed(KeyCode::O) {
-        create_dialog_box(commands, asset_server, materials, "Bonjour Florian\nComment vas-tu ?\nJ'ai faim.".to_string());
+        create_dialog_box(
+            commands,
+            asset_server,
+            "Bonjour Florian\nComment vas-tu ?\nJ'ai faim.".to_string(),
+        );
     }
 }
 
 pub fn destroy_dialog_box(
     mut commands: Commands,
-    query: QuerySet<(
-        Query<Entity, With<DialogBox>>,
-        Query<Entity, With<UiCamera>>,
+    mut query: QuerySet<(
+        QueryState<Entity, With<DialogBox>>,
+        QueryState<Entity, With<UiCamera>>,
     )>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
@@ -43,15 +48,10 @@ pub fn destroy_dialog_box(
     }
 }
 
-pub fn create_dialog_box(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    dialog: String
-) {
+pub fn create_dialog_box(mut commands: Commands, asset_server: Res<AssetServer>, dialog: String) {
     commands
         .spawn_bundle(ImageBundle {
-            material: materials.add(asset_server.load("textures/dialog_box.png").into()),
+            image: asset_server.load("textures/dialog_box.png").into(),
             style: Style {
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -69,23 +69,22 @@ pub fn create_dialog_box(
             ..ImageBundle::default()
         })
         .with_children(|parent| {
-            parent
-                .spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        "",
-                        TextStyle {
-                            font: asset_server.load("fonts/dpcomic.ttf"),
-                            font_size: 50.0,
-                            color: Color::BLACK,
-                        },
-                        TextAlignment {
-                            vertical: VerticalAlign::Center,
-                            horizontal: HorizontalAlign::Center,
-                        },
-                    ),
-                    transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
-                    ..TextBundle::default()
-                });
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "",
+                    TextStyle {
+                        font: asset_server.load("fonts/dpcomic.ttf"),
+                        font_size: 50.0,
+                        color: Color::BLACK,
+                    },
+                    TextAlignment {
+                        vertical: VerticalAlign::Center,
+                        horizontal: HorizontalAlign::Center,
+                    },
+                ),
+                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 10.0)),
+                ..TextBundle::default()
+            });
         })
         .insert(DialogBox {
             text: dialog,
@@ -94,7 +93,9 @@ pub fn create_dialog_box(
             update_timer: Timer::from_seconds(DIALOG_BOX_UPDATE_DELTA, true),
         });
 
-    commands.spawn_bundle(UiCameraBundle::default()).insert(UiCamera);
+    commands
+        .spawn_bundle(UiCameraBundle::default())
+        .insert(UiCamera);
 }
 
 pub fn update_dialog_box(
@@ -102,7 +103,7 @@ pub fn update_dialog_box(
     mut dialog_box_query: Query<(&mut DialogBox, &Children)>,
     mut text_query: Query<&mut Text>,
 ) {
-    if let Ok((mut dialog_box, children)) = dialog_box_query.single_mut() {
+    if let Ok((mut dialog_box, children)) = dialog_box_query.get_single_mut() {
         dialog_box.update_timer.tick(time.delta());
 
         if dialog_box.update_timer.finished() && !dialog_box.finished {

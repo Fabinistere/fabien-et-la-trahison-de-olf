@@ -1,8 +1,9 @@
+use bevy::ecs::component::Component;
+use serde::Deserialize;
 use std::fmt;
 use strum_macros::EnumIter;
-use serde::Deserialize;
 
-#[derive(Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash, Component)]
 pub enum Language {
     Francais,
     English,
@@ -23,4 +24,3 @@ impl Default for Language {
         Language::Francais
     }
 }
-

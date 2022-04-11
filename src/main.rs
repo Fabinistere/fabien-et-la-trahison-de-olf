@@ -1,22 +1,20 @@
-pub mod dialogs;
-pub mod constants;
-pub mod player;
+#![allow(clippy::type_complexity)]
+
 pub mod animations;
-mod menu;
-mod debug;
+pub mod constants;
+// mod debug;
+pub mod dialogs;
 mod locations;
+mod menu;
+pub mod player;
 
 use bevy::prelude::*;
-use bevy_prototype_debug_lines::*;
+// use bevy_prototype_debug_lines::*;
 use bevy_rapier2d::prelude::*;
 
 pub use crate::{
-    dialogs::{
-        Dialogs,
-        DialogId,
-        language::Language,
-    },
     constants::BACKGROUND_COLOR,
+    dialogs::{language::Language, DialogId, Dialogs},
 };
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -25,10 +23,11 @@ pub enum GameState {
     Playing,
 }
 
+#[derive(Component)]
 struct PlayerCamera;
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(WindowDescriptor {
             title: "Fabien et le trahison de Olf".to_string(),
             // vsync: true,
@@ -40,18 +39,15 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(DebugLinesPlugin)
+        // .add_plugin(DebugLinesPlugin)
         .add_plugin(dialogs::DialogsPlugin)
         .add_plugin(menu::MenuPlugin)
         .add_plugin(animations::AnimationPlugin)
         .add_state(GameState::Playing)
-        .add_system(debug::collider_debug_lines_system.system())
+        // .add_system(debug::collider_debug_lines_system)
         .add_plugin(player::PlayerPlugin)
         .add_plugin(locations::LocationsPlugin)
-        .add_system_set(
-            SystemSet::on_enter(GameState::Playing)
-                .with_system(game_setup.system())
-        )
+        .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(game_setup))
         .run();
 }
 

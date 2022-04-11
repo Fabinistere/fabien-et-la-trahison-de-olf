@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 
+#[derive(Component)]
 pub struct SpriteSheetAnimation {
-    pub start_index: u32,
-    pub end_index: u32,
+    pub start_index: usize,
+    pub end_index: usize,
     pub timer: Timer,
     pub duration: AnimationDuration,
 }
 
+#[derive(Component)]
 pub enum AnimationDuration {
     Infinite,
     Once,
