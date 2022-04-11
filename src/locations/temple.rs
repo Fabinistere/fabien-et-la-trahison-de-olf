@@ -35,7 +35,9 @@ impl Plugin for TemplePlugin {
             .add_system(pillars_position)
             .add_system(curtains_animation)
             .add_system(secret_room_enter)
-            .add_system(curtains_z_position);
+            .add_system(curtains_z_position)
+            .add_system(throne_position)
+            .add_system(olf_cat_animation);
     }
 }
 
@@ -55,6 +57,8 @@ struct CurtainsZPositionTimer;
 struct Throne;
 #[derive(Component)]
 struct ZPosition(f32);
+#[derive(Component)]
+struct OlfCat;
 
 // States
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -78,6 +82,21 @@ fn pillars_position(
                 pillar_transform.translation.z = PILLARS_Z_FRONT;
             } else {
                 pillar_transform.translation.z = PILLARS_Z_BACK;
+            }
+        }
+    }
+}
+
+fn throne_position(
+    player_query: Query<&GlobalTransform, With<Player>>,
+    mut throne_query: Query<&mut Transform, With<Throne>>,
+) {
+    if let Ok(player_transform) = player_query.get_single() {
+        for mut throne_transform in throne_query.iter_mut() {
+            if player_transform.translation.y > throne_transform.translation.y {
+                throne_transform.translation.z = THRONE_Z_FRONT;
+            } else {
+                throne_transform.translation.z = THRONE_Z_BACK;
             }
         }
     }
@@ -238,6 +257,20 @@ fn curtains_z_position(
     }
 }
 
+fn olf_cat_animation(
+    time: Res<Time>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &Handle<TextureAtlas>), With<OlfCat>>,
+) {
+    for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
+        timer.tick(time.delta());
+        if timer.finished() {
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            sprite.index = (sprite.index as usize + 1) % texture_atlas.textures.len();
+        }
+    }
+}
+
 fn setup_temple(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -250,10 +283,13 @@ fn setup_temple(
     let throne = asset_server.load("textures/temple/throne.png");
     let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
     let ground = asset_server.load("textures/temple/ground.png");
+    let olf_cat_spritesheet = asset_server.load("textures/temple/olf_cat_spritesheet.png");
     let left_curtains_texture_atlas =
         TextureAtlas::from_grid(curtains_spritesheet.clone(), Vec2::new(200.0, 360.0), 1, 10);
     let right_curtains_texture_atlas =
         TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
+    let olf_cat_texture_atlas =
+        TextureAtlas::from_grid(olf_cat_spritesheet, Vec2::new(100.0, 110.0), 2, 1);
 
     commands.spawn_bundle(SpriteBundle {
         texture: background,
@@ -321,6 +357,19 @@ fn setup_temple(
         })
         .insert(Curtain);
 
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
+            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
+                Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
+                Quat::default(),
+                Vec3::new(-200.0, 960.0, OLF_CAT_Z),
+            )),
+            ..SpriteSheetBundle::default()
+        })
+        .insert(OlfCat)
+        .insert(Timer::from_seconds(OLF_CAT_ANIMATION_DELTA, true));
+
     for pos in PILLAR_POSITIONS {
         commands
             .spawn_bundle(SpriteBundle {
@@ -373,4 +422,20 @@ fn spawn_hitboxes(mut commands: Commands) {
     spawn_collision_cuboid(&mut commands, 0.0, 360.0, 50.0, 10.0);
     // Throne front of front of seat
     spawn_collision_cuboid(&mut commands, 0.0, 340.0, 30.0, 10.0);
+    // Throne bump left 1
+    spawn_collision_cuboid(&mut commands, -330.0, 440.0, 1.0, 60.0);
+    // Throne bump right 1
+    spawn_collision_cuboid(&mut commands, 330.0, 440.0, 1.0, 60.0);
+    // Throne bump left 2
+    spawn_collision_cuboid(&mut commands, -310.0, 350.0, 1.0, 30.0);
+    // Throne bump right 2
+    spawn_collision_cuboid(&mut commands, 310.0, 350.0, 1.0, 30.0);
+    // Throne bump left 3
+    spawn_collision_cuboid(&mut commands, -290.0, 290.0, 1.0, 30.0);
+    // Throne bump right 3
+    spawn_collision_cuboid(&mut commands, 290.0, 290.0, 1.0, 30.0);
+    // Throne bump left 4
+    spawn_collision_cuboid(&mut commands, -230.0, 215.0, 1.0, 45.0);
+    // Throne bump right 4
+    spawn_collision_cuboid(&mut commands, 230.0, 215.0, 1.0, 45.0);
 }

@@ -48,5 +48,8 @@ pub mod locations {
         pub const SECRET_ROOM_TRIGGER_Y: f32 = 565.0;
         pub const CURTAINS_TRIGGER_Y: f32 = 480.0;
         pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.2;
+        pub const OLF_CAT_Z: f32 = 2.0;
+        pub const OLF_CAT_SCALE: f32 = 0.5;
+        pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
     }
 }

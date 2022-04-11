@@ -53,17 +53,26 @@ fn main() {
 
 fn game_setup(
     mut commands: Commands,
-    mut windows: ResMut<Windows>,
+    // mut windows: ResMut<Windows>,
     mut rapier_config: ResMut<RapierConfiguration>,
 ) {
     rapier_config.gravity = Vector::zeros();
     rapier_config.scale = 1.0;
 
+    /*
+    let mut camera = OrthographicCameraBundle::new_2d();
+    info!("{:?}", camera.transform.translation);
+    camera.transform.translation += Vec3::new(0.0, 0.0, -800.0);
+    */
+
     commands
         .spawn_bundle(OrthographicCameraBundle::new_2d())
+        // .spawn_bundle(camera)
         .insert(PlayerCamera);
 
+    /*
     let window = windows.get_primary_mut().unwrap();
     window.set_cursor_lock_mode(true);
     window.set_cursor_visibility(false);
+    */
 }
