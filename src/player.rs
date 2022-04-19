@@ -33,7 +33,7 @@ impl Plugin for PlayerPlugin {
 
 #[derive(Component)]
 pub struct Player;
-#[derive(Component)]
+#[derive(Component, Deref, DerefMut)]
 struct Speed(f32);
 #[derive(Component)]
 struct Immobilized;
@@ -188,50 +188,50 @@ fn set_player_movement(
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<
-        (&Speed, &mut RigidBodyVelocityComponent),
-        (With<Player>, Without<Immobilized>),
-    >,
+    // mut player_query: Query<
+    //     (&Speed, &mut RigidBodyVelocityComponent),
+    //     (With<Player>, Without<Immobilized>),
+    // >,
 ) {
-    for (speed, mut rb_vel) in player_query.iter_mut() {
-        let up =
-            keyboard_input.pressed(key_bindings.up.0) || keyboard_input.pressed(key_bindings.up.1);
-        let down = keyboard_input.pressed(key_bindings.down.0)
-            || keyboard_input.pressed(key_bindings.down.1);
-        let left = keyboard_input.pressed(key_bindings.left.0)
-            || keyboard_input.pressed(key_bindings.left.1);
-        let right = keyboard_input.pressed(key_bindings.right.0)
-            || keyboard_input.pressed(key_bindings.right.1);
-
-        let x_axis = -(left as i8) + right as i8;
-        let y_axis = -(down as i8) + up as i8;
-
-        let mut vel_x = x_axis as f32 * speed.0;
-        let mut vel_y = y_axis as f32 * speed.0;
-
-        if x_axis != 0 && y_axis != 0 {
-            vel_x *= (std::f32::consts::PI / 4.0).cos();
-            vel_y *= (std::f32::consts::PI / 4.0).cos();
-        }
-
-        rb_vel.0.linvel.x = vel_x;
-        rb_vel.0.linvel.y = vel_y;
-    }
+    //     for (speed, mut rb_vel) in player_query.iter_mut() {
+    //         let up =
+    //             keyboard_input.pressed(key_bindings.up.0) || keyboard_input.pressed(key_bindings.up.1);
+    //         let down = keyboard_input.pressed(key_bindings.down.0)
+    //             || keyboard_input.pressed(key_bindings.down.1);
+    //         let left = keyboard_input.pressed(key_bindings.left.0)
+    //             || keyboard_input.pressed(key_bindings.left.1);
+    //         let right = keyboard_input.pressed(key_bindings.right.0)
+    //             || keyboard_input.pressed(key_bindings.right.1);
+    //
+    //         let x_axis = -(left as i8) + right as i8;
+    //         let y_axis = -(down as i8) + up as i8;
+    //
+    //         let mut vel_x = x_axis as f32 * *speed;
+    //         let mut vel_y = y_axis as f32 * *speed;
+    //
+    //         if x_axis != 0 && y_axis != 0 {
+    //             vel_x *= (std::f32::consts::PI / 4.0).cos();
+    //             vel_y *= (std::f32::consts::PI / 4.0).cos();
+    //         }
+    //
+    //         rb_vel.0.linvel.x = vel_x;
+    //         rb_vel.0.linvel.y = vel_y;
+    //     }
 }
 
 fn camera_follow(
-    mut query: QuerySet<(
-        QueryState<&Transform, With<Player>>,
-        QueryState<&mut Transform, With<PlayerCamera>>,
+    mut query: ParamSet<(
+        Query<&Transform, With<Player>>,
+        Query<&mut Transform, With<PlayerCamera>>,
     )>,
 ) {
-    let player_transform = if let Ok(t) = query.q0().get_single() {
+    let player_transform = if let Ok(t) = query.p0().get_single() {
         t.clone()
     } else {
         return;
     };
 
-    if let Ok(mut camera_transform) = query.q1().get_single_mut() {
+    if let Ok(mut camera_transform) = query.p1().get_single_mut() {
         camera_transform.translation = camera_transform.translation.lerp(
             Vec3::new(
                 player_transform.translation.x,

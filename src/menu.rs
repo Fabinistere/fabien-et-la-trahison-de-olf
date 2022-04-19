@@ -210,33 +210,33 @@ fn game_start(
 fn language_button_interactions(
     button_colors: Res<LanguagesButtonColors>,
     mut language: ResMut<Language>,
-    mut buttons_query: QuerySet<(
-        QueryState<
+    mut buttons_query: ParamSet<(
+        Query<
             (&Interaction, &mut Selected, &Children, &Language),
             (Changed<Interaction>, With<Button>),
         >,
-        QueryState<(&mut Selected, &Children)>,
+        Query<(&mut Selected, &Children)>,
     )>,
     mut text_query: Query<&mut Text>,
     mut language_event_writer: EventWriter<LanguageChangedEvent>,
 ) {
     let mut reset_selected = false;
 
-    for (interaction, ..) in buttons_query.q0().iter_mut() {
+    for (interaction, ..) in buttons_query.p0().iter_mut() {
         if *interaction == Interaction::Clicked {
             reset_selected = true;
         }
     }
 
     if reset_selected {
-        for (mut selected, children) in buttons_query.q1().iter_mut() {
+        for (mut selected, children) in buttons_query.p1().iter_mut() {
             selected.0 = false;
             let mut text = text_query.get_mut(children[0]).unwrap();
             text.sections[0].style.color = button_colors.normal;
         }
     }
 
-    for (interaction, mut selected, children, button_language) in buttons_query.q0().iter_mut() {
+    for (interaction, mut selected, children, button_language) in buttons_query.p0().iter_mut() {
         let mut text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
             Interaction::Clicked => {

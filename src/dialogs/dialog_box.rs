@@ -31,18 +31,18 @@ pub fn create_dialog_box_on_key_press(
 
 pub fn destroy_dialog_box(
     mut commands: Commands,
-    mut query: QuerySet<(
-        QueryState<Entity, With<DialogBox>>,
-        QueryState<Entity, With<UiCamera>>,
+    mut query: ParamSet<(
+        Query<Entity, With<DialogBox>>,
+        Query<Entity, With<UiCamera>>,
     )>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.pressed(KeyCode::E) {
-        for entity in query.q0().iter() {
+        for entity in query.p0().iter() {
             commands.entity(entity).despawn_recursive();
         }
 
-        for entity in query.q1().iter() {
+        for entity in query.p1().iter() {
             commands.entity(entity).despawn_recursive();
         }
     }

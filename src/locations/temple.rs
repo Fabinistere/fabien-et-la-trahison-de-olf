@@ -55,10 +55,12 @@ struct Curtain;
 struct CurtainsZPositionTimer;
 #[derive(Component)]
 struct Throne;
-#[derive(Component)]
+#[derive(Component, Deref, DerefMut)]
 struct ZPosition(f32);
-#[derive(Component)]
-struct OlfCat;
+#[derive(Component, Deref, DerefMut)]
+struct CurtainsTimer(Timer);
+#[derive(Component, Deref, DerefMut)]
+struct OlfCatTimer(Timer);
 
 // States
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -74,17 +76,17 @@ enum PlayerCurtainsPosition {
 
 fn pillars_position(
     player_query: Query<&GlobalTransform, With<Player>>,
-    mut pillars_query: Query<(&mut Transform, &RigidBodyPositionComponent), With<Pillar>>,
+    // mut pillars_query: Query<(&mut Transform, &RigidBodyPositionComponent), With<Pillar>>,
 ) {
-    if let Ok(player_transform) = player_query.get_single() {
-        for (mut pillar_transform, rb_pos) in pillars_query.iter_mut() {
-            if player_transform.translation.y - 60.0 > rb_pos.0.position.translation.y {
-                pillar_transform.translation.z = PILLARS_Z_FRONT;
-            } else {
-                pillar_transform.translation.z = PILLARS_Z_BACK;
-            }
-        }
-    }
+    // if let Ok(player_transform) = player_query.get_single() {
+    //     for (mut pillar_transform, rb_pos) in pillars_query.iter_mut() {
+    //         if player_transform.translation.y - 60.0 > rb_pos.0.position.translation.y {
+    //             pillar_transform.translation.z = PILLARS_Z_FRONT;
+    //         } else {
+    //             pillar_transform.translation.z = PILLARS_Z_BACK;
+    //         }
+    //     }
+    // }
 }
 
 fn throne_position(
@@ -180,6 +182,8 @@ fn curtains_animation(
                 curtain_transform.translation.x < player_transform.translation.x + range;
             let in_range_right =
                 curtain_transform.translation.x > player_transform.translation.x - range;
+            let in_range_down =
+                curtain_transform.translation.y < player_transform.translation.y + 200.0;
 
             let (start, end) = if player_transform.translation.x > curtain_transform.translation.x {
                 (0, 4)
@@ -198,9 +202,11 @@ fn curtains_animation(
 
                 commands
                     .spawn()
-                    .insert(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, false))
-                    .insert(ZPosition(CURTAINS_Z_FRONT))
-                    .insert(CurtainsZPositionTimer);
+                    .insert(CurtainsTimer(Timer::from_seconds(
+                        CURTAINS_CHANGE_Z_TIME,
+                        false,
+                    )))
+                    .insert(ZPosition(CURTAINS_Z_FRONT));
 
                 commands
                     .entity(curtain_entity)
@@ -217,22 +223,26 @@ fn curtains_animation(
             {
                 curtains_state.set(PlayerCurtainsPosition::Below).unwrap();
 
-                sprite.index = start;
+                if in_range_down {
+                    sprite.index = start;
 
-                commands
-                    .spawn()
-                    .insert(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, false))
-                    .insert(ZPosition(CURTAINS_Z_BACK))
-                    .insert(CurtainsZPositionTimer);
+                    commands
+                        .spawn()
+                        .insert(CurtainsTimer(Timer::from_seconds(
+                            CURTAINS_CHANGE_Z_TIME,
+                            false,
+                        )))
+                        .insert(ZPosition(CURTAINS_Z_BACK));
 
-                commands
-                    .entity(curtain_entity)
-                    .insert(SpriteSheetAnimation {
-                        start_index: start,
-                        end_index: end,
-                        timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
-                        duration: AnimationDuration::Once,
-                    });
+                    commands
+                        .entity(curtain_entity)
+                        .insert(SpriteSheetAnimation {
+                            start_index: start,
+                            end_index: end,
+                            timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+                            duration: AnimationDuration::Once,
+                        });
+                }
             }
         }
     }
@@ -241,7 +251,7 @@ fn curtains_animation(
 fn curtains_z_position(
     mut commands: Commands,
     time: Res<Time>,
-    mut timer_query: Query<(Entity, &mut Timer, &ZPosition), With<CurtainsZPositionTimer>>,
+    mut timer_query: Query<(Entity, &mut CurtainsTimer, &ZPosition), With<CurtainsZPositionTimer>>,
     mut curtains_query: Query<&mut Transform, With<Curtain>>,
 ) {
     for (entity, mut timer, z_pos) in timer_query.iter_mut() {
@@ -251,7 +261,7 @@ fn curtains_z_position(
             commands.entity(entity).despawn();
 
             for mut curtains_transform in curtains_query.iter_mut() {
-                curtains_transform.translation.z = z_pos.0;
+                curtains_transform.translation.z = **z_pos;
             }
         }
     }
@@ -260,7 +270,11 @@ fn curtains_z_position(
 fn olf_cat_animation(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &Handle<TextureAtlas>), With<OlfCat>>,
+    mut query: Query<(
+        &mut OlfCatTimer,
+        &mut TextureAtlasSprite,
+        &Handle<TextureAtlas>,
+    )>,
 ) {
     for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
         timer.tick(time.delta());
@@ -367,8 +381,10 @@ fn setup_temple(
             )),
             ..SpriteSheetBundle::default()
         })
-        .insert(OlfCat)
-        .insert(Timer::from_seconds(OLF_CAT_ANIMATION_DELTA, true));
+        .insert(OlfCatTimer(Timer::from_seconds(
+            OLF_CAT_ANIMATION_DELTA,
+            true,
+        )));
 
     for pos in PILLAR_POSITIONS {
         commands
