@@ -393,15 +393,18 @@ fn setup_temple(
                 transform: Transform::from_translation(pos.into()),
                 ..SpriteBundle::default()
             })
-            .insert_bundle(RigidBodyBundle {
-                body_type: RigidBodyTypeComponent(RigidBodyType::Static),
-                mass_properties: RigidBodyMassPropsComponent(
-                    RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
-                ),
-                position: Vec2::new(pos.0, pos.1 - 110.0).into(),
-                ..RigidBodyBundle::default()
-            })
+            .insert(RigidBody::Dynamic)
+            // .insert_bundle(RigidBodyBundle {
+            //     body_type: RigidBodyTypeComponent(RigidBodyType::Static),
+            //     mass_properties: RigidBodyMassPropsComponent(
+            //         RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+            //     ),
+            //     position: Vec2::new(pos.0, pos.1 - 110.0).into(),
+            //     ..RigidBodyBundle::default()
+            // })
             .with_children(|parent| {
+                parent.spawn().insert(Collider::cuboid(60.0, 20.0));
+                /*
                 parent.spawn_bundle(ColliderBundle {
                     shape: ColliderShapeComponent(ColliderShape::cuboid(60.0, 20.0)),
                     position: Vec2::new(0.0, 0.0).into(),
@@ -412,6 +415,7 @@ fn setup_temple(
                     }),
                     ..ColliderBundle::default()
                 });
+                */
             })
             .insert(Pillar);
     }

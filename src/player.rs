@@ -138,10 +138,8 @@ fn set_player_movement(
             restart_animation = true;
         } else if keyboard_input.just_pressed(key_bindings.up.0)
             || keyboard_input.just_released(key_bindings.up.1)
-        {
-            restart_animation = true;
-        } else if keyboard_input.just_released(key_bindings.down.0)
             || keyboard_input.just_released(key_bindings.down.1)
+            || keyboard_input.just_released(key_bindings.down.0)
         {
             restart_animation = true;
         }
@@ -168,9 +166,7 @@ fn set_player_movement(
             restart_animation = true;
         } else if keyboard_input.just_pressed(key_bindings.up.0)
             || keyboard_input.just_pressed(key_bindings.up.1)
-        {
-            restart_animation = true;
-        } else if keyboard_input.just_pressed(key_bindings.down.0)
+            || keyboard_input.just_pressed(key_bindings.down.0)
             || keyboard_input.just_pressed(key_bindings.down.1)
         {
             restart_animation = true;
@@ -188,35 +184,32 @@ fn set_player_movement(
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    // mut player_query: Query<
-    //     (&Speed, &mut RigidBodyVelocityComponent),
-    //     (With<Player>, Without<Immobilized>),
-    // >,
+    mut player_query: Query<(&Speed, &mut Velocity), (With<Player>, Without<Immobilized>)>,
 ) {
-    //     for (speed, mut rb_vel) in player_query.iter_mut() {
-    //         let up =
-    //             keyboard_input.pressed(key_bindings.up.0) || keyboard_input.pressed(key_bindings.up.1);
-    //         let down = keyboard_input.pressed(key_bindings.down.0)
-    //             || keyboard_input.pressed(key_bindings.down.1);
-    //         let left = keyboard_input.pressed(key_bindings.left.0)
-    //             || keyboard_input.pressed(key_bindings.left.1);
-    //         let right = keyboard_input.pressed(key_bindings.right.0)
-    //             || keyboard_input.pressed(key_bindings.right.1);
-    //
-    //         let x_axis = -(left as i8) + right as i8;
-    //         let y_axis = -(down as i8) + up as i8;
-    //
-    //         let mut vel_x = x_axis as f32 * *speed;
-    //         let mut vel_y = y_axis as f32 * *speed;
-    //
-    //         if x_axis != 0 && y_axis != 0 {
-    //             vel_x *= (std::f32::consts::PI / 4.0).cos();
-    //             vel_y *= (std::f32::consts::PI / 4.0).cos();
-    //         }
-    //
-    //         rb_vel.0.linvel.x = vel_x;
-    //         rb_vel.0.linvel.y = vel_y;
-    //     }
+    for (speed, mut rb_vel) in player_query.iter_mut() {
+        let up =
+            keyboard_input.pressed(key_bindings.up.0) || keyboard_input.pressed(key_bindings.up.1);
+        let down = keyboard_input.pressed(key_bindings.down.0)
+            || keyboard_input.pressed(key_bindings.down.1);
+        let left = keyboard_input.pressed(key_bindings.left.0)
+            || keyboard_input.pressed(key_bindings.left.1);
+        let right = keyboard_input.pressed(key_bindings.right.0)
+            || keyboard_input.pressed(key_bindings.right.1);
+
+        let x_axis = -(left as i8) + right as i8;
+        let y_axis = -(down as i8) + up as i8;
+
+        let mut vel_x = x_axis as f32 * **speed;
+        let mut vel_y = y_axis as f32 * **speed;
+
+        if x_axis != 0 && y_axis != 0 {
+            vel_x *= (std::f32::consts::PI / 4.0).cos();
+            vel_y *= (std::f32::consts::PI / 4.0).cos();
+        }
+
+        rb_vel.linvel.x = vel_x;
+        rb_vel.linvel.y = vel_y;
+    }
 }
 
 fn camera_follow(
@@ -269,14 +262,25 @@ fn spawn_player(
             timer: Timer::from_seconds(player_animations_data.0[&STARTING_ANIMATION].delta, true),
             animation_type_queue: vec![STARTING_ANIMATION].into(),
         })
-        .insert_bundle(RigidBodyBundle {
-            body_type: RigidBodyTypeComponent(RigidBodyType::Dynamic),
-            mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
-            position: Vec2::new(0.0, 0.0).into(),
-            ..RigidBodyBundle::default()
+        .insert(RigidBody::Dynamic)
+        .insert(Velocity {
+            linvel: Vect::ZERO,
+            angvel: 0.0,
         })
-        .insert_bundle((RigidBodyPositionSync::Discrete, Player, Speed(200.0)))
+        // .insert_bundle(RigidBodyBundle {
+        //     body_type: RigidBodyTypeComponent(RigidBodyType::Dynamic),
+        //     mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
+        //     position: Vec2::new(0.0, 0.0).into(),
+        //     ..RigidBodyBundle::default()
+        // })
+        // .insert_bundle((RigidBodyPositionSync::Discrete, Player, Speed(200.0)))
         .with_children(|parent| {
+            parent
+                .spawn()
+                .insert(Collider::cuboid(35.0, 20.0))
+                .insert(Friction::coefficient(0.0))
+                .insert(Restitution::coefficient(0.0));
+            /*
             parent.spawn().insert_bundle(ColliderBundle {
                 shape: ColliderShapeComponent(ColliderShape::cuboid(35.0, 20.0)),
                 position: Vec2::new(0.0, -30.0).into(),
@@ -287,5 +291,6 @@ fn spawn_player(
                 }),
                 ..ColliderBundle::default()
             });
+            */
         });
 }

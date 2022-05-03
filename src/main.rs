@@ -34,12 +34,12 @@ fn main() {
             // mode: bevy::window::WindowMode::BorderlessFullscreen,
             ..WindowDescriptor::default()
         })
-        // .add_plugin(bevy::diagnostic::LogDiagnosticsPlugin::default())
-        // .add_plugin(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(bevy::diagnostic::LogDiagnosticsPlugin::default())
+        .add_plugin(bevy::diagnostic::FrameTimeDiagnosticsPlugin::default())
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(BACKGROUND_COLOR))
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        // .add_plugin(DebugLinesPlugin)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
+        .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(dialogs::DialogsPlugin)
         .add_plugin(menu::MenuPlugin)
         .add_plugin(animations::AnimationPlugin)
@@ -56,8 +56,8 @@ fn game_setup(
     // mut windows: ResMut<Windows>,
     mut rapier_config: ResMut<RapierConfiguration>,
 ) {
-    rapier_config.gravity = Vector::zeros();
-    rapier_config.scale = 1.0;
+    rapier_config.gravity = Vect::ZERO;
+    // rapier_config.scale = 1.0;
 
     /*
     let mut camera = OrthographicCameraBundle::new_2d();
