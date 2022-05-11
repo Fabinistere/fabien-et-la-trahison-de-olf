@@ -6,7 +6,7 @@ use crate::{
     },
     constants::{
         locations::temple::*,
-        player::{PLAYER_SCALE, PLAYER_WIDTH},
+        player::{PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_Y_OFFSET, PLAYER_SCALE, PLAYER_WIDTH},
         BACKGROUND_COLOR,
     },
     player::Player,
@@ -61,6 +61,12 @@ struct ZPosition(f32);
 struct CurtainsTimer(Timer);
 #[derive(Component, Deref, DerefMut)]
 struct OlfCatTimer(Timer);
+#[derive(Component)]
+struct SecretRoomSensor;
+#[derive(Component)]
+struct LeftCurtainSensor;
+#[derive(Component)]
+struct RightCurtainSensor;
 
 // States
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -76,17 +82,17 @@ enum PlayerCurtainsPosition {
 
 fn pillars_position(
     player_query: Query<&GlobalTransform, With<Player>>,
-    // mut pillars_query: Query<(&mut Transform, &RigidBodyPositionComponent), With<Pillar>>,
+    mut pillars_query: Query<&mut Transform, With<Pillar>>,
 ) {
-    // if let Ok(player_transform) = player_query.get_single() {
-    //     for (mut pillar_transform, rb_pos) in pillars_query.iter_mut() {
-    //         if player_transform.translation.y - 60.0 > rb_pos.0.position.translation.y {
-    //             pillar_transform.translation.z = PILLARS_Z_FRONT;
-    //         } else {
-    //             pillar_transform.translation.z = PILLARS_Z_BACK;
-    //         }
-    //     }
-    // }
+    if let Ok(player_transform) = player_query.get_single() {
+        for mut pillar_transform in pillars_query.iter_mut() {
+            if player_transform.translation.y + 60.0 > pillar_transform.translation.y {
+                pillar_transform.translation.z = PILLARS_Z_FRONT;
+            } else {
+                pillar_transform.translation.z = PILLARS_Z_BACK;
+            }
+        }
+    }
 }
 
 fn throne_position(
@@ -105,18 +111,44 @@ fn throne_position(
 }
 
 fn secret_room_enter(
-    player_query: Query<&GlobalTransform, With<Player>>,
+    player_query: Query<&Transform, With<Player>>,
+    sensor_query: Query<Entity, With<SecretRoomSensor>>,
+    mut collision_events: EventReader<CollisionEvent>,
     mut player_location: ResMut<State<PlayerLocation>>,
 ) {
-    if let Ok(transform) = player_query.get_single() {
-        if transform.translation.y >= SECRET_ROOM_TRIGGER_Y
-            && player_location.current() == &PlayerLocation::Temple
-        {
-            player_location.set(PlayerLocation::SecretRoom).unwrap();
-        } else if transform.translation.y < SECRET_ROOM_TRIGGER_Y
-            && player_location.current() == &PlayerLocation::SecretRoom
-        {
-            player_location.set(PlayerLocation::Temple).unwrap();
+    for collision_event in collision_events.iter() {
+        if let Ok(transform) = player_query.get_single() {
+            let sensor_e = sensor_query.single();
+
+            match collision_event {
+                // When the player goes through the sensor collider, change its location
+                // to the secret room or the temple
+                CollisionEvent::Started(e1, e2, _) if *e1 == sensor_e || *e2 == sensor_e => {
+                    if player_location.current() == &PlayerLocation::Temple {
+                        player_location.set(PlayerLocation::SecretRoom).unwrap();
+                    } else {
+                        player_location.set(PlayerLocation::Temple).unwrap();
+                    }
+                }
+                CollisionEvent::Stopped(e1, e2, _) if *e1 == sensor_e || *e2 == sensor_e => {
+                    // If the player changes direction while the sensor is still in its collider,
+                    // check the top of its hitbox is in the temple or the secret room
+                    if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
+                        > SECRET_ROOM_TRIGGER_Y
+                        && player_location.current() == &PlayerLocation::Temple
+                    {
+                        player_location.set(PlayerLocation::SecretRoom).unwrap();
+                    } else if transform.translation.y
+                        + PLAYER_HITBOX_Y_OFFSET
+                        + PLAYER_HITBOX_WIDTH / 2.0
+                        < SECRET_ROOM_TRIGGER_Y
+                        && player_location.current() == &PlayerLocation::SecretRoom
+                    {
+                        player_location.set(PlayerLocation::Temple).unwrap();
+                    }
+                }
+                _ => {}
+            }
         }
     }
 }
@@ -170,6 +202,83 @@ fn add_secret_room_cover(
 }
 
 fn curtains_animation(
+    mut commands: Commands,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut curtains_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,
+    mut curtains_state: ResMut<State<PlayerCurtainsPosition>>,
+    player_query: Query<&GlobalTransform, With<Player>>,
+) {
+    for collision_event in collision_events.iter() {
+        info!("testqskdjqlskdjs222IUEOAU82");
+        if let CollisionEvent::Started(e1, e2, _) = collision_event {
+            info!("testqskdjqlskdjs");
+            for (curtain_entity, curtain_transform, mut sprite) in curtains_query.iter_mut() {
+                info!("{e1:?} {e2:?} {curtain_entity:?}");
+                if *e1 == curtain_entity || *e2 == curtain_entity {
+                    let player_transform = player_query.single();
+
+                    let (start, end) =
+                        if player_transform.translation.x > curtain_transform.translation.x {
+                            (0, 4)
+                        } else {
+                            (5, 9)
+                        };
+
+                    let player_hitbox_top_y = player_transform.translation.y
+                        + PLAYER_HITBOX_Y_OFFSET
+                        - PLAYER_HITBOX_WIDTH / 2.0;
+                    let curtains_sensor_y =
+                        curtain_transform.translation.y - CURTAINS_SENSOR_Y_OFFSET;
+
+                    if player_hitbox_top_y > curtains_sensor_y {
+                        curtains_state.set(PlayerCurtainsPosition::Above).unwrap();
+                        sprite.index = start;
+
+                        commands
+                            .spawn()
+                            .insert(CurtainsTimer(Timer::from_seconds(
+                                CURTAINS_CHANGE_Z_TIME,
+                                false,
+                            )))
+                            .insert(ZPosition(CURTAINS_Z_FRONT));
+
+                        commands
+                            .entity(curtain_entity)
+                            .insert(SpriteSheetAnimation {
+                                start_index: start,
+                                end_index: end,
+                                timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+                                duration: AnimationDuration::Once,
+                            });
+                    } else {
+                        curtains_state.set(PlayerCurtainsPosition::Below).unwrap();
+                        sprite.index = start;
+
+                        commands
+                            .spawn()
+                            .insert(CurtainsTimer(Timer::from_seconds(
+                                CURTAINS_CHANGE_Z_TIME,
+                                false,
+                            )))
+                            .insert(ZPosition(CURTAINS_Z_BACK));
+
+                        commands
+                            .entity(curtain_entity)
+                            .insert(SpriteSheetAnimation {
+                                start_index: start,
+                                end_index: end,
+                                timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+                                duration: AnimationDuration::Once,
+                            });
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*
+fn curtains_animation_(
     mut commands: Commands,
     mut curtains_state: ResMut<State<PlayerCurtainsPosition>>,
     mut curtain_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,
@@ -247,7 +356,9 @@ fn curtains_animation(
         }
     }
 }
+*/
 
+// Changes the Z position of the curtains after the player passes through them
 fn curtains_z_position(
     mut commands: Commands,
     time: Res<Time>,
@@ -267,6 +378,7 @@ fn curtains_z_position(
     }
 }
 
+// Animation of smol black cat
 fn olf_cat_animation(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
@@ -285,6 +397,7 @@ fn olf_cat_animation(
     }
 }
 
+// Spawns all entity related to the temple
 fn setup_temple(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -305,6 +418,19 @@ fn setup_temple(
     let olf_cat_texture_atlas =
         TextureAtlas::from_grid(olf_cat_spritesheet, Vec2::new(100.0, 110.0), 2, 1);
 
+    // Sensors colliders
+    // Secret door sensor
+    commands
+        .spawn()
+        .insert(Collider::segment(
+            Vect::new(-235.0, SECRET_ROOM_TRIGGER_Y),
+            Vect::new(-165.0, SECRET_ROOM_TRIGGER_Y),
+        ))
+        .insert(ActiveEvents::COLLISION_EVENTS)
+        .insert(SecretRoomSensor)
+        .insert(Sensor(true));
+
+    // All the temple sprites
     commands.spawn_bundle(SpriteBundle {
         texture: background,
         transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
@@ -353,13 +479,18 @@ fn setup_temple(
         })
         .insert(Throne);
 
-    // Left curtain
+    // Left curtain, with a sensor collider to detect when the player passes through it
     commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlases.add(left_curtains_texture_atlas),
             transform: Transform::from_xyz(-200.0, 630.0, CURTAINS_Z_BACK),
             ..SpriteSheetBundle::default()
         })
+        .insert(Collider::segment(
+            Vect::new(-30.0, CURTAINS_SENSOR_Y_OFFSET),
+            Vect::new(30.0, CURTAINS_SENSOR_Y_OFFSET),
+        ))
+        .insert(Sensor(true))
         .insert(Curtain);
 
     // Right curtain
@@ -369,16 +500,21 @@ fn setup_temple(
             transform: Transform::from_xyz(200.0, 630.0, CURTAINS_Z_BACK),
             ..SpriteSheetBundle::default()
         })
+        .insert(Collider::segment(
+            Vect::new(-30.0, CURTAINS_SENSOR_Y_OFFSET),
+            Vect::new(30.0, CURTAINS_SENSOR_Y_OFFSET),
+        ))
+        .insert(Sensor(true))
         .insert(Curtain);
 
     commands
         .spawn_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
-            transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
-                Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
-                Quat::default(),
-                Vec3::new(-200.0, 960.0, OLF_CAT_Z),
-            )),
+            transform: Transform {
+                translation: Vec3::new(-200.0, 960.0, OLF_CAT_Z),
+                scale: Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
+                ..Transform::default()
+            },
             ..SpriteSheetBundle::default()
         })
         .insert(OlfCatTimer(Timer::from_seconds(
@@ -393,29 +529,11 @@ fn setup_temple(
                 transform: Transform::from_translation(pos.into()),
                 ..SpriteBundle::default()
             })
-            .insert(RigidBody::Dynamic)
-            // .insert_bundle(RigidBodyBundle {
-            //     body_type: RigidBodyTypeComponent(RigidBodyType::Static),
-            //     mass_properties: RigidBodyMassPropsComponent(
-            //         RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
-            //     ),
-            //     position: Vec2::new(pos.0, pos.1 - 110.0).into(),
-            //     ..RigidBodyBundle::default()
-            // })
             .with_children(|parent| {
-                parent.spawn().insert(Collider::cuboid(60.0, 20.0));
-                /*
-                parent.spawn_bundle(ColliderBundle {
-                    shape: ColliderShapeComponent(ColliderShape::cuboid(60.0, 20.0)),
-                    position: Vec2::new(0.0, 0.0).into(),
-                    material: ColliderMaterialComponent(ColliderMaterial {
-                        friction: 0.0,
-                        restitution: 0.0,
-                        ..ColliderMaterial::default()
-                    }),
-                    ..ColliderBundle::default()
-                });
-                */
+                parent
+                    .spawn()
+                    .insert(Collider::cuboid(60.0, 20.0))
+                    .insert(Transform::from_xyz(pos.0, pos.1 - 110.0, 0.0));
             })
             .insert(Pillar);
     }

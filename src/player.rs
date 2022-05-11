@@ -218,21 +218,19 @@ fn camera_follow(
         Query<&mut Transform, With<PlayerCamera>>,
     )>,
 ) {
-    let player_transform = if let Ok(t) = query.p0().get_single() {
-        t.clone()
-    } else {
-        return;
-    };
+    if let Ok(t) = query.p0().get_single() {
+        let player_transform = *t;
 
-    if let Ok(mut camera_transform) = query.p1().get_single_mut() {
-        camera_transform.translation = camera_transform.translation.lerp(
-            Vec3::new(
-                player_transform.translation.x,
-                player_transform.translation.y,
-                camera_transform.translation.z,
-            ),
-            CAMERA_INTERPOLATION,
-        );
+        if let Ok(mut camera_transform) = query.p1().get_single_mut() {
+            camera_transform.translation = camera_transform.translation.lerp(
+                Vec3::new(
+                    player_transform.translation.x,
+                    player_transform.translation.y,
+                    camera_transform.translation.z,
+                ),
+                CAMERA_INTERPOLATION,
+            );
+        }
     }
 }
 
@@ -263,34 +261,16 @@ fn spawn_player(
             animation_type_queue: vec![STARTING_ANIMATION].into(),
         })
         .insert(RigidBody::Dynamic)
+        .insert(LockedAxes::ROTATION_LOCKED)
         .insert(Velocity {
             linvel: Vect::ZERO,
             angvel: 0.0,
         })
-        // .insert_bundle(RigidBodyBundle {
-        //     body_type: RigidBodyTypeComponent(RigidBodyType::Dynamic),
-        //     mass_properties: RigidBodyMassPropsFlags::ROTATION_LOCKED.into(),
-        //     position: Vec2::new(0.0, 0.0).into(),
-        //     ..RigidBodyBundle::default()
-        // })
-        // .insert_bundle((RigidBodyPositionSync::Discrete, Player, Speed(200.0)))
+        .insert_bundle((Player, Speed(200.0)))
         .with_children(|parent| {
             parent
                 .spawn()
-                .insert(Collider::cuboid(35.0, 20.0))
-                .insert(Friction::coefficient(0.0))
-                .insert(Restitution::coefficient(0.0));
-            /*
-            parent.spawn().insert_bundle(ColliderBundle {
-                shape: ColliderShapeComponent(ColliderShape::cuboid(35.0, 20.0)),
-                position: Vec2::new(0.0, -30.0).into(),
-                material: ColliderMaterialComponent(ColliderMaterial {
-                    friction: 0.0,
-                    restitution: 0.0,
-                    ..ColliderMaterial::default()
-                }),
-                ..ColliderBundle::default()
-            });
-            */
+                .insert(Collider::cuboid(PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_HEIGHT))
+                .insert(Transform::from_xyz(0.0, PLAYER_HITBOX_Y_OFFSET, 0.0));
         });
 }

@@ -13,6 +13,9 @@ pub mod player {
     pub const PLAYER_HEIGHT: f32 = 15.0;
     pub const PLAYER_Z: f32 = 5.0;
     pub const PLAYER_SCALE: f32 = 6.0;
+    pub const PLAYER_HITBOX_WIDTH: f32 = 35.0;
+    pub const PLAYER_HITBOX_HEIGHT: f32 = 20.0;
+    pub const PLAYER_HITBOX_Y_OFFSET: f32 = -25.0;
     pub const CAMERA_INTERPOLATION: f32 = 0.1;
 }
 
@@ -45,8 +48,8 @@ pub mod locations {
             (300.0, -750.0, PILLARS_Z_BACK),
             (900.0, -750.0, PILLARS_Z_BACK),
         ];
-        pub const SECRET_ROOM_TRIGGER_Y: f32 = 565.0;
-        pub const CURTAINS_TRIGGER_Y: f32 = 480.0;
+        pub const SECRET_ROOM_TRIGGER_Y: f32 = 550.0;
+        pub const CURTAINS_SENSOR_Y_OFFSET: f32 = -150.0;
         pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.2;
         pub const OLF_CAT_Z: f32 = 2.0;
         pub const OLF_CAT_SCALE: f32 = 0.5;

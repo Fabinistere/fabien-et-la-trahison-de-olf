@@ -20,27 +20,10 @@ impl Plugin for LocationsPlugin {
 pub fn spawn_collision_cuboid(commands: &mut Commands, x: f32, y: f32, width: f32, height: f32) {
     commands
         .spawn()
-        .insert(RigidBody::Fixed)
         .insert(Collider::cuboid(width, height))
         .insert(Transform::from_xyz(x, y, 0.0))
         .insert(Friction::coefficient(0.0))
         .insert(Restitution::coefficient(0.0));
-    /*
-        .insert_bundle(RigidBodyBundle {
-            body_type: RigidBodyTypeComponent(RigidBodyType::Static),
-            position: Vec2::new(x, y).into(),
-            ..RigidBodyBundle::default()
-        })
-        .insert_bundle(ColliderBundle {
-            shape: ColliderShapeComponent(ColliderShape::cuboid(width, height)),
-            material: ColliderMaterialComponent(ColliderMaterial {
-                friction: 0.0,
-                restitution: 0.0,
-                ..ColliderMaterial::default()
-            }),
-            ..ColliderBundle::default()
-        });
-    */
 }
 
 /*
