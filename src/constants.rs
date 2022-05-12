@@ -32,6 +32,8 @@ pub mod locations {
         pub const CURTAINS_Z_BACK: f32 = 3.0;
         pub const CURTAINS_Z_FRONT: f32 = 7.0;
         pub const CURTAINS_ANIMATION_DELTA: f32 = 0.1;
+        pub const CURTAINS_SENSOR_Y_OFFSET: f32 = -150.0;
+        pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.2;
         pub const PILLARS_Z_BACK: f32 = 3.0;
         pub const PILLARS_Z_FRONT: f32 = 6.0;
         pub const PILLAR_POSITIONS: [(f32, f32, f32); 12] = [
@@ -49,8 +51,6 @@ pub mod locations {
             (900.0, -750.0, PILLARS_Z_BACK),
         ];
         pub const SECRET_ROOM_TRIGGER_Y: f32 = 550.0;
-        pub const CURTAINS_SENSOR_Y_OFFSET: f32 = -150.0;
-        pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.2;
         pub const OLF_CAT_Z: f32 = 2.0;
         pub const OLF_CAT_SCALE: f32 = 0.5;
         pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;

@@ -6,7 +6,7 @@ use crate::{
     },
     constants::{
         locations::temple::*,
-        player::{PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_Y_OFFSET, PLAYER_SCALE, PLAYER_WIDTH},
+        player::{PLAYER_HITBOX_HEIGHT, PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_Y_OFFSET},
         BACKGROUND_COLOR,
     },
     player::Player,
@@ -63,10 +63,6 @@ struct CurtainsTimer(Timer);
 struct OlfCatTimer(Timer);
 #[derive(Component)]
 struct SecretRoomSensor;
-#[derive(Component)]
-struct LeftCurtainSensor;
-#[derive(Component)]
-struct RightCurtainSensor;
 
 // States
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -111,12 +107,31 @@ fn throne_position(
 }
 
 fn secret_room_enter(
+    // player_sensor_query: Query<Entity, With<PlayerSensorCollider>>,
     player_query: Query<&Transform, With<Player>>,
     sensor_query: Query<Entity, With<SecretRoomSensor>>,
     mut collision_events: EventReader<CollisionEvent>,
     mut player_location: ResMut<State<PlayerLocation>>,
 ) {
     for collision_event in collision_events.iter() {
+        // if let CollisionEvent::Started(e1, e2, _) = collision_event {
+        /*
+        if let Ok(p_sensor_e) = player_sensor_query.get_single() {
+            // let sensor_e = sensor_query.single();
+            info!("EHHEHEHHEHE");
+            info!("{collision_event:?} {p_sensor_e:?} {sensor_e:?}");
+
+            if (*e1 == sensor_e && *e2 == p_sensor_e) || (*e1 == p_sensor_e && *e2 == sensor_e)
+            {
+                if player_location.current() == &PlayerLocation::Temple {
+                    player_location.set(PlayerLocation::SecretRoom).unwrap();
+                } else {
+                    player_location.set(PlayerLocation::Temple).unwrap();
+                }
+            }
+        }
+        */
+
         if let Ok(transform) = player_query.get_single() {
             let sensor_e = sensor_query.single();
 
@@ -209,12 +224,12 @@ fn curtains_animation(
     player_query: Query<&GlobalTransform, With<Player>>,
 ) {
     for collision_event in collision_events.iter() {
-        info!("testqskdjqlskdjs222IUEOAU82");
+        // info!("testqskdjqlskdjs222IUEOAU82");
         if let CollisionEvent::Started(e1, e2, _) = collision_event {
-            info!("testqskdjqlskdjs");
+            // info!("testqskdjqlskdjs");
             for (curtain_entity, curtain_transform, mut sprite) in curtains_query.iter_mut() {
-                info!("{e1:?} {e2:?} {curtain_entity:?}");
                 if *e1 == curtain_entity || *e2 == curtain_entity {
+                    info!("{e1:?} {e2:?} {curtain_entity:?}");
                     let player_transform = player_query.single();
 
                     let (start, end) =
@@ -226,11 +241,19 @@ fn curtains_animation(
 
                     let player_hitbox_top_y = player_transform.translation.y
                         + PLAYER_HITBOX_Y_OFFSET
-                        - PLAYER_HITBOX_WIDTH / 2.0;
+                        - PLAYER_HITBOX_HEIGHT;
                     let curtains_sensor_y =
-                        curtain_transform.translation.y - CURTAINS_SENSOR_Y_OFFSET;
+                        curtain_transform.translation.y + CURTAINS_SENSOR_Y_OFFSET;
 
-                    if player_hitbox_top_y > curtains_sensor_y {
+                    info!("{player_hitbox_top_y} {curtains_sensor_y}");
+                    info!(
+                        "{} {}",
+                        player_transform.translation.y, curtain_transform.translation.y
+                    );
+
+                    if player_transform.translation.y >= curtains_sensor_y
+                        && curtains_state.current() != &PlayerCurtainsPosition::Above
+                    {
                         curtains_state.set(PlayerCurtainsPosition::Above).unwrap();
                         sprite.index = start;
 
@@ -250,7 +273,7 @@ fn curtains_animation(
                                 timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
                                 duration: AnimationDuration::Once,
                             });
-                    } else {
+                    } else if curtains_state.current() != &PlayerCurtainsPosition::Below {
                         curtains_state.set(PlayerCurtainsPosition::Below).unwrap();
                         sprite.index = start;
 
@@ -490,6 +513,7 @@ fn setup_temple(
             Vect::new(-30.0, CURTAINS_SENSOR_Y_OFFSET),
             Vect::new(30.0, CURTAINS_SENSOR_Y_OFFSET),
         ))
+        .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(Sensor(true))
         .insert(Curtain);
 
@@ -504,6 +528,7 @@ fn setup_temple(
             Vect::new(-30.0, CURTAINS_SENSOR_Y_OFFSET),
             Vect::new(30.0, CURTAINS_SENSOR_Y_OFFSET),
         ))
+        .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(Sensor(true))
         .insert(Curtain);
 
