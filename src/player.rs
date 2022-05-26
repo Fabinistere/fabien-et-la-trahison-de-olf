@@ -37,6 +37,8 @@ pub struct Player;
 struct Speed(f32);
 #[derive(Component)]
 struct Immobilized;
+#[derive(Component)]
+pub struct PlayerSensor;
 
 #[derive(Deserialize, Debug)]
 pub struct PlayerSpriteSheetAnimation {
@@ -272,5 +274,16 @@ fn spawn_player(
                 .spawn()
                 .insert(Collider::cuboid(PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_HEIGHT))
                 .insert(Transform::from_xyz(0.0, PLAYER_HITBOX_Y_OFFSET, 0.0));
+
+            parent
+                .spawn()
+                .insert(Collider::segment(
+                    Vect::new(-PLAYER_HITBOX_WIDTH, 0.0),
+                    Vect::new(PLAYER_HITBOX_WIDTH, 0.0),
+                ))
+                .insert(Sensor(true))
+                .insert(ActiveEvents::COLLISION_EVENTS)
+                .insert(ActiveCollisionTypes::STATIC_STATIC)
+                .insert(PlayerSensor);
         });
 }

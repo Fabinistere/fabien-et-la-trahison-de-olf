@@ -33,7 +33,7 @@ pub mod locations {
         pub const CURTAINS_Z_FRONT: f32 = 7.0;
         pub const CURTAINS_ANIMATION_DELTA: f32 = 0.1;
         pub const CURTAINS_SENSOR_Y_OFFSET: f32 = -150.0;
-        pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.2;
+        pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.17;
         pub const PILLARS_Z_BACK: f32 = 3.0;
         pub const PILLARS_Z_FRONT: f32 = 6.0;
         pub const PILLAR_POSITIONS: [(f32, f32, f32); 12] = [
