@@ -1,15 +1,13 @@
 use super::ZPosition;
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
-    collisions::IsColliding,
     constants::{
         locations::temple::*,
-        player::{PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_Y_OFFSET},
+        player::{PLAYER_SCALE, PLAYER_WIDTH},
     },
-    player::{Player, PlayerSensor},
+    player::Player,
 };
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
 #[derive(Component, Deref, DerefMut)]
 pub struct CurtainsTimer(Timer);
@@ -24,76 +22,51 @@ pub enum PlayerCurtainsPosition {
 
 pub fn curtains_animation(
     mut commands: Commands,
-    mut collision_events: EventReader<CollisionEvent>,
     mut curtains_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,
     mut curtains_state: ResMut<State<PlayerCurtainsPosition>>,
-    player_query: Query<(&GlobalTransform, &Children), With<Player>>,
-    rapier_context: Res<RapierContext>,
+    player_query: Query<&GlobalTransform, With<Player>>,
 ) {
-    let (player_transform, children) = player_query.single();
-    for (e_c, ..) in curtains_query.iter() {
-        info!("{:?}", rapier_context.intersection_pair(children[1], e_c));
-        // for c in rapier_context.intersections_with(e_c) {
-        //     info!("{children:?}");
-        //     info!("{c:?}");
-        // }
-        // info!("{}", e_c.is_intersecting_with(children[0], &rapier_context));
-    }
-    for collision_event in collision_events.iter() {
-        for (curtain_entity, curtain_transform, mut sprite) in curtains_query.iter_mut() {
-            let (start, end) = if player_transform.translation.x > curtain_transform.translation.x {
+    let player_transform = player_query.single();
+
+    for (curtain_entity, curtain_transform, mut sprite) in curtains_query.iter_mut() {
+        let half_player_width = (PLAYER_WIDTH * PLAYER_SCALE) / 2.0;
+        let in_range_left =
+            curtain_transform.translation.x < player_transform.translation.x + half_player_width;
+        let in_range_right =
+            curtain_transform.translation.x > player_transform.translation.x - half_player_width;
+
+        let (anim_start, anim_end) =
+            if player_transform.translation.x > curtain_transform.translation.x {
                 (0, 4)
             } else {
                 (5, 9)
             };
-            let curtains_sensor_y = curtain_transform.translation.y + CURTAINS_SENSOR_Y_OFFSET;
 
-            match collision_event {
-                CollisionEvent::Started(e1, e2, _)
-                    if *e1 == curtain_entity || *e2 == curtain_entity =>
-                {
-                    if curtains_state.current() == &PlayerCurtainsPosition::Below {
-                        curtains_state.set(PlayerCurtainsPosition::Above).unwrap();
-                        sprite.index = start;
+        if player_transform.translation.y >= CURTAINS_TRIGGER_Y
+            && curtains_state.current() == &PlayerCurtainsPosition::Below
+        {
+            curtains_state
+                .overwrite_set(PlayerCurtainsPosition::Above)
+                .unwrap();
+            spawn_z_timer(&mut commands, CURTAINS_Z_FRONT);
 
-                        spawn_z_timer(&mut commands, CURTAINS_Z_BACK);
-                        insert_curtain_animation(&mut commands, curtain_entity, start, end);
-                    } else if curtains_state.current() == &PlayerCurtainsPosition::Above {
-                        curtains_state.set(PlayerCurtainsPosition::Below).unwrap();
-                        sprite.index = start;
+            if in_range_left && in_range_right {
+                sprite.index = anim_start;
 
-                        spawn_z_timer(&mut commands, CURTAINS_Z_FRONT);
-                        insert_curtain_animation(&mut commands, curtain_entity, start, end);
-                    }
-                }
-                CollisionEvent::Stopped(e1, e2, _)
-                    if *e1 == curtain_entity || *e2 == curtain_entity =>
-                {
-                    if player_transform.translation.y
-                        + PLAYER_HITBOX_Y_OFFSET
-                        + PLAYER_HITBOX_WIDTH / 2.0
-                        > curtains_sensor_y
-                        && curtains_state.current() == &PlayerCurtainsPosition::Above
-                    {
-                        curtains_state.set(PlayerCurtainsPosition::Below).unwrap();
-                        sprite.index = start;
+                insert_curtain_animation(&mut commands, curtain_entity, anim_start, anim_end);
+            }
+        } else if player_transform.translation.y < CURTAINS_TRIGGER_Y
+            && curtains_state.current() == &PlayerCurtainsPosition::Above
+        {
+            curtains_state
+                .overwrite_set(PlayerCurtainsPosition::Below)
+                .unwrap();
+            spawn_z_timer(&mut commands, CURTAINS_Z_BACK);
 
-                        spawn_z_timer(&mut commands, CURTAINS_Z_FRONT);
-                        insert_curtain_animation(&mut commands, curtain_entity, start, end);
-                    } else if player_transform.translation.y
-                        + PLAYER_HITBOX_Y_OFFSET
-                        + PLAYER_HITBOX_WIDTH / 2.0
-                        < curtains_sensor_y
-                        && curtains_state.current() == &PlayerCurtainsPosition::Below
-                    {
-                        curtains_state.set(PlayerCurtainsPosition::Above).unwrap();
-                        sprite.index = start;
+            if in_range_left && in_range_right {
+                sprite.index = anim_start;
 
-                        spawn_z_timer(&mut commands, CURTAINS_Z_BACK);
-                        insert_curtain_animation(&mut commands, curtain_entity, start, end);
-                    }
-                }
-                _ => {}
+                insert_curtain_animation(&mut commands, curtain_entity, anim_start, anim_end);
             }
         }
     }
