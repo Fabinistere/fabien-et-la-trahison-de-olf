@@ -1,6 +1,9 @@
 use super::{PlayerLocation, Temple};
 use crate::{
-    animations::fade::*,
+    animations::{
+        fade::*,
+        functions::{ease_in_sine, ease_out_sine},
+    },
     constants::{
         locations::temple::*,
         player::{PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_Y_OFFSET},
@@ -70,13 +73,11 @@ pub fn remove_secret_room_cover(
         if let Some(mut fade) = fade_opt {
             fade.invert();
         } else {
-            commands.entity(cover_entity).insert(Fade {
-                current_alpha: 1.0,
-                fade_type: FadeType::FadeIn,
-                total_duration: Duration::from_secs(1),
-                animation_fn: ease_in_sine,
-                ..Fade::default()
-            });
+            commands.entity(cover_entity).insert(Fade::new(
+                FadeType::FadeIn,
+                Duration::from_secs(1),
+                ease_in_sine,
+            ));
         }
     }
 
@@ -94,13 +95,11 @@ pub fn add_secret_room_cover(
         if let Some(mut fade) = fade_opt {
             fade.invert();
         } else {
-            commands.entity(cover_entity).insert(Fade {
-                current_alpha: 0.0,
-                fade_type: FadeType::FadeOut,
-                total_duration: Duration::from_secs(1),
-                animation_fn: ease_out_sine,
-                ..Fade::default()
-            });
+            commands.entity(cover_entity).insert(Fade::new(
+                FadeType::FadeOut,
+                Duration::from_secs(1),
+                ease_out_sine,
+            ));
         }
     }
 

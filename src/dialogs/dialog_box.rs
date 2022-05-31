@@ -1,3 +1,4 @@
+use crate::constants::ui::dialogs::DIALOG_BOX_UPDATE_DELTA;
 use bevy::prelude::*;
 
 #[derive(Debug, Component)]
@@ -12,8 +13,6 @@ pub struct DialogBox {
 pub struct DialogBoxText;
 #[derive(Component)]
 pub struct UiCamera;
-
-const DIALOG_BOX_UPDATE_DELTA: f32 = 0.08;
 
 pub fn create_dialog_box_on_key_press(
     commands: Commands,

@@ -5,6 +5,12 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color = bevy::render::color::Co
     alpha: 1.0,
 };
 
+pub mod ui {
+    pub mod dialogs {
+        pub const DIALOG_BOX_UPDATE_DELTA: f32 = 0.08;
+    }
+}
+
 pub mod player {
     use crate::player::PlayerAnimationType;
 

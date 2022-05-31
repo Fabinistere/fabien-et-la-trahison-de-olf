@@ -40,11 +40,11 @@ pub enum DialogId {
     MenuPlay,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Deref, DerefMut)]
 pub struct Dialogs(HashMap<DialogId, Dialog>);
 
 impl Dialogs {
     pub fn get(&self, id: DialogId, language: Language) -> String {
-        self.0[&id][&language].clone()
+        self[&id][&language].clone()
     }
 }
