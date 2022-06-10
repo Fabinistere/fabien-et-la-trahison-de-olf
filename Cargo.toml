@@ -1,6 +1,6 @@
 [package]
 name = "fabien-et-la-trahison-de-olf"
-version = "0.1.0"
+version = "0.3.7"
 authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "WaBtey", "Grassouille la Fripouille", "Sombre Roi René"]
 edition = "2021"
 
@@ -16,6 +16,7 @@ serde = "1.0"
 ron = "0.7"
 strum = "0.24"
 strum_macros = "0.24"
+bevy_tweening = { version = "0.4", features = ["bevy_ui"] }
 
 [profile.dev.package."*"]
 opt-level = 3

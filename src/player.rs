@@ -268,22 +268,22 @@ fn spawn_player(
             linvel: Vect::ZERO,
             angvel: 0.0,
         })
-        .insert_bundle((Player, Speed(200.0)))
-        .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::cuboid(PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_HEIGHT))
-                .insert(Transform::from_xyz(0.0, PLAYER_HITBOX_Y_OFFSET, 0.0));
-
-            parent
-                .spawn()
-                .insert(Collider::segment(
-                    Vect::new(-PLAYER_HITBOX_WIDTH, 0.0),
-                    Vect::new(PLAYER_HITBOX_WIDTH, 0.0),
-                ))
-                .insert(Sensor(true))
-                .insert(ActiveEvents::COLLISION_EVENTS)
-                .insert(ActiveCollisionTypes::STATIC_STATIC)
-                .insert(PlayerSensor);
-        });
+        .insert_bundle((Player, Speed(700.0)));
+    // .with_children(|parent| {
+    //     parent
+    //         .spawn()
+    //         .insert(Collider::cuboid(PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_HEIGHT))
+    //         .insert(Transform::from_xyz(0.0, PLAYER_HITBOX_Y_OFFSET, 0.0));
+    //
+    //     parent
+    //         .spawn()
+    //         .insert(Collider::segment(
+    //             Vect::new(-PLAYER_HITBOX_WIDTH, 0.0),
+    //             Vect::new(PLAYER_HITBOX_WIDTH, 0.0),
+    //         ))
+    //         .insert(Sensor(true))
+    //         .insert(ActiveEvents::COLLISION_EVENTS)
+    //         .insert(ActiveCollisionTypes::STATIC_STATIC)
+    //         .insert(PlayerSensor);
+    // });
 }

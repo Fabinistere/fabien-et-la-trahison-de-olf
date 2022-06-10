@@ -1,4 +1,6 @@
 mod curtains;
+mod first_corridor;
+mod second_corridor;
 mod secret_room;
 
 use super::{spawn_collision_cuboid, Location};
@@ -21,7 +23,9 @@ impl Plugin for TemplePlugin {
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
                     .with_system(setup_temple)
-                    .with_system(spawn_hitboxes),
+                    .with_system(spawn_hitboxes)
+                    .with_system(first_corridor::setup_first_corridor)
+                    .with_system(second_corridor::setup_second_corridor),
             )
             .add_system_set(
                 SystemSet::on_enter(PlayerLocation::SecretRoom)
@@ -36,11 +40,12 @@ impl Plugin for TemplePlugin {
                 SystemSet::new()
                     .with_run_criteria(run_if_in_temple)
                     .with_system(pillars_position)
+                    .with_system(throne_position)
                     .with_system(curtains::curtains_animation)
                     .with_system(curtains::curtains_z_position)
+                    .with_system(secret_room::setup_secret_room)
                     .with_system(secret_room::secret_room_enter)
-                    .with_system(throne_position)
-                    .with_system(olf_cat_animation),
+                    .with_system(secret_room::olf_cat_animation),
             );
     }
 }
@@ -53,8 +58,6 @@ struct Pillar;
 struct Throne;
 #[derive(Component, Deref, DerefMut)]
 pub struct ZPosition(f32);
-#[derive(Component, Deref, DerefMut)]
-struct OlfCatTimer(Timer);
 
 // States
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -104,25 +107,6 @@ fn throne_position(
     }
 }
 
-// Animation of smol black cat
-fn olf_cat_animation(
-    time: Res<Time>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<(
-        &mut OlfCatTimer,
-        &mut TextureAtlasSprite,
-        &Handle<TextureAtlas>,
-    )>,
-) {
-    for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
-        timer.tick(time.delta());
-        if timer.finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            sprite.index = (sprite.index as usize + 1) % texture_atlas.textures.len();
-        }
-    }
-}
-
 // Spawns all entity related to the temple
 fn setup_temple(
     mut commands: Commands,
@@ -131,18 +115,14 @@ fn setup_temple(
 ) {
     let background = asset_server.load("textures/temple/background.png");
     let main_room = asset_server.load("textures/temple/main_room.png");
-    let secret_room = asset_server.load("textures/temple/secret_room.png");
     let pillar = asset_server.load("textures/temple/pillar.png");
     let throne = asset_server.load("textures/temple/throne.png");
     let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
     let ground = asset_server.load("textures/temple/ground.png");
-    let olf_cat_spritesheet = asset_server.load("textures/temple/olf_cat_spritesheet.png");
     let left_curtains_texture_atlas =
         TextureAtlas::from_grid(curtains_spritesheet.clone(), Vec2::new(200.0, 360.0), 1, 10);
     let right_curtains_texture_atlas =
         TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
-    let olf_cat_texture_atlas =
-        TextureAtlas::from_grid(olf_cat_spritesheet, Vec2::new(100.0, 110.0), 2, 1);
 
     // Sensors colliders
     // Secret door sensor
@@ -176,14 +156,6 @@ fn setup_temple(
         transform: Transform::from_xyz(0.0, 0.0, GROUND_Z),
         ..SpriteBundle::default()
     });
-
-    commands
-        .spawn_bundle(SpriteBundle {
-            texture: secret_room,
-            transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
-            ..SpriteBundle::default()
-        })
-        .insert(SecretRoom);
 
     commands
         .spawn_bundle(SpriteBundle {
@@ -236,21 +208,6 @@ fn setup_temple(
         .insert(ActiveCollisionTypes::STATIC_STATIC)
         .insert(Sensor(true))
         .insert(Curtain);
-
-    commands
-        .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
-            transform: Transform {
-                translation: Vec3::new(-200.0, 960.0, OLF_CAT_Z),
-                scale: Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
-                ..Transform::default()
-            },
-            ..SpriteSheetBundle::default()
-        })
-        .insert(OlfCatTimer(Timer::from_seconds(
-            OLF_CAT_ANIMATION_DELTA,
-            true,
-        )));
 
     for pos in PILLAR_POSITIONS {
         commands

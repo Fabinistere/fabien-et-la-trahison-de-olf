@@ -1,8 +1,8 @@
 use super::{PlayerLocation, Temple};
 use crate::{
     animations::{
-        fade::*,
         functions::{ease_in_sine, ease_out_sine},
+        Fade, FadeType,
     },
     constants::{
         locations::temple::*,
@@ -19,6 +19,42 @@ pub struct SecretRoomSensor;
 pub struct SecretRoom;
 #[derive(Component)]
 pub struct SecretRoomCover;
+#[derive(Component, Deref, DerefMut)]
+pub struct OlfCatTimer(Timer);
+
+pub fn setup_secret_room(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    let secret_room = asset_server.load("textures/temple/secret_room.png");
+    let olf_cat_spritesheet = asset_server.load("textures/temple/olf_cat_spritesheet.png");
+    let olf_cat_texture_atlas =
+        TextureAtlas::from_grid(olf_cat_spritesheet, Vec2::new(100.0, 110.0), 2, 1);
+
+    commands
+        .spawn_bundle(SpriteBundle {
+            texture: secret_room,
+            transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
+            ..SpriteBundle::default()
+        })
+        .insert(SecretRoom);
+
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
+            transform: Transform {
+                translation: Vec3::new(-200.0, 960.0, OLF_CAT_Z),
+                scale: Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
+                ..Transform::default()
+            },
+            ..SpriteSheetBundle::default()
+        })
+        .insert(OlfCatTimer(Timer::from_seconds(
+            OLF_CAT_ANIMATION_DELTA,
+            true,
+        )));
+}
 
 pub fn secret_room_enter(
     // player_sensor_query: Query<Entity, With<PlayerSensorCollider>>,
@@ -105,5 +141,24 @@ pub fn add_secret_room_cover(
 
     if let Ok(mut temple_transform) = temple_query.get_single_mut() {
         temple_transform.translation.z = TEMPLE_Z;
+    }
+}
+
+// Animation of smol black cat
+pub fn olf_cat_animation(
+    time: Res<Time>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut query: Query<(
+        &mut OlfCatTimer,
+        &mut TextureAtlasSprite,
+        &Handle<TextureAtlas>,
+    )>,
+) {
+    for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
+        timer.tick(time.delta());
+        if timer.finished() {
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            sprite.index = (sprite.index as usize + 1) % texture_atlas.textures.len();
+        }
     }
 }
