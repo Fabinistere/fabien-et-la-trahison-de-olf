@@ -9,14 +9,13 @@ resolver = "2"
 
 [dependencies]
 bevy = "0.7"
-# bevy-inspector-egui = { git = "https://github.com/jakobhellermann/bevy-inspector-egui" }
 bevy_rapier2d = { version = "0.13", features = ["simd-stable", "debug-render"] }
-# bevy_prototype_debug_lines = { git = "https://github.com/Toqozz/bevy_debug_lines"}
+bevy_tweening = { version = "0.4", features = ["bevy_ui"] }
+bevy-web-resizer = "2.0"
 serde = "1.0"
 ron = "0.7"
 strum = "0.24"
 strum_macros = "0.24"
-bevy_tweening = { version = "0.4", features = ["bevy_ui"] }
 
 [profile.dev.package."*"]
 opt-level = 3

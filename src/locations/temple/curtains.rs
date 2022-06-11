@@ -20,6 +20,36 @@ pub enum PlayerCurtainsPosition {
     Below,
 }
 
+pub fn setup_curtains(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
+    let left_curtains_texture_atlas =
+        TextureAtlas::from_grid(curtains_spritesheet.clone(), Vec2::new(200.0, 360.0), 1, 10);
+    let right_curtains_texture_atlas =
+        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
+
+    // Left curtain, with a sensor collider to detect when the player passes through it
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.add(left_curtains_texture_atlas),
+            transform: Transform::from_translation(LEFT_CURTAIN_POSITION.into()),
+            ..SpriteSheetBundle::default()
+        })
+        .insert(Curtain);
+
+    // Right curtain
+    commands
+        .spawn_bundle(SpriteSheetBundle {
+            texture_atlas: texture_atlases.add(right_curtains_texture_atlas),
+            transform: Transform::from_translation(RIGHT_CURTAIN_POSITION.into()),
+            ..SpriteSheetBundle::default()
+        })
+        .insert(Curtain);
+}
+
 pub fn curtains_animation(
     mut commands: Commands,
     mut curtains_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,

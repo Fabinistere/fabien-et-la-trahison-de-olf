@@ -28,31 +28,35 @@ pub enum GameState {
 struct PlayerCamera;
 
 fn main() {
-    App::new()
-        .insert_resource(WindowDescriptor {
-            title: "Fabien et le trahison de Olf".to_string(),
-            // vsync: true,
-            // mode: bevy::window::WindowMode::BorderlessFullscreen,
-            ..WindowDescriptor::default()
-        })
-        .insert_resource(Msaa::default())
-        .insert_resource(ClearColor(BACKGROUND_COLOR))
-        .add_plugins(DefaultPlugins)
-        .add_plugin(RapierDebugRenderPlugin {
-            depth_test: false,
-            ..RapierDebugRenderPlugin::default()
-        })
-        .add_plugin(bevy_tweening::TweeningPlugin)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
-        .add_plugin(dialogs::DialogsPlugin)
-        .add_plugin(menu::MenuPlugin)
-        .add_plugin(animations::AnimationPlugin)
-        .add_plugin(player::PlayerPlugin)
-        .add_plugin(locations::LocationsPlugin)
-        .add_plugin(ui::UiPlugin)
-        .add_state(GameState::Playing)
-        .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(game_setup))
-        .run();
+    let mut app = App::new();
+    app.insert_resource(WindowDescriptor {
+        title: "Fabien et le trahison de Olf".to_string(),
+        // vsync: true,
+        // mode: bevy::window::WindowMode::BorderlessFullscreen,
+        ..WindowDescriptor::default()
+    })
+    .insert_resource(Msaa::default())
+    .insert_resource(ClearColor(BACKGROUND_COLOR))
+    .add_plugins(DefaultPlugins)
+    .add_plugin(bevy_tweening::TweeningPlugin)
+    .add_plugin(RapierDebugRenderPlugin {
+        depth_test: false,
+        ..RapierDebugRenderPlugin::default()
+    })
+    .add_state(GameState::Playing)
+    .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(game_setup))
+    .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
+    .add_plugin(dialogs::DialogsPlugin)
+    .add_plugin(menu::MenuPlugin)
+    .add_plugin(animations::AnimationPlugin)
+    .add_plugin(player::PlayerPlugin)
+    .add_plugin(locations::LocationsPlugin)
+    .add_plugin(ui::UiPlugin);
+
+    #[cfg(target_arch = "wasm32")]
+    app.add_plugin(bevy_web_resizer::Plugin);
+
+    app.run();
 }
 
 fn game_setup(
