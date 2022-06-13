@@ -14,6 +14,7 @@ pub fn setup_first_corridor(mut commands: Commands, asset_server: Res<AssetServe
 
     commands.spawn_bundle(SpriteBundle {
         texture: props,
+        transform: Transform::from_xyz(0.0, 0.0, 2.5),
         ..SpriteBundle::default()
     });
 }

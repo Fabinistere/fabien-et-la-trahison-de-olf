@@ -194,6 +194,7 @@ pub fn olf_cat_animation(
 ) {
     for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
         timer.tick(time.delta());
+
         if timer.finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
             sprite.index = (sprite.index as usize + 1) % texture_atlas.textures.len();

@@ -9,6 +9,7 @@ impl Plugin for UiPlugin {
         app.add_startup_system(setup_ui)
             .add_startup_system(dialog_box::load_textures)
             .add_system(dialog_box::update_dialog_box)
+            .add_system(dialog_box::animate_scroll)
             .add_system(dialog_box::create_dialog_box_on_key_press);
     }
 }

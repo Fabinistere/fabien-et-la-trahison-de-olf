@@ -5,11 +5,12 @@ pub mod collisions;
 pub mod constants;
 pub mod dialogs;
 mod locations;
+pub mod material;
 mod menu;
 pub mod player;
 mod ui;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Material2dPlugin};
 // use bevy_prototype_debug_lines::*;
 use bevy_rapier2d::prelude::*;
 
@@ -38,6 +39,7 @@ fn main() {
     .insert_resource(Msaa::default())
     .insert_resource(ClearColor(BACKGROUND_COLOR))
     .add_plugins(DefaultPlugins)
+    .add_plugin(Material2dPlugin::<material::CustomMaterial>::default())
     .add_plugin(bevy_tweening::TweeningPlugin)
     .add_plugin(RapierDebugRenderPlugin {
         depth_test: false,
@@ -63,7 +65,10 @@ fn game_setup(
     mut commands: Commands,
     mut rapier_config: ResMut<RapierConfiguration>,
     mut windows: ResMut<Windows>,
+    asset_server: Res<AssetServer>,
 ) {
+    asset_server.watch_for_changes().unwrap();
+
     windows.primary_mut().set_scale_factor_override(Some(1.0));
     rapier_config.gravity = Vect::ZERO;
     commands

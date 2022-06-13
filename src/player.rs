@@ -1,6 +1,9 @@
 use super::PlayerCamera;
-use crate::{constants::player::*, GameState};
-use bevy::prelude::*;
+use crate::{constants::player::*, material::CustomMaterial, GameState};
+use bevy::{
+    prelude::*,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+};
 use bevy_rapier2d::prelude::*;
 use serde::Deserialize;
 use std::collections::{HashMap, VecDeque};
@@ -241,18 +244,38 @@ fn spawn_player(
     asset_server: Res<AssetServer>,
     player_animations_data: Res<PlayerAnimationData>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut my_material_assets: ResMut<Assets<CustomMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let texture_handle = asset_server.load("textures/fabien_info_spritesheet.png");
     let texture_atlas =
         TextureAtlas::from_grid(texture_handle, Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT), 4, 4);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
+    let random_texture = asset_server.load("textures/hud/stained_glass_opened.png");
+
+    commands.spawn().insert_bundle(MaterialMesh2dBundle {
+        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
+        material: my_material_assets.add(CustomMaterial {
+            brightness: 0.5,
+            progress: 0.5,
+            texture: random_texture,
+        }),
+        transform: Transform {
+            translation: Vec3::new(0.0, 0.0, 15.0),
+            scale: Vec3::new(100.0, 100.0, 0.0),
+            ..Transform::default()
+        },
+        ..MaterialMesh2dBundle::default()
+    });
+
     commands
         .spawn()
         .insert_bundle(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
             transform: Transform {
-                translation: Vec3::new(-200.0, -1500.0, PLAYER_Z),
+                // translation: Vec3::new(-200.0, -1500.0, PLAYER_Z),
+                translation: Vec3::new(0.0, 0.0, PLAYER_Z),
                 scale: Vec3::splat(PLAYER_SCALE),
                 ..Transform::default()
             },

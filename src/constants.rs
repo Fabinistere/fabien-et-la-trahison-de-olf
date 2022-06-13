@@ -8,6 +8,8 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color = bevy::render::color::Co
 pub mod ui {
     pub mod dialogs {
         pub const DIALOG_BOX_UPDATE_DELTA: f32 = 0.08;
+        pub const SCROLL_SIZE: (f32, f32) = (490.0, 11700.0 / 45.0);
+        pub const SCROLL_ANIMATION_DELTA_S: f32 = 0.1;
     }
 }
 
