@@ -11,7 +11,7 @@ impl Plugin for MenuPlugin {
             .add_system_set(SystemSet::on_enter(GameState::Menu).with_system(setup_menu))
             .add_system_set(SystemSet::on_exit(GameState::Menu).with_system(destroy_menu))
             .add_system(language_button_interactions)
-            .add_system(game_start)
+            // .add_system(game_start)
             .add_system(language_changed);
     }
 }

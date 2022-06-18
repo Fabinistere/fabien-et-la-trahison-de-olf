@@ -1,5 +1,4 @@
 pub mod dialog_box;
-
 use bevy::prelude::*;
 
 pub struct UiPlugin;

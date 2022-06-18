@@ -31,7 +31,10 @@ impl DialogBox {
 #[derive(Component)]
 pub struct DialogBoxText;
 #[derive(Component)]
-pub struct Scroll;
+pub struct Scroll {
+    current_frame: usize,
+    reverse: bool,
+}
 #[derive(Component, Deref, DerefMut)]
 pub struct ScrollTimer(Timer);
 
@@ -47,7 +50,7 @@ pub struct DialogBoxResources {
     stained_glass_opened: Handle<Image>,
     stained_glass_bars: Handle<Image>,
     stained_glass_panels: Handle<Image>,
-    scroll_animation: [Handle<Image>; SCROLL_ANIMATION_FRAMES_NUMBER],
+    scroll_animation: Vec<Handle<Image>>,
 }
 
 pub fn load_textures(
@@ -58,10 +61,10 @@ pub fn load_textures(
     // let scroll_texture = asset_server.load("textures/hud/scroll_animation.png");
     // let scroll_atlas = TextureAtlas::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45);
 
-    let mut scroll_animation_frames: [Handle<Image>; SCROLL_ANIMATION_FRAMES_NUMBER];
+    let mut scroll_animation_frames = vec![];
     for i in 0..SCROLL_ANIMATION_FRAMES_NUMBER {
-        scroll_animation_frames[i] =
-            asset_server.load(&format!("textures/hud/scroll_animation/frame_{}.png", i));
+        scroll_animation_frames
+            .push(asset_server.load(&format!("textures/hud/scroll_animation/frame_{}.png", i)));
     }
 
     commands.insert_resource(DialogBoxResources {
@@ -167,26 +170,6 @@ pub fn create_dialog_box(
                 ..ImageBundle::default()
             })
             .with_children(|parent| {
-                parent.spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        "",
-                        TextStyle {
-                            font: dialog_box_resources.text_font.clone(),
-                            font_size: 50.0,
-                            color: Color::BLACK,
-                        },
-                        TextAlignment {
-                            vertical: VerticalAlign::Center,
-                            horizontal: HorizontalAlign::Center,
-                        },
-                    ),
-                    style: Style {
-                        position_type: PositionType::Relative,
-                        ..Style::default()
-                    },
-                    ..TextBundle::default()
-                });
-
                 let child_sprite_style = Style {
                     position_type: PositionType::Absolute,
                     size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
@@ -213,6 +196,43 @@ pub fn create_dialog_box(
                     ..ImageBundle::default()
                 });
 
+                parent
+                    .spawn_bundle(ImageBundle {
+                        image: dialog_box_resources.scroll_animation[0].clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    })
+                    .insert(Scroll {
+                        current_frame: 0,
+                        reverse: false,
+                    })
+                    .insert(ScrollTimer(Timer::from_seconds(
+                        SCROLL_ANIMATION_DELTA_S,
+                        false,
+                    )))
+                    .with_children(|parent| {
+                        parent.spawn_bundle(TextBundle {
+                            text: Text::with_section(
+                                "",
+                                TextStyle {
+                                    font: dialog_box_resources.text_font.clone(),
+                                    font_size: 50.0,
+                                    color: Color::BLACK,
+                                },
+                                TextAlignment {
+                                    vertical: VerticalAlign::Center,
+                                    horizontal: HorizontalAlign::Center,
+                                },
+                            ),
+                            style: Style {
+                                position_type: PositionType::Relative,
+                                ..Style::default()
+                            },
+                            ..TextBundle::default()
+                        });
+                    })
+                    .insert(DialogBox::new(dialog.clone(), DIALOG_BOX_UPDATE_DELTA));
+
                 // parent.spawn_bundle(ImageBundle {
                 //     image: texture_atlases
                 //         .get(dialog_box_resources.scroll_animation.clone())
@@ -223,107 +243,8 @@ pub fn create_dialog_box(
                 //     style: child_sprite_style.clone(),
                 //     ..ImageBundle::default()
                 // });
-
-                parent
-                    .spawn()
-                    .insert_bundle(SpriteSheetBundle {
-                        texture_atlas: dialog_box_resources.scroll_animation.clone(),
-                        ..SpriteSheetBundle::default()
-                    })
-                    .insert(child_sprite_style.clone())
-                    .insert(CalculatedSize {
-                        size: Size::new(300.0, 300.0),
-                    })
-                    .insert(bevy::ui::FocusPolicy::Block)
-                    .insert(bevy::ui::Interaction::None)
-                    .insert(bevy::ui::widget::ImageMode::KeepAspect)
-                    .insert(bevy::ui::UiColor(Color::rgb(1.0, 1.0, 0.0)))
-                    .insert(bevy::ui::FocusPolicy::Block)
-                    .insert(Transform::from_xyz(0.0, 0.0, 20.0))
-                    .insert(GlobalTransform::default())
-                    .insert(Visibility { is_visible: true })
-                    .insert(Node::default())
-                    .insert(Scroll)
-                    .insert(ScrollTimer(Timer::from_seconds(
-                        SCROLL_ANIMATION_DELTA_S,
-                        true,
-                    )));
-
-                parent
-                    .spawn()
-                    .insert_bundle(MaterialMesh2dBundle {
-                        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-                        material: custom_material_assets.add(CustomMaterial {
-                            brightness: 0.5,
-                            progress: 0.5,
-                            texture: dialog_box_resources.chandelier.clone(),
-                        }),
-                        transform: Transform {
-                            translation: Vec3::new(0.0, 0.0, 15.0),
-                            scale: Vec3::new(1000.0, 1000.0, 0.0),
-                            ..Transform::default()
-                        },
-                        ..MaterialMesh2dBundle::default()
-                    })
-                    .insert(child_sprite_style.clone())
-                    .insert(Transform::from_xyz(0.0, 0.0, 20.0))
-                    .insert(GlobalTransform::default())
-                    .insert(CalculatedSize {
-                        size: Size::new(30.0, 30.0),
-                    })
-                    .insert(Node::default());
             })
-            .insert(DialogBox::new(dialog.clone(), DIALOG_BOX_UPDATE_DELTA))
             .insert(Animator::new(dialog_box_tween));
-        commands
-            .spawn()
-            .insert_bundle(MaterialMesh2dBundle {
-                mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-                material: custom_material_assets.add(CustomMaterial {
-                    brightness: 0.5,
-                    progress: 0.5,
-                    texture: dialog_box_resources.chandelier.clone(),
-                }),
-                transform: Transform {
-                    translation: Vec3::new(0.0, 0.0, 15.0),
-                    scale: Vec3::new(1000.0, 1000.0, 0.0),
-                    ..Transform::default()
-                },
-                ..MaterialMesh2dBundle::default()
-            })
-            .insert(Style::default())
-            .insert(Transform::from_xyz(0.0, 0.0, 20.0))
-            .insert(GlobalTransform::default())
-            .insert(CalculatedSize {
-                size: Size::new(300.0, 300.0),
-            })
-            .insert(bevy::ui::FocusPolicy::Block)
-            .insert(bevy::ui::Interaction::None)
-            .insert(Node::default());
-
-        commands
-            .spawn_bundle(SpriteSheetBundle {
-                texture_atlas: dialog_box_resources.scroll_animation.clone(),
-                ..SpriteSheetBundle::default()
-            })
-            .insert(Style::default())
-            .insert(CalculatedSize {
-                size: Size::new(300.0, 300.0),
-            })
-            .insert(Transform::from_xyz(0.0, 0.0, 20.0))
-            .insert(GlobalTransform::default())
-            .insert(bevy::ui::FocusPolicy::Block)
-            .insert(bevy::ui::Interaction::None)
-            .insert(bevy::ui::widget::ImageMode::KeepAspect)
-            .insert(bevy::ui::UiColor(Color::rgb(1.0, 1.0, 0.0)))
-            .insert(bevy::ui::FocusPolicy::Block)
-            .insert(Visibility { is_visible: true })
-            .insert(Node::default())
-            .insert(Scroll)
-            .insert(ScrollTimer(Timer::from_seconds(
-                SCROLL_ANIMATION_DELTA_S,
-                true,
-            )));
     }
 }
 
@@ -351,76 +272,29 @@ pub fn update_dialog_box(
 pub fn animate_scroll(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
+    dialog_box_resources: Res<DialogBoxResources>,
     mut commands: Commands,
-    mut scroll_query: Query<
-        (
-            &mut TextureAtlasSprite,
-            &Handle<TextureAtlas>,
-            &mut ScrollTimer,
-            Entity,
-        ),
-        With<Scroll>,
-    >,
+    mut scroll_query: Query<(&mut UiImage, &mut Scroll, &mut ScrollTimer, Entity)>,
 ) {
-    for (mut sprite, texture_atlas_handle, mut timer, entity) in scroll_query.iter_mut() {
+    for (mut image, mut scroll, mut timer, entity) in scroll_query.iter_mut() {
         timer.tick(time.delta());
-        let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
 
         if timer.finished() {
-            sprite.index += 1;
+            if scroll.reverse {
+                scroll.current_frame -= 1;
 
-            if sprite.index >= texture_atlas.textures.len() - 1 {
-                commands.entity(entity).remove::<ScrollTimer>();
+                if scroll.current_frame == 0 {
+                    commands.entity(entity).remove::<ScrollTimer>();
+                }
+            } else {
+                scroll.current_frame += 1;
+
+                if scroll.current_frame >= SCROLL_ANIMATION_FRAMES_NUMBER - 1 {
+                    commands.entity(entity).remove::<ScrollTimer>();
+                }
             }
-        }
-    }
-}
 
-pub fn extract_atlas_uinodes(
-    mut render_world: ResMut<RenderWorld>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    images: Res<Assets<Image>>,
-    uinode_query: Query<(
-        &Node,
-        &GlobalTransform,
-        Option<&UiColor>,
-        &Handle<TextureAtlas>,
-        &Visibility,
-        Option<&CalculatedClip>,
-    )>,
-) {
-    let mut extracted_uinodes = render_world.get_resource_mut::<ExtractedUiNodes>().unwrap();
-    for (uinode, transform, color, ui_atlas, visibility, clip) in uinode_query.iter() {
-        // Skips if the node is not visible or if its size is set to zero (e.g. when a parent is set to `Display::None`)
-        if !visibility.is_visible || uinode.size == Vec2::ZERO {
-            continue;
+            image.0 = dialog_box_resources.scroll_animation[scroll.current_frame].clone();
         }
-        let atlas = texture_atlases
-            .get(ui_atlas.clone_weak())
-            .unwrap_or_else(|| {
-                panic!(
-                    "Failed to retrieve `TextureAtlas` from handle {:?}",
-                    ui_atlas
-                )
-            });
-        // Skip loading images
-        if !images.contains(atlas.texture.clone_weak()) {
-            continue;
-        }
-        let image = atlas.texture.clone_weak();
-        let atlas_size = Some(atlas.size);
-        let color = color.map_or(Color::default(), |c| c.0);
-        let rect =
-            atlas.textures.get(0).copied().unwrap_or_else(|| {
-                panic!("TextureAtlas {:?} as no texture at index {}", ui_atlas, 0)
-            });
-        extracted_uinodes.uinodes.push(ExtractedUiNode {
-            transform: transform.compute_matrix(),
-            color,
-            rect,
-            image,
-            atlas_size,
-            clip: clip.map(|clip| clip.clip),
-        });
     }
 }
