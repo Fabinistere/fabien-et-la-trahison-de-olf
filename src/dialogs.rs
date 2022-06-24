@@ -8,11 +8,7 @@ pub struct DialogsPlugin;
 impl Plugin for DialogsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Dialogs(
-            ron::de::from_bytes(include_bytes!(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/data/dialogs.ron"
-            )))
-            .unwrap(),
+            ron::de::from_bytes(include_bytes!("../data/dialogs.ron")).unwrap(),
         ))
         .init_resource::<Language>();
     }

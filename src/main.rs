@@ -1,9 +1,10 @@
 #![allow(clippy::type_complexity)]
 
 pub mod animations;
-pub mod collisions;
 pub mod constants;
+pub mod controls;
 pub mod dialogs;
+pub mod interactions;
 mod locations;
 pub mod material;
 mod menu;
@@ -16,6 +17,7 @@ use bevy_rapier2d::prelude::*;
 
 pub use crate::{
     constants::BACKGROUND_COLOR,
+    controls::Key,
     dialogs::{DialogId, Dialogs, Language},
 };
 
@@ -38,6 +40,13 @@ fn main() {
     })
     .insert_resource(Msaa::default())
     .insert_resource(ClearColor(BACKGROUND_COLOR))
+    .insert_resource(controls::KeyBindings {
+        up: [Key(KeyCode::Z), Key(KeyCode::Up)],
+        down: [Key(KeyCode::S), Key(KeyCode::Down)],
+        right: [Key(KeyCode::D), Key(KeyCode::Right)],
+        left: [Key(KeyCode::Q), Key(KeyCode::Left)],
+        interact: [Key(KeyCode::E), Key(KeyCode::R)],
+    })
     .add_plugins(DefaultPlugins)
     .add_plugin(Material2dPlugin::<material::CustomMaterial>::default())
     .add_plugin(bevy_tweening::TweeningPlugin)
@@ -53,6 +62,7 @@ fn main() {
     .add_plugin(animations::AnimationPlugin)
     .add_plugin(player::PlayerPlugin)
     .add_plugin(locations::LocationsPlugin)
+    .add_plugin(interactions::InteractionsPlugin)
     .add_plugin(ui::UiPlugin);
 
     #[cfg(target_arch = "wasm32")]

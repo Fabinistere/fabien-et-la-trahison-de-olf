@@ -1,7 +1,5 @@
 /target
-assets/CorridorTemple*
-assets/Temple*
-assets/HUD*
+assets/olf_asset_store
 assets/stone_house_map.png
 out
 index.html

@@ -9,6 +9,9 @@ use bevy::{
 use bevy_tweening::{lens::UiPositionLens, *};
 use std::time::Duration;
 
+#[derive(Component)]
+pub struct DialogPanel;
+
 #[derive(Debug, Component)]
 pub struct DialogBox {
     text: String,
@@ -41,6 +44,7 @@ pub struct ScrollTimer(Timer);
 pub struct CreateDialogBoxEvent {
     dialog: String,
 }
+pub struct CloseDialogBoxEvent;
 
 pub struct DialogBoxResources {
     text_font: Handle<Font>,
@@ -81,16 +85,63 @@ pub fn load_textures(
 
 pub fn create_dialog_box_on_key_press(
     mut create_dialog_box_event: EventWriter<CreateDialogBoxEvent>,
-    mut query: Query<(Entity, &mut Animator<Style>), With<DialogBox>>,
+    mut close_dialog_box_event: EventWriter<CloseDialogBoxEvent>,
+    query: Query<(Entity, &Animator<Style>, &Style), With<DialogPanel>>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::O) {
-        if let Ok((entity, mut animator)) = query.get_single_mut() {
-            animator.rewind();
+        if let Ok((entity, animator, style)) = query.get_single() {
+            if animator.tweenable().unwrap().progress() >= 1.0 {
+                close_dialog_box_event.send(CloseDialogBoxEvent);
+            }
         } else {
+            info!("here second");
             create_dialog_box_event.send(CreateDialogBoxEvent {
-                dialog: "Bonjour Florian\nComment vas-tu ?\nJ'ai faim.".to_owned(),
+                dialog: "Bonjour Florian. Comment vas-tu ? J'ai faim.".to_owned(),
             });
+        }
+    }
+}
+
+pub fn close_dialog_box(
+    mut commands: Commands,
+    mut close_dialog_box_events: EventReader<CloseDialogBoxEvent>,
+    mut query: Query<(Entity, &mut Animator<Style>, &Style), With<DialogPanel>>,
+) {
+    for CloseDialogBoxEvent in close_dialog_box_events.iter() {
+        info!("close dialog event");
+        if let Ok((entity, mut animator, style)) = query.get_single_mut() {
+            let dialog_box_tween = Tween::new(
+                EaseFunction::QuadraticIn,
+                TweeningType::Once,
+                Duration::from_millis(DIALOG_BOX_ANIMATION_TIME_MS),
+                UiPositionLens {
+                    start: style.position,
+                    end: Rect {
+                        left: Val::Auto,
+                        top: Val::Px(0.0),
+                        right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
+                        bottom: Val::Px(0.0),
+                    },
+                },
+            )
+            .with_completed_event(true, 0);
+
+            commands
+                .entity(entity)
+                .remove::<Animator<Style>>()
+                .insert(Animator::new(dialog_box_tween));
+        }
+    }
+}
+
+pub fn despawn_dialog_box(
+    mut commands: Commands,
+    mut completed_event: EventReader<TweenCompleted>,
+) {
+    for TweenCompleted { entity, user_data } in completed_event.iter() {
+        if *user_data == 0 {
+            commands.entity(*entity).despawn_recursive();
         }
     }
 }
@@ -104,17 +155,16 @@ pub fn create_dialog_box(
     dialog_box_resources: Res<DialogBoxResources>,
 ) {
     for CreateDialogBoxEvent { dialog } in create_dialog_box_events.iter() {
-        let start_right_offset = -1000.0;
-
+        info!("open dialog event");
         let dialog_box_tween = Tween::new(
             EaseFunction::QuadraticOut,
             TweeningType::Once,
-            Duration::from_millis(500),
+            Duration::from_millis(DIALOG_BOX_ANIMATION_TIME_MS),
             UiPositionLens {
                 start: Rect {
                     left: Val::Auto,
                     top: Val::Px(0.0),
-                    right: Val::Px(-1000.0),
+                    right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
                     bottom: Val::Px(0.0),
                 },
                 end: Rect {
@@ -154,7 +204,7 @@ pub fn create_dialog_box(
                     position: Rect {
                         top: Val::Px(0.0),
                         left: Val::Auto,
-                        right: Val::Px(start_right_offset),
+                        right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
                         bottom: Val::Px(0.0),
                     },
                     margin: Rect {
@@ -199,7 +249,15 @@ pub fn create_dialog_box(
                 parent
                     .spawn_bundle(ImageBundle {
                         image: dialog_box_resources.scroll_animation[0].clone().into(),
-                        style: child_sprite_style.clone(),
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                            display: Display::Flex,
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::FlexStart,
+                            justify_content: JustifyContent::FlexEnd,
+                            ..Style::default()
+                        },
                         ..ImageBundle::default()
                     })
                     .insert(Scroll {
@@ -216,22 +274,28 @@ pub fn create_dialog_box(
                                 "",
                                 TextStyle {
                                     font: dialog_box_resources.text_font.clone(),
-                                    font_size: 50.0,
+                                    font_size: 30.0,
                                     color: Color::BLACK,
                                 },
                                 TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
+                                    vertical: VerticalAlign::Top,
+                                    horizontal: HorizontalAlign::Left,
                                 },
                             ),
                             style: Style {
-                                position_type: PositionType::Relative,
+                                flex_wrap: FlexWrap::Wrap,
+                                margin: Rect {
+                                    top: Val::Percent(74.0),
+                                    left: Val::Percent(24.0),
+                                    ..Rect::default()
+                                },
+                                max_size: Size::new(Val::Px(450.0), Val::Percent(100.0)),
                                 ..Style::default()
                             },
                             ..TextBundle::default()
                         });
                     })
-                    .insert(DialogBox::new(dialog.clone(), DIALOG_BOX_UPDATE_DELTA));
+                    .insert(DialogBox::new(dialog.clone(), DIALOG_BOX_UPDATE_DELTA_S));
 
                 // parent.spawn_bundle(ImageBundle {
                 //     image: texture_atlases
@@ -244,6 +308,7 @@ pub fn create_dialog_box(
                 //     ..ImageBundle::default()
                 // });
             })
+            .insert(DialogPanel)
             .insert(Animator::new(dialog_box_tween));
     }
 }
