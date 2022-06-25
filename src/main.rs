@@ -1,6 +1,7 @@
 #![allow(clippy::type_complexity)]
 
 pub mod animations;
+mod collisions;
 pub mod constants;
 pub mod controls;
 pub mod dialogs;

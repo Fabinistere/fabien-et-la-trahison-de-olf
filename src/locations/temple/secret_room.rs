@@ -5,7 +5,7 @@ use crate::{
         Fade, FadeType,
     },
     constants::{
-        locations::temple::*,
+        locations::temple::{secret_room::*, TEMPLE_Z, TEMPLE_Z_WHEN_IN_SECRET_ROOM},
         player::{PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_Y_OFFSET},
         BACKGROUND_COLOR,
     },

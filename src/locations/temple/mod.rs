@@ -40,7 +40,8 @@ impl Plugin for TemplePlugin {
                     .with_system(curtains::curtains_animation)
                     .with_system(curtains::curtains_z_position)
                     .with_system(secret_room::secret_room_enter)
-                    .with_system(secret_room::olf_cat_animation),
+                    .with_system(secret_room::olf_cat_animation)
+                    .with_system(first_corridor::open_door),
             );
     }
 }

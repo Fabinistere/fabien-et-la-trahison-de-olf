@@ -1,5 +1,6 @@
 use crate::{controls::KeyBindings, player::Player};
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 pub struct InteractionsPlugin;
 
@@ -11,13 +12,15 @@ impl Plugin for InteractionsPlugin {
     }
 }
 
-pub struct InteractionEvent(pub u32);
+pub trait InteractionEvent<E: Send + Sync> {
+    fn interaction_event() -> E;
+}
 
 #[derive(Component)]
 pub struct Interactible {
     pub range: f32,
     pub icon_position: Vec3,
-    pub interaction_id: u32,
+    pub event: Box<dyn InteractionEvent>,
 }
 
 pub struct InteractionResources {
@@ -46,7 +49,6 @@ pub fn interact_icon(
             && player_transform.translation.y < transform.translation.y + interactible.range
             && player_transform.translation.y > transform.translation.y - interactible.range
         {
-            info!("here");
             commands.entity(entity).with_children(|parent| {
                 parent.spawn_bundle(SpriteBundle {
                     texture: interaction_resources.interact_button.clone(),

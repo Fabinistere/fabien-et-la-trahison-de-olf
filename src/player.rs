@@ -238,7 +238,7 @@ fn spawn_player(
             linvel: Vect::ZERO,
             angvel: 0.0,
         })
-        .insert_bundle((Player, Speed(200.0)))
+        .insert_bundle((Player, Speed(800.0)))
         .with_children(|parent| {
             parent
                 .spawn()

@@ -33,13 +33,34 @@ pub mod player {
 
 pub mod locations {
     pub mod temple {
+        pub mod first_corridor {
+            pub const FIRST_CORRIDOR_Z: f32 = 2.2;
+            pub const DOOR_Z: f32 = 2.3;
+            pub const PROPS_INTERACTION_ID: u32 = 0;
+            pub const DOOR_INTERACTION_ID: u32 = 1;
+            pub const DOOR_POSITION: (f32, f32, f32) = (610.0, -1275.0, 2.3);
+        }
+
+        pub mod secret_room {
+            pub const SECRET_ROOM_Z: f32 = 1.0;
+            pub const SECRET_ROOM_TRIGGER_Y: f32 = 990.0;
+            pub const SECRET_ROOM_COVER_POSITION: (f32, f32, f32) = (-240.0, 1375.0, 1.5);
+            pub const SECRET_ROOM_COVER_SIZE: (f32, f32) = (2500.0, 800.0);
+
+            pub const OLF_CAT_Z: f32 = 1.4;
+            pub const OLF_CAT_SCALE: f32 = 0.5;
+            pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
+            pub const OLF_CAT_POSITION: (f32, f32, f32) = (-500.0, 1480.0, OLF_CAT_Z);
+            pub const OLF_CAT_HITBOX_POSITION: (f32, f32, f32) =
+                (OLF_CAT_POSITION.0, OLF_CAT_POSITION.1 - 5.0, OLF_CAT_Z);
+        }
+
         pub const BACKGROUND_Z: f32 = 0.0;
 
         pub const TEMPLE_Z: f32 = 2.0;
         pub const TEMPLE_Z_WHEN_IN_SECRET_ROOM: f32 = 5.5;
 
         pub const SECOND_CORRIDOR_Z: f32 = 2.1;
-        pub const FIRST_CORRIDOR_Z: f32 = 2.2;
         pub const CORRIDOR_DOORS_Z: f32 = 7.0;
 
         pub const GROUND_Z: f32 = 0.5;
@@ -47,11 +68,6 @@ pub mod locations {
         pub const THRONE_Z_BACK: f32 = 3.0;
         pub const THRONE_Z_FRONT: f32 = 6.0;
         pub const THRONE_POSITION: (f32, f32, f32) = (-230.0, 900.0, THRONE_Z_BACK);
-
-        pub const SECRET_ROOM_Z: f32 = 1.0;
-        pub const SECRET_ROOM_TRIGGER_Y: f32 = 990.0;
-        pub const SECRET_ROOM_COVER_POSITION: (f32, f32, f32) = (-240.0, 1375.0, 1.5);
-        pub const SECRET_ROOM_COVER_SIZE: (f32, f32) = (2500.0, 800.0);
 
         pub const CURTAINS_Z_BACK: f32 = 3.0;
         pub const CURTAINS_Z_FRONT: f32 = 7.0;
@@ -81,12 +97,5 @@ pub mod locations {
             (70.0, -335.0, PILLARS_Z_BACK),   // 11
             (500.0, -335.0, PILLARS_Z_BACK),  // 12
         ];
-
-        pub const OLF_CAT_Z: f32 = 1.4;
-        pub const OLF_CAT_SCALE: f32 = 0.5;
-        pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
-        pub const OLF_CAT_POSITION: (f32, f32, f32) = (-500.0, 1480.0, OLF_CAT_Z);
-        pub const OLF_CAT_HITBOX_POSITION: (f32, f32, f32) =
-            (OLF_CAT_POSITION.0, OLF_CAT_POSITION.1 - 5.0, OLF_CAT_Z);
     }
 }

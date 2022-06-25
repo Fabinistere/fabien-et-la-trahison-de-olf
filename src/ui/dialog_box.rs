@@ -1,11 +1,9 @@
 use crate::{constants::ui::dialogs::*, material::CustomMaterial};
 
-use bevy::{
-    prelude::*,
-    render::RenderWorld,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    ui::{ExtractedUiNode, ExtractedUiNodes},
-};
+use bevy::prelude::*;
+// render::RenderWorld,
+// sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+// ui::{ExtractedUiNode, ExtractedUiNodes},
 use bevy_tweening::{lens::UiPositionLens, *};
 use std::time::Duration;
 
@@ -90,7 +88,7 @@ pub fn create_dialog_box_on_key_press(
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::O) {
-        if let Ok((entity, animator, style)) = query.get_single() {
+        if let Ok((_entity, animator, _style)) = query.get_single() {
             if animator.tweenable().unwrap().progress() >= 1.0 {
                 close_dialog_box_event.send(CloseDialogBoxEvent);
             }
@@ -110,7 +108,7 @@ pub fn close_dialog_box(
 ) {
     for CloseDialogBoxEvent in close_dialog_box_events.iter() {
         info!("close dialog event");
-        if let Ok((entity, mut animator, style)) = query.get_single_mut() {
+        if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
             let dialog_box_tween = Tween::new(
                 EaseFunction::QuadraticIn,
                 TweeningType::Once,
@@ -149,9 +147,9 @@ pub fn despawn_dialog_box(
 pub fn create_dialog_box(
     mut create_dialog_box_events: EventReader<CreateDialogBoxEvent>,
     mut commands: Commands,
-    mut custom_material_assets: ResMut<Assets<CustomMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut _custom_material_assets: ResMut<Assets<CustomMaterial>>,
+    mut _meshes: ResMut<Assets<Mesh>>,
+    _texture_atlases: Res<Assets<TextureAtlas>>,
     dialog_box_resources: Res<DialogBoxResources>,
 ) {
     for CreateDialogBoxEvent { dialog } in create_dialog_box_events.iter() {
