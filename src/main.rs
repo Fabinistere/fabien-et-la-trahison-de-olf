@@ -64,7 +64,8 @@ fn main() {
     .add_plugin(player::PlayerPlugin)
     .add_plugin(locations::LocationsPlugin)
     .add_plugin(interactions::InteractionsPlugin)
-    .add_plugin(ui::UiPlugin);
+    .add_plugin(ui::UiPlugin)
+    .add_plugin(collisions::CollisionsPlugin);
 
     #[cfg(target_arch = "wasm32")]
     app.add_plugin(bevy_web_resizer::Plugin);

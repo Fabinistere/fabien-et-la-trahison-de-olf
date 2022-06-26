@@ -1,14 +1,22 @@
-use crate::{constants::locations::temple::first_corridor::*, interactions::Interactible};
+use crate::{
+    constants::{interactions::INTERACT_BUTTON_Z, locations::temple::first_corridor::*},
+    interactions::Interactible,
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 #[derive(Component)]
-pub struct Door;
+pub struct Door {
+    open: bool,
+}
+
 #[derive(Component)]
 pub struct DoorInteract {
     timer: Timer,
     opening: bool,
 }
+
+pub struct DoorInteractEvent;
 
 pub fn setup_first_corridor(
     mut commands: Commands,
@@ -37,13 +45,18 @@ pub fn setup_first_corridor(
         .with_children(|parent| {
             parent
                 .spawn()
+                .insert(Collider::cuboid(20.0, 105.0))
+                .insert(Transform::from_xyz(20.0, 0.0, 0.0))
+                .insert(Sensor(true));
+
+            parent
+                .spawn()
                 .insert(Collider::cuboid(100.0, 105.0))
-                .insert(Transform::from_xyz(-1210.0, -1430.0, 0.0));
+                .insert(Transform::from_translation(PROPS_POSITION.into()));
         })
         .insert(Interactible {
-            range: 100.0,
-            icon_position: Vec3::new(0.0, 0.0, 0.0),
-            interaction_id: 0,
+            icon_transform: Transform::from_xyz(0.0, 0.0, INTERACT_BUTTON_Z),
+            interaction_id: PROPS_INTERACTION_ID,
         });
 
     commands
@@ -52,15 +65,10 @@ pub fn setup_first_corridor(
             transform: Transform::from_translation(DOOR_POSITION.into()),
             ..SpriteSheetBundle::default()
         })
-        .insert(Door)
+        .insert(Door { open: false })
         .insert(DoorInteract {
-            timer: Timer::from_seconds(1.0, true),
             opening: true,
-        })
-        .insert(Interactible {
-            range: 50.0,
-            icon_position: Vec3::new(0.0, 0.0, 0.0),
-            interaction_id: 0,
+            timer: Timer::from_seconds(DOOR_OPEN_DELTA_S, true),
         })
         .with_children(|parent| {
             parent
@@ -83,12 +91,34 @@ pub fn setup_first_corridor(
         });
 }
 
-pub fn open_door(
+/*
+pub fn door_interact(
+    mut commands: Commands,
+    mut door_interact_events: EventReader<DoorInteractEvent>,
+    mut door_query: Query<(Entity, &Door, Option<&mut DoorInteract>)>,
+) {
+    for DoorInteractEvent in door_interact_events.iter() {
+        let (entity, door, door_interact) = door_query.single_mut();
+
+        if let Some(mut door_interact) = door_interact {
+            door_interact.opening = !door_interact.opening;
+        } else {
+            commands.entity(entity).insert(DoorInteract {
+                opening: !door.open,
+                timer: Timer::from_seconds(DOOR_OPEN_DELTA_S, true),
+            });
+        }
+    }
+}
+*/
+
+pub fn open_close_door(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
     mut commands: Commands,
     mut door_query: Query<(
         Entity,
+        &mut Door,
         &mut DoorInteract,
         &Children,
         &mut TextureAtlasSprite,
@@ -96,7 +126,7 @@ pub fn open_door(
     )>,
     mut colliders_query: Query<&mut Transform, With<Collider>>,
 ) {
-    for (entity, mut door_interaction, children, mut sprite, texture_atlas_handle) in
+    for (entity, mut door, mut door_interaction, children, mut sprite, texture_atlas_handle) in
         door_query.iter_mut()
     {
         door_interaction.timer.tick(time.delta());
@@ -111,6 +141,7 @@ pub fn open_door(
 
                 if sprite.index >= texture_atlas.len() - 1 {
                     commands.entity(entity).remove::<DoorInteract>();
+                    door.open = true;
                 }
             } else {
                 sprite.index -= 1;
@@ -119,6 +150,7 @@ pub fn open_door(
 
                 if sprite.index == 0 {
                     commands.entity(entity).remove::<DoorInteract>();
+                    door.open = false;
                 }
             }
         }

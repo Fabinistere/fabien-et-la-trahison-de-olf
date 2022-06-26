@@ -1,7 +1,7 @@
 mod curtains;
-mod first_corridor;
+pub mod first_corridor;
 mod second_corridor;
-mod secret_room;
+pub mod secret_room;
 
 use super::{spawn_collision_cuboid, Location};
 use crate::{constants::locations::temple::*, player::Player, GameState};
@@ -14,6 +14,8 @@ impl Plugin for TemplePlugin {
     fn build(&self, app: &mut App) {
         app.add_state(PlayerLocation::Temple)
             .add_state(curtains::PlayerCurtainsPosition::Below)
+            .add_event::<secret_room::SecretRoomTriggerEvent>()
+            .add_event::<first_corridor::DoorInteractEvent>()
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
                     .with_system(setup_temple)
@@ -39,9 +41,9 @@ impl Plugin for TemplePlugin {
                     .with_system(throne_position)
                     .with_system(curtains::curtains_animation)
                     .with_system(curtains::curtains_z_position)
-                    .with_system(secret_room::secret_room_enter)
+                    .with_system(secret_room::secret_room_trigger)
                     .with_system(secret_room::olf_cat_animation)
-                    .with_system(first_corridor::open_door),
+                    .with_system(first_corridor::open_close_door),
             );
     }
 }

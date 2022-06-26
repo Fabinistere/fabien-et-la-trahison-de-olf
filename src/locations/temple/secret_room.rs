@@ -15,6 +15,10 @@ use crate::{
 use bevy::{prelude::*, utils::Duration};
 use bevy_rapier2d::prelude::*;
 
+pub struct SecretRoomTriggerEvent {
+    pub started: bool,
+}
+
 #[derive(Component)]
 pub struct SecretRoomSensor;
 #[derive(Component)]
@@ -94,45 +98,37 @@ pub fn setup_secret_room(
     spawn_collision_cuboid(&mut commands, -80.0, 1285.0, 140.0, 190.0);
 }
 
-pub fn secret_room_enter(
+pub fn secret_room_trigger(
     // player_sensor_query: Query<Entity, With<PlayerSensorCollider>>,
     player_query: Query<&Transform, With<Player>>,
     sensor_query: Query<Entity, With<SecretRoomSensor>>,
-    mut collision_events: EventReader<CollisionEvent>,
+    mut secret_room_trigger_events: EventReader<SecretRoomTriggerEvent>,
     mut player_location: ResMut<State<PlayerLocation>>,
 ) {
-    for collision_event in collision_events.iter() {
-        if let Ok(transform) = player_query.get_single() {
-            let sensor_e = sensor_query.single();
+    for SecretRoomTriggerEvent { started } in secret_room_trigger_events.iter() {
+        let transform = player_query.single();
 
-            match collision_event {
-                // When the player goes through the sensor collider, change its location
-                // to the secret room or the temple
-                CollisionEvent::Started(e1, e2, _) if *e1 == sensor_e || *e2 == sensor_e => {
-                    if player_location.current() == &PlayerLocation::Temple {
-                        player_location.set(PlayerLocation::SecretRoom).unwrap();
-                    } else {
-                        player_location.set(PlayerLocation::Temple).unwrap();
-                    }
-                }
-                CollisionEvent::Stopped(e1, e2, _) if *e1 == sensor_e || *e2 == sensor_e => {
-                    // If the player changes direction while the sensor is still in its collider,
-                    // check the top of its hitbox is in the temple or the secret room
-                    if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
-                        > SECRET_ROOM_TRIGGER_Y
-                        && player_location.current() == &PlayerLocation::Temple
-                    {
-                        player_location.set(PlayerLocation::SecretRoom).unwrap();
-                    } else if transform.translation.y
-                        + PLAYER_HITBOX_Y_OFFSET
-                        + PLAYER_HITBOX_WIDTH / 2.0
-                        < SECRET_ROOM_TRIGGER_Y
-                        && player_location.current() == &PlayerLocation::SecretRoom
-                    {
-                        player_location.set(PlayerLocation::Temple).unwrap();
-                    }
-                }
-                _ => {}
+        if *started {
+            // When the player goes through the sensor collider, change its location
+            // to the secret room or the temple
+            if player_location.current() == &PlayerLocation::Temple {
+                player_location.set(PlayerLocation::SecretRoom).unwrap();
+            } else {
+                player_location.set(PlayerLocation::Temple).unwrap();
+            }
+        } else {
+            // If the player changes direction while the sensor is still in its collider,
+            // check the top of its hitbox is in the temple or the secret room
+            if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
+                > SECRET_ROOM_TRIGGER_Y
+                && player_location.current() == &PlayerLocation::Temple
+            {
+                player_location.set(PlayerLocation::SecretRoom).unwrap();
+            } else if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
+                < SECRET_ROOM_TRIGGER_Y
+                && player_location.current() == &PlayerLocation::SecretRoom
+            {
+                player_location.set(PlayerLocation::Temple).unwrap();
             }
         }
     }

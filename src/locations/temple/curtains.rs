@@ -2,7 +2,7 @@ use super::ZPosition;
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     constants::{
-        locations::temple::*,
+        locations::temple::curtains::*,
         player::{PLAYER_SCALE, PLAYER_WIDTH},
     },
     player::Player,
@@ -26,15 +26,14 @@ pub fn setup_curtains(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
-    let left_curtains_texture_atlas =
-        TextureAtlas::from_grid(curtains_spritesheet.clone(), Vec2::new(200.0, 360.0), 1, 10);
-    let right_curtains_texture_atlas =
-        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
+    let curtains_texture_atlas =
+        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(100.0, 180.0), 1, 10);
+    let curtains_texture_atlas_handle = texture_atlases.add(curtains_texture_atlas);
 
     // Left curtain, with a sensor collider to detect when the player passes through it
     commands
         .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.add(left_curtains_texture_atlas),
+            texture_atlas: curtains_texture_atlas_handle.clone(),
             transform: Transform::from_translation(LEFT_CURTAIN_POSITION.into()),
             ..SpriteSheetBundle::default()
         })
@@ -43,7 +42,7 @@ pub fn setup_curtains(
     // Right curtain
     commands
         .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.add(right_curtains_texture_atlas),
+            texture_atlas: curtains_texture_atlas_handle,
             transform: Transform::from_translation(RIGHT_CURTAIN_POSITION.into()),
             ..SpriteSheetBundle::default()
         })

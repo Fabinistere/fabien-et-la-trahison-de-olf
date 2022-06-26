@@ -5,6 +5,10 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color = bevy::render::color::Co
     alpha: 1.0,
 };
 
+pub mod interactions {
+    pub const INTERACT_BUTTON_Z: f32 = 20.0;
+}
+
 pub mod ui {
     pub mod dialogs {
         pub const DIALOG_BOX_ANIMATION_OFFSET: f32 = -1000.0;
@@ -37,8 +41,17 @@ pub mod locations {
             pub const FIRST_CORRIDOR_Z: f32 = 2.2;
             pub const DOOR_Z: f32 = 2.3;
             pub const PROPS_INTERACTION_ID: u32 = 0;
+            pub const PROPS_POSITION: (f32, f32, f32) = (-1210.0, -1430.0, 0.0);
             pub const DOOR_INTERACTION_ID: u32 = 1;
-            pub const DOOR_POSITION: (f32, f32, f32) = (610.0, -1275.0, 2.3);
+            pub const DOOR_POSITION: (f32, f32, f32) = (610.0, -1275.0, DOOR_Z);
+            pub const DOOR_OPEN_DELTA_S: f32 = 0.1;
+        }
+
+        pub mod second_corridor {
+            pub const SECOND_CORRIDOR_Z: f32 = 2.1;
+            pub const DOOR_INTERACTION_ID: u32 = 1;
+            pub const DOOR_POSITION: (f32, f32, f32) = (-230.0, -725.0, 2.2);
+            pub const DOOR_OPEN_DELTA_S: f32 = 0.1;
         }
 
         pub mod secret_room {
@@ -55,12 +68,22 @@ pub mod locations {
                 (OLF_CAT_POSITION.0, OLF_CAT_POSITION.1 - 5.0, OLF_CAT_Z);
         }
 
+        pub mod curtains {
+            pub const CURTAINS_Z_BACK: f32 = 3.0;
+            pub const CURTAINS_Z_FRONT: f32 = 7.0;
+            pub const CURTAINS_ANIMATION_DELTA: f32 = 0.1;
+            pub const CURTAINS_SENSOR_Y_OFFSET: f32 = -150.0;
+            pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.17;
+            pub const CURTAINS_TRIGGER_Y: f32 = 930.0;
+            pub const LEFT_CURTAIN_POSITION: (f32, f32, f32) = (-440.0, 1080.0, CURTAINS_Z_BACK);
+            pub const RIGHT_CURTAIN_POSITION: (f32, f32, f32) = (-40.0, 1080.0, CURTAINS_Z_BACK);
+        }
+
         pub const BACKGROUND_Z: f32 = 0.0;
 
         pub const TEMPLE_Z: f32 = 2.0;
         pub const TEMPLE_Z_WHEN_IN_SECRET_ROOM: f32 = 5.5;
 
-        pub const SECOND_CORRIDOR_Z: f32 = 2.1;
         pub const CORRIDOR_DOORS_Z: f32 = 7.0;
 
         pub const GROUND_Z: f32 = 0.5;
@@ -68,15 +91,6 @@ pub mod locations {
         pub const THRONE_Z_BACK: f32 = 3.0;
         pub const THRONE_Z_FRONT: f32 = 6.0;
         pub const THRONE_POSITION: (f32, f32, f32) = (-230.0, 900.0, THRONE_Z_BACK);
-
-        pub const CURTAINS_Z_BACK: f32 = 3.0;
-        pub const CURTAINS_Z_FRONT: f32 = 7.0;
-        pub const CURTAINS_ANIMATION_DELTA: f32 = 0.1;
-        pub const CURTAINS_SENSOR_Y_OFFSET: f32 = -150.0;
-        pub const CURTAINS_CHANGE_Z_TIME: f32 = 0.17;
-        pub const CURTAINS_TRIGGER_Y: f32 = 930.0;
-        pub const LEFT_CURTAIN_POSITION: (f32, f32, f32) = (-440.0, 1080.0, CURTAINS_Z_BACK);
-        pub const RIGHT_CURTAIN_POSITION: (f32, f32, f32) = (-40.0, 1080.0, CURTAINS_Z_BACK);
 
         pub const PILLARS_Z_BACK: f32 = 3.0;
         pub const PILLARS_Z_FRONT: f32 = 6.0;
