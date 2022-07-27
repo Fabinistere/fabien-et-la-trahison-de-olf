@@ -142,11 +142,7 @@ fn set_player_movement(
                 .animation_type_queue
                 .push_front(PlayerAnimationType::LeftRun);
             restart_animation = true;
-        } else if keyboard_input.any_just_pressed([key_bindings.up(), key_bindings.down()].concat())
-        {
-            restart_animation = true;
         }
-
         if restart_animation && start_anim_type != player_animation.animation_type_queue[0] {
             let animation_data =
                 &player_animations_data.0[&player_animation.animation_type_queue[0]];

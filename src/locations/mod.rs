@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
-enum Location {
+pub enum Location {
     Temple,
 }
 

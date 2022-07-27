@@ -1,6 +1,7 @@
 use crate::{
-    constants::locations::temple::first_corridor, controls::KeyBindings,
-    locations::temple::first_corridor::DoorInteractEvent,
+    constants::locations::temple::{first_corridor, second_corridor},
+    controls::KeyBindings,
+    locations::temple::second_corridor::DoorInteractEvent,
 };
 use bevy::prelude::*;
 
@@ -25,6 +26,17 @@ pub struct InteractionIconEvent {
 pub struct Interactible {
     pub icon_transform: Transform,
     pub interaction_id: u32,
+    pub in_range: bool,
+}
+
+impl Interactible {
+    pub fn new(icon_transform: Transform, interaction_id: u32) -> Self {
+        Self {
+            icon_transform,
+            interaction_id,
+            in_range: false,
+        }
+    }
 }
 
 pub struct InteractionResources {
@@ -41,7 +53,7 @@ pub fn setup_interactions(mut commands: Commands, asset_server: Res<AssetServer>
 pub fn interaction_icon(
     mut commands: Commands,
     mut interaction_icon_events: EventReader<InteractionIconEvent>,
-    interactibles_query: Query<(&Children, &Interactible)>,
+    mut interactibles_query: Query<(&Children, &mut Interactible)>,
     interaction_resources: Res<InteractionResources>,
 ) {
     for InteractionIconEvent {
@@ -49,7 +61,8 @@ pub fn interaction_icon(
         entity,
     } in interaction_icon_events.iter()
     {
-        let (children, interactible) = interactibles_query.get(*entity).unwrap();
+        let (children, mut interactible) = interactibles_query.get_mut(*entity).unwrap();
+        interactible.in_range = *entering_range;
 
         if *entering_range {
             commands.entity(*entity).with_children(|parent| {
@@ -73,10 +86,14 @@ pub fn interaction(
 ) {
     if keyboard_input.any_just_pressed(key_bindings.interact()) {
         for interactible in interactibles_query.iter() {
-            match interactible.interaction_id {
-                first_corridor::PROPS_INTERACTION_ID => {}
-                first_corridor::DOOR_INTERACTION_ID => door_interact_event.send(DoorInteractEvent),
-                id => error!("Unknown interaction id {id}"),
+            if interactible.in_range {
+                match interactible.interaction_id {
+                    first_corridor::PROPS_INTERACTION_ID => {}
+                    second_corridor::DOOR_INTERACTION_ID => {
+                        door_interact_event.send(DoorInteractEvent)
+                    }
+                    id => error!("Unknown interaction id {id}"),
+                }
             }
         }
     }

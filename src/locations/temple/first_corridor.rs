@@ -16,8 +16,6 @@ pub struct DoorInteract {
     opening: bool,
 }
 
-pub struct DoorInteractEvent;
-
 pub fn setup_first_corridor(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -54,10 +52,10 @@ pub fn setup_first_corridor(
                 .insert(Collider::cuboid(100.0, 105.0))
                 .insert(Transform::from_translation(PROPS_POSITION.into()));
         })
-        .insert(Interactible {
-            icon_transform: Transform::from_xyz(0.0, 0.0, INTERACT_BUTTON_Z),
-            interaction_id: PROPS_INTERACTION_ID,
-        });
+        .insert(Interactible::new(
+            Transform::from_xyz(0.0, 0.0, INTERACT_BUTTON_Z),
+            PROPS_INTERACTION_ID,
+        ));
 
     commands
         .spawn_bundle(SpriteSheetBundle {

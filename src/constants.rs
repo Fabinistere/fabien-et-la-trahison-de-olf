@@ -42,16 +42,20 @@ pub mod locations {
             pub const DOOR_Z: f32 = 2.3;
             pub const PROPS_INTERACTION_ID: u32 = 0;
             pub const PROPS_POSITION: (f32, f32, f32) = (-1210.0, -1430.0, 0.0);
-            pub const DOOR_INTERACTION_ID: u32 = 1;
+
             pub const DOOR_POSITION: (f32, f32, f32) = (610.0, -1275.0, DOOR_Z);
             pub const DOOR_OPEN_DELTA_S: f32 = 0.1;
         }
 
         pub mod second_corridor {
             pub const SECOND_CORRIDOR_Z: f32 = 2.1;
+            pub const SECOND_CORRIDOR_Z_IN_MAIN_ROOM: f32 = 5.1;
+
+            pub const DOOR_Z: f32 = 2.2;
+            pub const DOOR_Z_IN_MAIN_ROOM: f32 = 5.2;
             pub const DOOR_INTERACTION_ID: u32 = 1;
-            pub const DOOR_POSITION: (f32, f32, f32) = (-230.0, -725.0, 2.2);
-            pub const DOOR_OPEN_DELTA_S: f32 = 0.1;
+            pub const DOOR_POSITION: (f32, f32, f32) = (-230.0, -725.0, DOOR_Z);
+            pub const DOOR_OPEN_DELTA_S: f32 = 0.2;
         }
 
         pub mod secret_room {
@@ -79,37 +83,41 @@ pub mod locations {
             pub const RIGHT_CURTAIN_POSITION: (f32, f32, f32) = (-40.0, 1080.0, CURTAINS_Z_BACK);
         }
 
-        pub const BACKGROUND_Z: f32 = 0.0;
+        pub mod main_room {
+            pub const MAIN_ROOM_ENTER_Y: f32 = -800.0;
 
-        pub const TEMPLE_Z: f32 = 2.0;
-        pub const TEMPLE_Z_WHEN_IN_SECRET_ROOM: f32 = 5.5;
+            pub const MAIN_ROOM_Z: f32 = 2.0;
+            pub const MAIN_ROOM_Z_WHEN_IN_SECRET_ROOM: f32 = 5.5;
+
+            pub const THRONE_Z_BACK: f32 = 3.0;
+            pub const THRONE_Z_FRONT: f32 = 6.0;
+            pub const THRONE_POSITION: (f32, f32, f32) = (-230.0, 900.0, THRONE_Z_BACK);
+
+            pub const PILLARS_Z_BACK: f32 = 3.0;
+            pub const PILLARS_Z_FRONT: f32 = 6.0;
+            pub const PILLAR_POSITIONS: [(f32, f32, f32); 12] = [
+                // 1 2    7  8
+                // 3 4    9  10
+                // 5 6    11 12
+                (-960.0, 585.0, PILLARS_Z_BACK),  // 1
+                (-530.0, 585.0, PILLARS_Z_BACK),  // 2
+                (-960.0, 125.0, PILLARS_Z_BACK),  // 3
+                (-530.0, 125.0, PILLARS_Z_BACK),  // 4
+                (-960.0, -335.0, PILLARS_Z_BACK), // 5
+                (-530.0, -335.0, PILLARS_Z_BACK), // 6
+                (70.0, 585.0, PILLARS_Z_BACK),    // 7
+                (500.0, 585.0, PILLARS_Z_BACK),   // 8
+                (70.0, 125.0, PILLARS_Z_BACK),    // 9
+                (500.0, 125.0, PILLARS_Z_BACK),   // 10
+                (70.0, -335.0, PILLARS_Z_BACK),   // 11
+                (500.0, -335.0, PILLARS_Z_BACK),  // 12
+            ];
+        }
+
+        pub const BACKGROUND_Z: f32 = 0.0;
 
         pub const CORRIDOR_DOORS_Z: f32 = 7.0;
 
         pub const GROUND_Z: f32 = 0.5;
-
-        pub const THRONE_Z_BACK: f32 = 3.0;
-        pub const THRONE_Z_FRONT: f32 = 6.0;
-        pub const THRONE_POSITION: (f32, f32, f32) = (-230.0, 900.0, THRONE_Z_BACK);
-
-        pub const PILLARS_Z_BACK: f32 = 3.0;
-        pub const PILLARS_Z_FRONT: f32 = 6.0;
-        pub const PILLAR_POSITIONS: [(f32, f32, f32); 12] = [
-            // 1 2    7  8
-            // 3 4    9  10
-            // 5 6    11 12
-            (-960.0, 585.0, PILLARS_Z_BACK),  // 1
-            (-530.0, 585.0, PILLARS_Z_BACK),  // 2
-            (-960.0, 125.0, PILLARS_Z_BACK),  // 3
-            (-530.0, 125.0, PILLARS_Z_BACK),  // 4
-            (-960.0, -335.0, PILLARS_Z_BACK), // 5
-            (-530.0, -335.0, PILLARS_Z_BACK), // 6
-            (70.0, 585.0, PILLARS_Z_BACK),    // 7
-            (500.0, 585.0, PILLARS_Z_BACK),   // 8
-            (70.0, 125.0, PILLARS_Z_BACK),    // 9
-            (500.0, 125.0, PILLARS_Z_BACK),   // 10
-            (70.0, -335.0, PILLARS_Z_BACK),   // 11
-            (500.0, -335.0, PILLARS_Z_BACK),  // 12
-        ];
     }
 }

@@ -5,7 +5,10 @@ use crate::{
         Fade, FadeType,
     },
     constants::{
-        locations::temple::{secret_room::*, TEMPLE_Z, TEMPLE_Z_WHEN_IN_SECRET_ROOM},
+        locations::temple::{
+            main_room::{MAIN_ROOM_Z, MAIN_ROOM_Z_WHEN_IN_SECRET_ROOM},
+            secret_room::*,
+        },
         player::{PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_Y_OFFSET},
         BACKGROUND_COLOR,
     },
@@ -101,7 +104,6 @@ pub fn setup_secret_room(
 pub fn secret_room_trigger(
     // player_sensor_query: Query<Entity, With<PlayerSensorCollider>>,
     player_query: Query<&Transform, With<Player>>,
-    sensor_query: Query<Entity, With<SecretRoomSensor>>,
     mut secret_room_trigger_events: EventReader<SecretRoomTriggerEvent>,
     mut player_location: ResMut<State<PlayerLocation>>,
 ) {
@@ -118,7 +120,7 @@ pub fn secret_room_trigger(
             }
         } else {
             // If the player changes direction while the sensor is still in its collider,
-            // check the top of its hitbox is in the temple or the secret room
+            // check if the top of its hitbox is in the temple or the secret room
             if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
                 > SECRET_ROOM_TRIGGER_Y
                 && player_location.current() == &PlayerLocation::Temple
@@ -152,7 +154,7 @@ pub fn remove_secret_room_cover(
     }
 
     if let Ok(mut temple_transform) = temple_query.get_single_mut() {
-        temple_transform.translation.z = TEMPLE_Z_WHEN_IN_SECRET_ROOM;
+        temple_transform.translation.z = MAIN_ROOM_Z_WHEN_IN_SECRET_ROOM;
     }
 }
 
@@ -174,7 +176,7 @@ pub fn add_secret_room_cover(
     }
 
     if let Ok(mut temple_transform) = temple_query.get_single_mut() {
-        temple_transform.translation.z = TEMPLE_Z;
+        temple_transform.translation.z = MAIN_ROOM_Z;
     }
 }
 

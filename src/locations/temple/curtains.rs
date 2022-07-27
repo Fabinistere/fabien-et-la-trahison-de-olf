@@ -27,7 +27,7 @@ pub fn setup_curtains(
 ) {
     let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
     let curtains_texture_atlas =
-        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(100.0, 180.0), 1, 10);
+        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
     let curtains_texture_atlas_handle = texture_atlases.add(curtains_texture_atlas);
 
     // Left curtain, with a sensor collider to detect when the player passes through it

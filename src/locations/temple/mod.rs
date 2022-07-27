@@ -1,12 +1,25 @@
 mod curtains;
 pub mod first_corridor;
-mod second_corridor;
+pub mod main_room;
+pub mod second_corridor;
 pub mod secret_room;
 
 use super::{spawn_collision_cuboid, Location};
-use crate::{constants::locations::temple::*, player::Player, GameState};
+use crate::{constants::locations::temple::*, GameState};
 use bevy::{ecs::schedule::ShouldRun, prelude::*};
-use bevy_rapier2d::prelude::*;
+
+#[derive(Component)]
+pub struct Temple;
+
+#[derive(Component, Deref, DerefMut)]
+pub struct ZPosition(f32);
+
+// States
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+pub enum PlayerLocation {
+    Temple,
+    SecretRoom,
+}
 
 pub struct TemplePlugin;
 
@@ -15,11 +28,12 @@ impl Plugin for TemplePlugin {
         app.add_state(PlayerLocation::Temple)
             .add_state(curtains::PlayerCurtainsPosition::Below)
             .add_event::<secret_room::SecretRoomTriggerEvent>()
-            .add_event::<first_corridor::DoorInteractEvent>()
+            .add_event::<second_corridor::DoorInteractEvent>()
+            .add_event::<main_room::EnterMainRoomEvent>()
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
-                    .with_system(setup_temple)
                     .with_system(spawn_hitboxes)
+                    .with_system(main_room::setup_main_room)
                     .with_system(first_corridor::setup_first_corridor)
                     .with_system(second_corridor::setup_second_corridor)
                     .with_system(secret_room::setup_secret_room)
@@ -37,34 +51,21 @@ impl Plugin for TemplePlugin {
                 CoreStage::PostUpdate,
                 SystemSet::new()
                     .with_run_criteria(run_if_in_temple)
-                    .with_system(pillars_position)
-                    .with_system(throne_position)
+                    .with_system(main_room::enter_main_room)
+                    .with_system(main_room::pillars_position)
+                    .with_system(main_room::throne_position)
                     .with_system(curtains::curtains_animation)
                     .with_system(curtains::curtains_z_position)
                     .with_system(secret_room::secret_room_trigger)
                     .with_system(secret_room::olf_cat_animation)
-                    .with_system(first_corridor::open_close_door),
+                    .with_system(first_corridor::open_close_door)
+                    .with_system(second_corridor::open_close_door)
+                    .with_system(second_corridor::door_interact),
             );
     }
 }
 
-#[derive(Component)]
-pub struct Temple;
-#[derive(Component)]
-struct Pillar;
-#[derive(Component)]
-struct Throne;
-#[derive(Component, Deref, DerefMut)]
-pub struct ZPosition(f32);
-
-// States
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
-pub enum PlayerLocation {
-    Temple,
-    SecretRoom,
-}
-
-fn run_if_in_temple(
+pub fn run_if_in_temple(
     location: Res<State<Location>>,
     game_state: Res<State<GameState>>,
 ) -> ShouldRun {
@@ -75,88 +76,21 @@ fn run_if_in_temple(
     }
 }
 
-fn pillars_position(
-    player_query: Query<&GlobalTransform, With<Player>>,
-    mut pillars_query: Query<&mut Transform, With<Pillar>>,
-) {
-    if let Ok(player_transform) = player_query.get_single() {
-        for mut pillar_transform in pillars_query.iter_mut() {
-            if player_transform.translation.y + 60.0 > pillar_transform.translation.y {
-                pillar_transform.translation.z = PILLARS_Z_FRONT;
-            } else {
-                pillar_transform.translation.z = PILLARS_Z_BACK;
-            }
-        }
-    }
-}
-
-fn throne_position(
-    player_query: Query<&GlobalTransform, With<Player>>,
-    mut throne_query: Query<&mut Transform, With<Throne>>,
-) {
-    if let Ok(player_transform) = player_query.get_single() {
-        for mut throne_transform in throne_query.iter_mut() {
-            if player_transform.translation.y > throne_transform.translation.y {
-                throne_transform.translation.z = THRONE_Z_FRONT;
-            } else {
-                throne_transform.translation.z = THRONE_Z_BACK;
-            }
-        }
-    }
-}
-
-// Spawns all entity related to the temple
-fn setup_temple(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_temple(mut commands: Commands, asset_server: Res<AssetServer>) {
     let background = asset_server.load("textures/temple/background.png");
-    let main_room = asset_server.load("textures/temple/main_room.png");
-    let pillar = asset_server.load("textures/temple/pillar.png");
-    let throne = asset_server.load("textures/temple/throne.png");
     let corridor_doors = asset_server.load("textures/temple/corridor_doors.png");
 
-    // All the temple sprites
     commands.spawn_bundle(SpriteBundle {
         texture: background,
         transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
         ..SpriteBundle::default()
     });
 
-    commands
-        .spawn_bundle(SpriteBundle {
-            texture: main_room,
-            transform: Transform::from_xyz(0.0, 0.0, TEMPLE_Z),
-            ..SpriteBundle::default()
-        })
-        .insert(Temple);
-
-    commands
-        .spawn_bundle(SpriteBundle {
-            texture: throne,
-            transform: Transform::from_translation(THRONE_POSITION.into()),
-            ..SpriteBundle::default()
-        })
-        .insert(Throne);
-
     commands.spawn_bundle(SpriteBundle {
         texture: corridor_doors,
         transform: Transform::from_xyz(0.0, 0.0, CORRIDOR_DOORS_Z),
         ..SpriteBundle::default()
     });
-
-    for pos in PILLAR_POSITIONS {
-        commands
-            .spawn_bundle(SpriteBundle {
-                texture: pillar.clone(),
-                transform: Transform::from_translation(pos.into()),
-                ..SpriteBundle::default()
-            })
-            .insert(Pillar)
-            .with_children(|parent| {
-                parent
-                    .spawn()
-                    .insert(Collider::cuboid(60.0, 20.0))
-                    .insert(Transform::from_xyz(pos.0, pos.1 - 110.0, 0.0));
-            });
-    }
 }
 
 fn spawn_hitboxes(mut commands: Commands) {
