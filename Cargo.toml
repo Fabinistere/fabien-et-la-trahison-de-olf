@@ -8,10 +8,10 @@ edition = "2021"
 resolver = "2"
 
 [dependencies]
-bevy = "0.7"
-bevy_rapier2d = { version = "0.13", features = ["simd-stable", "debug-render"] }
-bevy_tweening = { version = "0.4", features = ["bevy_ui"] }
-bevy-web-resizer = "2.0"
+bevy = "0.8"
+bevy_rapier2d = { version = "0.16", features = ["simd-stable", "debug-render"] }
+bevy_tweening = { git = "https://github.com/djeedai/bevy_tweening", features = ["bevy_ui"], rev = "176f18e99673bbc0a2f249f2f7a7453aab2e1404" }
+bevy-web-resizer = "3.0"
 serde = "1.0"
 ron = "0.7"
 strum = "0.24"

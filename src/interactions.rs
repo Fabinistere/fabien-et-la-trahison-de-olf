@@ -1,7 +1,9 @@
 use crate::{
     constants::locations::temple::{first_corridor, second_corridor},
     controls::KeyBindings,
-    locations::temple::second_corridor::DoorInteractEvent,
+    locations::temple::{
+        first_corridor::PropsInteractionEvent, second_corridor::DoorInteractEvent,
+    },
 };
 use bevy::prelude::*;
 
@@ -24,15 +26,15 @@ pub struct InteractionIconEvent {
 
 #[derive(Component, Debug)]
 pub struct Interactible {
-    pub icon_transform: Transform,
+    pub icon_translation: Vec3,
     pub interaction_id: u32,
     pub in_range: bool,
 }
 
 impl Interactible {
-    pub fn new(icon_transform: Transform, interaction_id: u32) -> Self {
+    pub fn new(icon_translation: Vec3, interaction_id: u32) -> Self {
         Self {
-            icon_transform,
+            icon_translation,
             interaction_id,
             in_range: false,
         }
@@ -68,7 +70,11 @@ pub fn interaction_icon(
             commands.entity(*entity).with_children(|parent| {
                 parent.spawn_bundle(SpriteBundle {
                     texture: interaction_resources.interact_button.clone(),
-                    transform: interactible.icon_transform,
+                    transform: Transform {
+                        translation: interactible.icon_translation,
+                        scale: Vec3::new(2.0, 2.0, 1.0),
+                        ..Transform::default()
+                    },
                     ..SpriteBundle::default()
                 });
             });
@@ -83,12 +89,15 @@ pub fn interaction(
     keyboard_input: Res<Input<KeyCode>>,
     interactibles_query: Query<&Interactible>,
     mut door_interact_event: EventWriter<DoorInteractEvent>,
+    mut props_interaction_event: EventWriter<PropsInteractionEvent>,
 ) {
     if keyboard_input.any_just_pressed(key_bindings.interact()) {
         for interactible in interactibles_query.iter() {
             if interactible.in_range {
                 match interactible.interaction_id {
-                    first_corridor::PROPS_INTERACTION_ID => {}
+                    first_corridor::PROPS_INTERACTION_ID => {
+                        props_interaction_event.send(PropsInteractionEvent);
+                    }
                     second_corridor::DOOR_INTERACTION_ID => {
                         door_interact_event.send(DoorInteractEvent)
                     }

@@ -54,26 +54,26 @@ pub fn setup_second_corridor(
         })
         .insert(Door { open: false })
         .insert(Interactible::new(
-            Transform::from_xyz(-80.0, 10.0, INTERACT_BUTTON_Z),
+            Vec3::new(-80.0, 10.0, INTERACT_BUTTON_Z),
             DOOR_INTERACTION_ID,
         ))
         .with_children(|parent| {
             parent
                 .spawn()
-                .insert(Collider::cuboid(120.0, 35.0))
+                .insert(Collider::cuboid(120.0, 50.0))
                 .insert(Transform::from_xyz(
                     DOOR_POSITION.0,
-                    DOOR_POSITION.1 - 150.0,
+                    DOOR_POSITION.1 - 160.0,
                     0.0,
                 ))
-                .insert(Sensor(true));
+                .insert(Sensor);
 
             parent
                 .spawn()
-                .insert(Collider::cuboid(30.0, 50.0))
+                .insert(Collider::cuboid(70.0, 20.0))
                 .insert(Transform::from_xyz(
-                    DOOR_POSITION.0 + 30.0,
-                    DOOR_POSITION.1,
+                    DOOR_POSITION.0,
+                    DOOR_POSITION.1 - 130.0,
                     0.0,
                 ));
         });
@@ -82,14 +82,18 @@ pub fn setup_second_corridor(
 pub fn door_interact(
     mut commands: Commands,
     mut door_interact_events: EventReader<DoorInteractEvent>,
-    mut door_query: Query<(Entity, &Door, Option<&mut DoorInteract>)>,
+    mut door_query: Query<(Entity, &Door, Option<&mut DoorInteract>, &Children)>,
 ) {
     for DoorInteractEvent in door_interact_events.iter() {
-        let (entity, door, door_interact) = door_query.single_mut();
+        let (entity, door, door_interact, children) = door_query.single_mut();
 
         if let Some(mut door_interact) = door_interact {
             door_interact.opening = !door_interact.opening;
         } else {
+            if door.open {
+                commands.entity(children[1]).insert(Sensor);
+            }
+
             commands.entity(entity).insert(DoorInteract {
                 opening: !door.open,
                 timer: Timer::from_seconds(DOOR_OPEN_DELTA_S, true),
@@ -108,9 +112,10 @@ pub fn open_close_door(
         &mut DoorInteract,
         &mut TextureAtlasSprite,
         &Handle<TextureAtlas>,
+        &Children,
     )>,
 ) {
-    for (entity, mut door, mut door_interaction, mut sprite, texture_atlas_handle) in
+    for (entity, mut door, mut door_interaction, mut sprite, texture_atlas_handle, children) in
         door_query.iter_mut()
     {
         door_interaction.timer.tick(time.delta());
@@ -123,6 +128,7 @@ pub fn open_close_door(
 
                 if sprite.index >= texture_atlas.len() - 1 {
                     commands.entity(entity).remove::<DoorInteract>();
+                    commands.entity(children[1]).insert(Sensor);
                     door.open = true;
                 }
             } else {

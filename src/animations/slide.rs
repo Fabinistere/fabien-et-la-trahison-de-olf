@@ -30,7 +30,7 @@ impl Slide {
 pub fn slide_animations(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(&mut GlobalTransform, &mut Slide, Entity)>,
+    mut query: Query<(&mut Transform, &mut Slide, Entity)>,
 ) {
     for (mut transform, mut slide_data, entity) in query.iter_mut() {
         slide_data.elapsed += time.delta();

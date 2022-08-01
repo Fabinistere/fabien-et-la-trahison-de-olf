@@ -247,7 +247,7 @@ fn spawn_player(
                     Vect::new(-PLAYER_HITBOX_WIDTH, 0.0),
                     Vect::new(PLAYER_HITBOX_WIDTH, 0.0),
                 ))
-                .insert(Sensor(true))
+                .insert(Sensor)
                 .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(ActiveCollisionTypes::STATIC_STATIC)
                 .insert(PlayerSensor);

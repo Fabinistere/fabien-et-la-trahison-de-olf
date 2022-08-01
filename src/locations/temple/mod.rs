@@ -29,10 +29,11 @@ impl Plugin for TemplePlugin {
             .add_state(curtains::PlayerCurtainsPosition::Below)
             .add_event::<secret_room::SecretRoomTriggerEvent>()
             .add_event::<second_corridor::DoorInteractEvent>()
-            .add_event::<main_room::EnterMainRoomEvent>()
+            .add_event::<first_corridor::PropsInteractionEvent>()
             .add_system_set(
                 SystemSet::on_enter(Location::Temple)
                     .with_system(spawn_hitboxes)
+                    .with_system(setup_temple)
                     .with_system(main_room::setup_main_room)
                     .with_system(first_corridor::setup_first_corridor)
                     .with_system(second_corridor::setup_second_corridor)
@@ -59,6 +60,7 @@ impl Plugin for TemplePlugin {
                     .with_system(secret_room::secret_room_trigger)
                     .with_system(secret_room::olf_cat_animation)
                     .with_system(first_corridor::open_close_door)
+                    .with_system(first_corridor::props_interaction_event)
                     .with_system(second_corridor::open_close_door)
                     .with_system(second_corridor::door_interact),
             );
@@ -103,9 +105,9 @@ fn spawn_hitboxes(mut commands: Commands) {
     // Right side of top wall
     spawn_collision_cuboid(&mut commands, 225.0, 975.0, 625.0, 30.0);
     // Left side of bottom wall
-    spawn_collision_cuboid(&mut commands, -815.0, -805.0, 495.0, 30.0);
+    spawn_collision_cuboid(&mut commands, -815.0, -805.0, 515.0, 30.0);
     // Right side of bottom wall
-    spawn_collision_cuboid(&mut commands, 355.0, -805.0, 495.0, 30.0);
+    spawn_collision_cuboid(&mut commands, 355.0, -805.0, 515.0, 30.0);
     // Throne seat
     spawn_collision_cuboid(&mut commands, -230.0, 860.0, 70.0, 40.0);
     // Throne front of seat

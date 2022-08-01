@@ -1,4 +1,4 @@
-use crate::{constants::ui::dialogs::*, material::CustomMaterial};
+use crate::constants::ui::dialogs::*;
 
 use bevy::prelude::*;
 // render::RenderWorld,
@@ -115,7 +115,7 @@ pub fn close_dialog_box(
                 Duration::from_millis(DIALOG_BOX_ANIMATION_TIME_MS),
                 UiPositionLens {
                     start: style.position,
-                    end: Rect {
+                    end: UiRect {
                         left: Val::Auto,
                         top: Val::Px(0.0),
                         right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
@@ -123,7 +123,7 @@ pub fn close_dialog_box(
                     },
                 },
             )
-            .with_completed_event(true, 0);
+            .with_completed_event(0);
 
             commands
                 .entity(entity)
@@ -147,7 +147,6 @@ pub fn despawn_dialog_box(
 pub fn create_dialog_box(
     mut create_dialog_box_events: EventReader<CreateDialogBoxEvent>,
     mut commands: Commands,
-    mut _custom_material_assets: ResMut<Assets<CustomMaterial>>,
     mut _meshes: ResMut<Assets<Mesh>>,
     _texture_atlases: Res<Assets<TextureAtlas>>,
     dialog_box_resources: Res<DialogBoxResources>,
@@ -159,13 +158,13 @@ pub fn create_dialog_box(
             TweeningType::Once,
             Duration::from_millis(DIALOG_BOX_ANIMATION_TIME_MS),
             UiPositionLens {
-                start: Rect {
+                start: UiRect {
                     left: Val::Auto,
                     top: Val::Px(0.0),
                     right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
                     bottom: Val::Px(0.0),
                 },
-                end: Rect {
+                end: UiRect {
                     left: Val::Auto,
                     top: Val::Px(0.0),
                     right: Val::Px(0.0),
@@ -179,13 +178,13 @@ pub fn create_dialog_box(
             TweeningType::Once,
             Duration::from_millis(1000),
             UiPositionLens {
-                start: Rect {
+                start: UiRect {
                     top: Val::Px(0.0),
-                    ..Rect::default()
+                    ..UiRect::default()
                 },
-                end: Rect {
+                end: UiRect {
                     top: Val::Px(-160.0),
-                    ..Rect::default()
+                    ..UiRect::default()
                 },
             },
         );
@@ -199,13 +198,13 @@ pub fn create_dialog_box(
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     position_type: PositionType::Relative,
-                    position: Rect {
+                    position: UiRect {
                         top: Val::Px(0.0),
                         left: Val::Auto,
                         right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
                         bottom: Val::Px(0.0),
                     },
-                    margin: Rect {
+                    margin: UiRect {
                         left: Val::Auto,
                         right: Val::Px(0.0),
                         top: Val::Px(0.0),
@@ -268,24 +267,24 @@ pub fn create_dialog_box(
                     )))
                     .with_children(|parent| {
                         parent.spawn_bundle(TextBundle {
-                            text: Text::with_section(
+                            text: Text::from_section(
                                 "",
                                 TextStyle {
                                     font: dialog_box_resources.text_font.clone(),
                                     font_size: 30.0,
                                     color: Color::BLACK,
                                 },
-                                TextAlignment {
-                                    vertical: VerticalAlign::Top,
-                                    horizontal: HorizontalAlign::Left,
-                                },
-                            ),
+                            )
+                            .with_alignment(TextAlignment {
+                                vertical: VerticalAlign::Top,
+                                horizontal: HorizontalAlign::Left,
+                            }),
                             style: Style {
                                 flex_wrap: FlexWrap::Wrap,
-                                margin: Rect {
+                                margin: UiRect {
                                     top: Val::Percent(74.0),
                                     left: Val::Percent(24.0),
-                                    ..Rect::default()
+                                    ..UiRect::default()
                                 },
                                 max_size: Size::new(Val::Px(450.0), Val::Percent(100.0)),
                                 ..Style::default()

@@ -59,7 +59,7 @@ pub fn setup_secret_room(
                 .insert(Transform::default())
                 .insert(ActiveEvents::COLLISION_EVENTS)
                 .insert(SecretRoomSensor)
-                .insert(Sensor(true));
+                .insert(Sensor);
         });
 
     commands

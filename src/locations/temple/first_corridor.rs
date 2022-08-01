@@ -16,6 +16,8 @@ pub struct DoorInteract {
     opening: bool,
 }
 
+pub struct PropsInteractionEvent;
+
 pub fn setup_first_corridor(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -43,9 +45,13 @@ pub fn setup_first_corridor(
         .with_children(|parent| {
             parent
                 .spawn()
-                .insert(Collider::cuboid(20.0, 105.0))
-                .insert(Transform::from_xyz(20.0, 0.0, 0.0))
-                .insert(Sensor(true));
+                .insert(Collider::cuboid(40.0, 105.0))
+                .insert(Transform::from_xyz(
+                    PROPS_POSITION.0 + 140.0,
+                    PROPS_POSITION.1,
+                    0.0,
+                ))
+                .insert(Sensor);
 
             parent
                 .spawn()
@@ -53,7 +59,7 @@ pub fn setup_first_corridor(
                 .insert(Transform::from_translation(PROPS_POSITION.into()));
         })
         .insert(Interactible::new(
-            Transform::from_xyz(0.0, 0.0, INTERACT_BUTTON_Z),
+            Vec3::new(PROPS_POSITION.0, PROPS_POSITION.1, INTERACT_BUTTON_Z),
             PROPS_INTERACTION_ID,
         ));
 
@@ -152,5 +158,11 @@ pub fn open_close_door(
                 }
             }
         }
+    }
+}
+
+pub fn props_interaction_event(mut props_interaction_events: EventReader<PropsInteractionEvent>) {
+    for PropsInteractionEvent in props_interaction_events.iter() {
+        info!("interact with props");
     }
 }

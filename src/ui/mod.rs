@@ -7,7 +7,6 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<dialog_box::CreateDialogBoxEvent>()
             .add_event::<dialog_box::CloseDialogBoxEvent>()
-            .add_startup_system(setup_ui)
             .add_startup_system(dialog_box::load_textures)
             .add_system(dialog_box::update_dialog_box)
             .add_system(dialog_box::animate_scroll)
@@ -19,12 +18,4 @@ impl Plugin for UiPlugin {
 }
 
 #[derive(Component)]
-pub struct UiCamera;
-#[derive(Component)]
 pub struct UiElement;
-
-fn setup_ui(mut commands: Commands) {
-    commands
-        .spawn_bundle(UiCameraBundle::default())
-        .insert(UiCamera);
-}

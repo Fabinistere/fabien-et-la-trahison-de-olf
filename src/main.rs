@@ -7,13 +7,11 @@ pub mod controls;
 pub mod dialogs;
 pub mod interactions;
 mod locations;
-pub mod material;
 mod menu;
 pub mod player;
 mod ui;
 
-use bevy::{prelude::*, sprite::Material2dPlugin};
-// use bevy_prototype_debug_lines::*;
+use bevy::{prelude::*, render::texture::ImageSettings};
 use bevy_rapier2d::prelude::*;
 
 pub use crate::{
@@ -39,7 +37,8 @@ fn main() {
         // mode: bevy::window::WindowMode::BorderlessFullscreen,
         ..WindowDescriptor::default()
     })
-    .insert_resource(Msaa::default())
+    .insert_resource(ImageSettings::default_nearest())
+    // .insert_resource(Msaa::default())
     .insert_resource(ClearColor(BACKGROUND_COLOR))
     .insert_resource(controls::KeyBindings {
         up: [Key(KeyCode::Z), Key(KeyCode::Up)],
@@ -49,7 +48,6 @@ fn main() {
         interact: [Key(KeyCode::E), Key(KeyCode::R)],
     })
     .add_plugins(DefaultPlugins)
-    .add_plugin(Material2dPlugin::<material::CustomMaterial>::default())
     .add_plugin(bevy_tweening::TweeningPlugin)
     .add_plugin(RapierDebugRenderPlugin {
         depth_test: false,
@@ -84,6 +82,6 @@ fn game_setup(
     windows.primary_mut().set_scale_factor_override(Some(1.0));
     rapier_config.gravity = Vect::ZERO;
     commands
-        .spawn_bundle(OrthographicCameraBundle::new_2d())
+        .spawn_bundle(Camera2dBundle::default())
         .insert(PlayerCamera);
 }

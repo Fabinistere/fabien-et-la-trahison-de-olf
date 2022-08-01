@@ -48,17 +48,13 @@ fn setup_menu(
     languages_button_colors: Res<LanguagesButtonColors>,
     language: Res<Language>,
 ) {
-    commands
-        .spawn_bundle(UiCameraBundle::default())
-        .insert(Menu);
-
     let font = asset_server.load("fonts/dpcomic.ttf");
     let background_image = asset_server.load("textures/Monkey_ULTIME.png");
 
     let background_image = ImageBundle {
         style: Style {
             position_type: PositionType::Absolute,
-            position: Rect::all(Val::Px(0.0)),
+            position: UiRect::all(Val::Px(0.0)),
             aspect_ratio: Some(10.0 / 9.0),
             ..Style::default()
         },
@@ -97,21 +93,20 @@ fn setup_menu(
 
     let play_text = TextBundle {
         style: Style {
-            margin: Rect {
+            margin: UiRect {
                 top: Val::Auto,
                 bottom: Val::Percent(5.0),
-                ..Rect::default()
+                ..UiRect::default()
             },
             ..Style::default()
         },
-        text: Text::with_section(
+        text: Text::from_section(
             dialogs.get(DialogId::MenuPlay, *language),
             TextStyle {
                 font: font.clone(),
                 font_size: 30.0,
                 color: Color::YELLOW,
             },
-            TextAlignment::default(),
         ),
         ..TextBundle::default()
     };
@@ -125,10 +120,10 @@ fn setup_menu(
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     position_type: PositionType::Absolute,
-                    position: Rect {
+                    position: UiRect {
                         right: Val::Px(15.0),
                         bottom: Val::Px(i as f32 * 20.0 + 5.0),
-                        ..Rect::default()
+                        ..UiRect::default()
                     },
                     ..Style::default()
                 },
@@ -136,7 +131,7 @@ fn setup_menu(
                 ..ButtonBundle::default()
             },
             TextBundle {
-                text: Text::with_section(
+                text: Text::from_section(
                     language.to_string(),
                     TextStyle {
                         font: font.clone(),
@@ -147,7 +142,6 @@ fn setup_menu(
                             languages_button_colors.normal
                         },
                     },
-                    TextAlignment::default(),
                 ),
                 ..TextBundle::default()
             },
