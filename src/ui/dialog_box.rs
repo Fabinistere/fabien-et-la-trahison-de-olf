@@ -39,19 +39,33 @@ pub struct Scroll {
 #[derive(Component, Deref, DerefMut)]
 pub struct ScrollTimer(Timer);
 
+/// Happens when
+///   - ui::dialog_box::create_dialog_box_on_key_press
+///     - press 'o' to open the UI
+/// Read in
+///   - ui::dialog_box::create_dialog_box
+///     - for a given String, creates a ui + fx
 pub struct CreateDialogBoxEvent {
     dialog: String,
 }
+
+/// Happens when
+///   - ui::dialog_box::create_dialog_box_on_key_press
+///     - ui already open
+/// Read in
+///   - ui::dialog_box::close_dialog_box
+///     - close ui
 pub struct CloseDialogBoxEvent;
 
 pub struct DialogBoxResources {
     text_font: Handle<Font>,
-    background: Handle<Image>,
-    chandelier: Handle<Image>,
-    stained_glass_closed: Handle<Image>,
-    stained_glass_opened: Handle<Image>,
-    stained_glass_bars: Handle<Image>,
+    appartements: Handle<Image>,
     stained_glass_panels: Handle<Image>,
+    background: Handle<Image>,
+    _stained_glass_closed: Handle<Image>,
+    stained_glass_opened: Handle<Image>,
+    _stained_glass_bars: Handle<Image>,
+    chandelier: Handle<Image>,
     scroll_animation: Vec<Handle<Image>>,
 }
 
@@ -71,12 +85,13 @@ pub fn load_textures(
 
     commands.insert_resource(DialogBoxResources {
         text_font: asset_server.load("fonts/dpcomic.ttf"),
+        appartements: asset_server.load("textures/hud/papier_paint.png"),
         background: asset_server.load("textures/hud/dialog_background.png"),
         scroll_animation: scroll_animation_frames,
         chandelier: asset_server.load("textures/hud/chandelier.png"),
-        stained_glass_closed: asset_server.load("textures/hud/stained_glass_closed.png"),
+        _stained_glass_closed: asset_server.load("textures/hud/stained_glass_closed.png"),
         stained_glass_opened: asset_server.load("textures/hud/stained_glass_opened.png"),
-        stained_glass_bars: asset_server.load("textures/hud/stained_glass_bars.png"),
+        _stained_glass_bars: asset_server.load("textures/hud/stained_glass_bars.png"),
         stained_glass_panels: asset_server.load("textures/hud/stained_glass_panels.png"),
     });
 }
@@ -95,7 +110,7 @@ pub fn create_dialog_box_on_key_press(
         } else {
             info!("here second");
             create_dialog_box_event.send(CreateDialogBoxEvent {
-                dialog: "Bonjour Florian. Comment vas-tu ? J'ai faim.".to_owned(),
+                dialog: "Bonjour Florian. \nComment vas-tu ? \nJ'ai faim.".to_owned(),
             });
         }
     }
@@ -183,7 +198,8 @@ pub fn create_dialog_box(
                     ..UiRect::default()
                 },
                 end: UiRect {
-                    top: Val::Px(-160.0),
+                    // TODO Magical Number
+                    top: Val::Px(-200.0),
                     ..UiRect::default()
                 },
             },
@@ -191,7 +207,7 @@ pub fn create_dialog_box(
 
         commands
             .spawn_bundle(ImageBundle {
-                image: dialog_box_resources.background.clone().into(),
+                image: dialog_box_resources.appartements.clone().into(),
                 style: Style {
                     display: Display::Flex,
                     flex_direction: FlexDirection::Column,
@@ -216,6 +232,7 @@ pub fn create_dialog_box(
                 },
                 ..ImageBundle::default()
             })
+            .insert(Name::new("UI Wall"))
             .with_children(|parent| {
                 let child_sprite_style = Style {
                     position_type: PositionType::Absolute,
@@ -223,12 +240,7 @@ pub fn create_dialog_box(
                     ..Style::default()
                 };
 
-                parent.spawn_bundle(ImageBundle {
-                    image: dialog_box_resources.chandelier.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
-                });
-
+                // panels under the wall to prevent them from sticking out of the window after being lifted.
                 parent
                     .spawn_bundle(ImageBundle {
                         image: dialog_box_resources.stained_glass_panels.clone().into(),
@@ -237,11 +249,26 @@ pub fn create_dialog_box(
                     })
                     .insert(Animator::new(panels_tween));
 
-                parent.spawn_bundle(ImageBundle {
-                    image: dialog_box_resources.stained_glass_opened.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
-                });
+                parent
+                    .spawn_bundle(ImageBundle {
+                        image: dialog_box_resources.background.clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    });
+
+                parent
+                    .spawn_bundle(ImageBundle {
+                        image: dialog_box_resources.stained_glass_opened.clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    });
+
+                parent
+                    .spawn_bundle(ImageBundle {
+                        image: dialog_box_resources.chandelier.clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    });
 
                 parent
                     .spawn_bundle(ImageBundle {
