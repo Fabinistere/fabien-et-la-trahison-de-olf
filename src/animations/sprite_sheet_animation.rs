@@ -24,7 +24,7 @@ pub fn animate_sprite_sheet(
 
         if animation.timer.finished() {
             if sprite.index == animation.end_index {
-                if let AnimationDuration::Once = animation.duration {
+                if animation.duration == AnimationDuration::Once {
                     commands.entity(entity).remove::<SpriteSheetAnimation>();
                 } else {
                     sprite.index = animation.start_index;
