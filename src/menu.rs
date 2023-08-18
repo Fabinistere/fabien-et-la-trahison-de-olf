@@ -8,11 +8,13 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LanguageChangedEvent>()
             .init_resource::<LanguagesButtonColors>()
-            .add_system_set(SystemSet::on_enter(GameState::Menu).with_system(setup_menu))
-            .add_system_set(SystemSet::on_exit(GameState::Menu).with_system(destroy_menu))
-            .add_system(language_button_interactions)
-            // .add_system(game_start)
-            .add_system(language_changed);
+            .add_systems((
+                setup_menu.in_schedule(OnEnter(GameState::Menu)),
+                destroy_menu.in_schedule(OnExit(GameState::Menu)),
+                language_button_interactions,
+                // game_start,
+                language_changed,
+            ));
     }
 }
 
@@ -83,10 +85,7 @@ fn setup_menu(
                     },
                 },
             ],
-            alignment: TextAlignment {
-                horizontal: HorizontalAlign::Center,
-                ..TextAlignment::default()
-            },
+            alignment: TextAlignment::Center,
             ..Text::default()
         },
         ..TextBundle::default()
@@ -189,11 +188,12 @@ fn destroy_menu(mut commands: Commands, mut query: Query<Entity, With<Menu>>) {
 
 fn game_start(
     mut keyboard_inputs: EventReader<KeyboardInput>,
-    mut game_state: ResMut<State<GameState>>,
+    game_state: Res<State<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if game_state.current() == &GameState::Menu {
+    if game_state.0 == GameState::Menu {
         for _ in keyboard_inputs.iter() {
-            game_state.set(GameState::Playing).unwrap();
+            next_game_state.set(GameState::Playing);
             break;
         }
     }

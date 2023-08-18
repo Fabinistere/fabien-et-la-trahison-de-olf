@@ -18,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf#license)
 
+### Bevy 0.10 Migration
+
+- Remove bevy-web-resizer dependency: [Note: this functionality is now built into Bevy and this crate will no longer be maintained.](https://github.com/frewsxcv/bevy-web-resizer#readme)
+- [Migrate engine to Schedule v3 (stageless)](https://bevyengine.org/learn/migration-guides/0.9-0.10/#migrate-engine-to-schedule-v3-stageless)
+- [System sets (Bevy 0.9)](https://bevyengine.org/learn/migration-guides/0.9-0.10/#system-sets-bevy-0-9)
+- [States](https://bevyengine.org/learn/migration-guides/0.9-0.10/#states)
+- [Windows as Entities](https://bevyengine.org/learn/migration-guides/0.9-0.10/#windows-as-entities)
+- [Remove VerticalAlign from TextAlignment](https://bevyengine.org/learn/migration-guides/0.9-0.10/#remove-verticalalign-from-textalignment)
+- [Remove the `GlobalTransform::translation_mut` method](https://bevyengine.org/learn/migration-guides/0.9-0.10/#remove-the-globaltransform-translation-mut-method)
+
 ### Bevy 0.9 Migration
 
 - [Make `Resource` trait opt-in, requiring `#[derive(Resource)]` V2](https://bevyengine.org/learn/migration-guides/0.8-0.9/#make-resource-trait-opt-in-requiring-derive-resource-v2)

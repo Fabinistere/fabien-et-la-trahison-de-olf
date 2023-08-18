@@ -13,8 +13,7 @@ impl Plugin for InteractionsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<InteractionIconEvent>()
             .add_startup_system(setup_interactions)
-            .add_system(interaction_icon)
-            .add_system(interaction);
+            .add_systems((interaction_icon, interaction));
     }
 }
 

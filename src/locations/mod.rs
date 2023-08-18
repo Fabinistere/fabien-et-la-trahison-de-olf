@@ -3,8 +3,9 @@ pub mod temple;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum Location {
+    #[default]
     Temple,
 }
 
@@ -12,8 +13,7 @@ pub struct LocationsPlugin;
 
 impl Plugin for LocationsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(temple::TemplePlugin)
-            .add_state(Location::Temple);
+        app.add_state::<Location>().add_plugin(temple::TemplePlugin);
     }
 }
 

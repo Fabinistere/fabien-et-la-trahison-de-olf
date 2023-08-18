@@ -11,7 +11,7 @@ mod menu;
 pub mod player;
 mod ui;
 
-use bevy::prelude::*;
+use bevy::{ecs::schedule::ScheduleBuildSettings, prelude::*};
 use bevy_rapier2d::prelude::*;
 
 pub use crate::{
@@ -20,9 +20,10 @@ pub use crate::{
     dialogs::{DialogId, Dialogs, Language},
 };
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum GameState {
     Menu,
+    #[default]
     Playing,
 }
 
@@ -44,12 +45,12 @@ fn main() {
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
-                    window: WindowDescriptor {
+                    primary_window: Some(Window {
                         title: "Fabien et le trahison de Olf".to_string(),
                         // vsync: true,
                         // mode: bevy::window::WindowMode::BorderlessFullscreen,
-                        ..WindowDescriptor::default()
-                    },
+                        ..Window::default()
+                    }),
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest())
@@ -60,8 +61,8 @@ fn main() {
         )
         .add_plugin(bevy_tweening::TweeningPlugin)
         .add_plugin(RapierDebugRenderPlugin::default())
-        .add_state(GameState::Playing)
-        .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(game_setup))
+        .add_state::<GameState>()
+        .add_system(game_setup.in_schedule(OnEnter(GameState::Playing)))
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
         .add_plugin(dialogs::DialogsPlugin)
         .add_plugin(menu::MenuPlugin)
@@ -75,15 +76,17 @@ fn main() {
     #[cfg(target_arch = "wasm32")]
     app.add_plugin(bevy_web_resizer::Plugin);
 
+    app.edit_schedule(CoreSchedule::Main, |schedule| {
+        schedule.set_build_settings(ScheduleBuildSettings {
+            ambiguity_detection: bevy::ecs::schedule::LogLevel::Warn,
+            ..default()
+        });
+    });
+
     app.run();
 }
 
-fn game_setup(
-    mut commands: Commands,
-    mut rapier_config: ResMut<RapierConfiguration>,
-    mut windows: ResMut<Windows>,
-) {
-    windows.primary_mut().set_scale_factor_override(Some(1.0));
+fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
     rapier_config.gravity = Vect::ZERO;
     commands.spawn((Camera2dBundle::default(), PlayerCamera));
 }

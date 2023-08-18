@@ -18,7 +18,7 @@ pub struct Pillar;
 pub struct Throne;
 
 pub fn enter_main_room(
-    mut second_corridor_query: Query<&mut GlobalTransform, (With<SecondCorridor>, Without<Player>)>,
+    mut second_corridor_query: Query<&mut Transform, (With<SecondCorridor>, Without<Player>)>,
     mut door_query: Query<&mut Transform, (With<Door>, Without<Player>, Without<SecondCorridor>)>,
     player_query: Query<&GlobalTransform, With<Player>>,
 ) {
@@ -27,10 +27,10 @@ pub fn enter_main_room(
     let mut door_transform = door_query.single_mut();
 
     if player_transform.translation().y >= MAIN_ROOM_ENTER_Y {
-        corridor_transform.translation_mut().z = SECOND_CORRIDOR_Z_IN_MAIN_ROOM;
+        corridor_transform.translation.z = SECOND_CORRIDOR_Z_IN_MAIN_ROOM;
         door_transform.translation.z = DOOR_Z_IN_MAIN_ROOM;
     } else {
-        corridor_transform.translation_mut().z = SECOND_CORRIDOR_Z;
+        corridor_transform.translation.z = SECOND_CORRIDOR_Z;
         door_transform.translation.z = DOOR_Z;
     }
 }

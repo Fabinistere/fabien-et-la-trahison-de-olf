@@ -305,10 +305,7 @@ pub fn create_dialog_box(
                                     color: Color::BLACK,
                                 },
                             )
-                            .with_alignment(TextAlignment {
-                                vertical: VerticalAlign::Top,
-                                horizontal: HorizontalAlign::Left,
-                            }),
+                            .with_alignment(TextAlignment::Left),
                             style: Style {
                                 flex_wrap: FlexWrap::Wrap,
                                 margin: UiRect {
@@ -383,7 +380,7 @@ pub fn animate_scroll(
                 }
             }
 
-            image.0 = dialog_box_resources.scroll_animation[scroll.current_frame].clone();
+            image.texture = dialog_box_resources.scroll_animation[scroll.current_frame].clone();
         }
     }
 }

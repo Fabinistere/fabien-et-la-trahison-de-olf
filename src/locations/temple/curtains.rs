@@ -14,9 +14,10 @@ pub struct CurtainsTimer(Timer);
 #[derive(Component)]
 pub struct Curtain;
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum PlayerCurtainsPosition {
     Above,
+    #[default]
     Below,
 }
 
@@ -60,7 +61,8 @@ pub fn setup_curtains(
 pub fn curtains_animation(
     mut commands: Commands,
     mut curtains_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,
-    mut curtains_state: ResMut<State<PlayerCurtainsPosition>>,
+    curtains_state: Res<State<PlayerCurtainsPosition>>,
+    mut next_curtains_state: ResMut<NextState<PlayerCurtainsPosition>>,
     player_query: Query<&GlobalTransform, With<Player>>,
 ) {
     let player_transform = player_query.single();
@@ -80,11 +82,9 @@ pub fn curtains_animation(
             };
 
         if player_transform.translation().y >= CURTAINS_TRIGGER_Y
-            && curtains_state.current() == &PlayerCurtainsPosition::Below
+            && curtains_state.0 == PlayerCurtainsPosition::Below
         {
-            curtains_state
-                .overwrite_set(PlayerCurtainsPosition::Above)
-                .unwrap();
+            next_curtains_state.set(PlayerCurtainsPosition::Above);
             spawn_z_timer(&mut commands, CURTAINS_Z_FRONT);
 
             if in_range_left && in_range_right {
@@ -93,11 +93,9 @@ pub fn curtains_animation(
                 insert_curtain_animation(&mut commands, curtain_entity, anim_start, anim_end);
             }
         } else if player_transform.translation().y < CURTAINS_TRIGGER_Y
-            && curtains_state.current() == &PlayerCurtainsPosition::Above
+            && curtains_state.0 == PlayerCurtainsPosition::Above
         {
-            curtains_state
-                .overwrite_set(PlayerCurtainsPosition::Below)
-                .unwrap();
+            next_curtains_state.set(PlayerCurtainsPosition::Below);
             spawn_z_timer(&mut commands, CURTAINS_Z_BACK);
 
             if in_range_left && in_range_right {

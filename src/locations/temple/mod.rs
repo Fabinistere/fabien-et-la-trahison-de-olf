@@ -6,7 +6,7 @@ pub mod secret_room;
 
 use super::{spawn_collision_cuboid, Location};
 use crate::{constants::locations::temple::*, GameState};
-use bevy::{ecs::schedule::ShouldRun, prelude::*};
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct Temple;
@@ -15,8 +15,9 @@ pub struct Temple;
 pub struct ZPosition(f32);
 
 // States
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum PlayerLocation {
+    #[default]
     Temple,
     SecretRoom,
 }
@@ -25,57 +26,50 @@ pub struct TemplePlugin;
 
 impl Plugin for TemplePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state(PlayerLocation::Temple)
-            .add_state(curtains::PlayerCurtainsPosition::Below)
+        app.add_state::<PlayerLocation>()
+            .add_state::<curtains::PlayerCurtainsPosition>()
             .add_event::<secret_room::SecretRoomTriggerEvent>()
             .add_event::<second_corridor::DoorInteractEvent>()
             .add_event::<first_corridor::PropsInteractionEvent>()
-            .add_system_set(
-                SystemSet::on_enter(Location::Temple)
-                    .with_system(spawn_hitboxes)
-                    .with_system(setup_temple)
-                    .with_system(main_room::setup_main_room)
-                    .with_system(first_corridor::setup_first_corridor)
-                    .with_system(second_corridor::setup_second_corridor)
-                    .with_system(secret_room::setup_secret_room)
-                    .with_system(curtains::setup_curtains),
+            .add_systems(
+                (
+                    spawn_hitboxes,
+                    setup_temple,
+                    main_room::setup_main_room,
+                    first_corridor::setup_first_corridor,
+                    second_corridor::setup_second_corridor,
+                    secret_room::setup_secret_room,
+                    curtains::setup_curtains,
+                )
+                    .in_schedule(OnEnter(Location::Temple)),
             )
-            .add_system_set(
-                SystemSet::on_enter(PlayerLocation::SecretRoom)
-                    .with_system(secret_room::remove_secret_room_cover),
-            )
-            .add_system_set(
-                SystemSet::on_exit(PlayerLocation::SecretRoom)
-                    .with_system(secret_room::add_secret_room_cover),
-            )
-            .add_system_set_to_stage(
-                CoreStage::PostUpdate,
-                SystemSet::new()
-                    .with_run_criteria(run_if_in_temple)
-                    .with_system(main_room::enter_main_room)
-                    .with_system(main_room::pillars_position)
-                    .with_system(main_room::throne_position)
-                    .with_system(curtains::curtains_animation)
-                    .with_system(curtains::curtains_z_position)
-                    .with_system(secret_room::secret_room_trigger)
-                    .with_system(secret_room::olf_cat_animation)
-                    .with_system(first_corridor::open_close_door)
-                    .with_system(first_corridor::props_interaction_event)
-                    .with_system(second_corridor::open_close_door)
-                    .with_system(second_corridor::door_interact),
+            .add_systems((
+                secret_room::remove_secret_room_cover
+                    .in_schedule(OnEnter(PlayerLocation::SecretRoom)),
+                secret_room::add_secret_room_cover.in_schedule(OnExit(PlayerLocation::SecretRoom)),
+            ))
+            .add_systems(
+                (
+                    main_room::enter_main_room,
+                    main_room::pillars_position,
+                    main_room::throne_position,
+                    curtains::curtains_animation,
+                    curtains::curtains_z_position,
+                    secret_room::secret_room_trigger,
+                    secret_room::olf_cat_animation,
+                    first_corridor::open_close_door,
+                    first_corridor::props_interaction_event,
+                    second_corridor::open_close_door,
+                    second_corridor::door_interact,
+                )
+                    .distributive_run_if(in_temple)
+                    .in_base_set(CoreSet::PostUpdate),
             );
     }
 }
 
-pub fn run_if_in_temple(
-    location: Res<State<Location>>,
-    game_state: Res<State<GameState>>,
-) -> ShouldRun {
-    if location.current() == &Location::Temple && game_state.current() == &GameState::Playing {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
-    }
+pub fn in_temple(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
+    location.0 == Location::Temple && game_state.0 == GameState::Playing
 }
 
 pub fn setup_temple(mut commands: Commands, asset_server: Res<AssetServer>) {

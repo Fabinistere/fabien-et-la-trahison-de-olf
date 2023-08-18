@@ -118,7 +118,8 @@ pub fn secret_room_trigger(
     // player_sensor_query: Query<Entity, With<PlayerSensorCollider>>,
     player_query: Query<&Transform, With<Player>>,
     mut secret_room_trigger_events: EventReader<SecretRoomTriggerEvent>,
-    mut player_location: ResMut<State<PlayerLocation>>,
+    player_location: Res<State<PlayerLocation>>,
+    mut next_player_location: ResMut<NextState<PlayerLocation>>,
 ) {
     for SecretRoomTriggerEvent { started } in secret_room_trigger_events.iter() {
         let transform = player_query.single();
@@ -126,24 +127,24 @@ pub fn secret_room_trigger(
         if *started {
             // When the player goes through the sensor collider, change its location
             // to the secret room or the temple
-            if player_location.current() == &PlayerLocation::Temple {
-                player_location.set(PlayerLocation::SecretRoom).unwrap();
+            if player_location.0 == PlayerLocation::Temple {
+                next_player_location.set(PlayerLocation::SecretRoom);
             } else {
-                player_location.set(PlayerLocation::Temple).unwrap();
+                next_player_location.set(PlayerLocation::Temple);
             }
         } else {
             // If the player changes direction while the sensor is still in its collider,
             // check if the top of its hitbox is in the temple or the secret room
             if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
                 > SECRET_ROOM_TRIGGER_Y
-                && player_location.current() == &PlayerLocation::Temple
+                && player_location.0 == PlayerLocation::Temple
             {
-                player_location.set(PlayerLocation::SecretRoom).unwrap();
+                next_player_location.set(PlayerLocation::SecretRoom);
             } else if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
                 < SECRET_ROOM_TRIGGER_Y
-                && player_location.current() == &PlayerLocation::SecretRoom
+                && player_location.0 == PlayerLocation::SecretRoom
             {
-                player_location.set(PlayerLocation::Temple).unwrap();
+                next_player_location.set(PlayerLocation::Temple);
             }
         }
     }

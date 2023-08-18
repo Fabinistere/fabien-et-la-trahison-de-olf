@@ -1,6 +1,6 @@
 [package]
 name = "fabien-et-la-trahison-de-olf"
-version = "0.3.7"
+version = "0.3.8"
 authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "Olf EPAIN <wabtey@disroot.org>", "Grassouille la Fripouille", "Sombre Roi René"]
 edition = "2021"
 
@@ -8,10 +8,11 @@ edition = "2021"
 resolver = "2"
 
 [dependencies]
-bevy = "0.9"
-bevy_rapier2d = { version = "0.19", features = ["simd-stable", "debug-render"] }
-bevy_tweening = "0.6" # { git = "https://github.com/djeedai/bevy_tweening", features = ["bevy_ui"], rev = "176f18e99673bbc0a2f249f2f7a7453aab2e1404" }
-bevy-web-resizer = "3.0"
+bevy = "0.10"
+bevy_rapier2d = { version = "0.21", features = ["simd-stable", "debug-render-2d"] }
+bevy_tweening = "0.7"
+
+# ----- Utilities -----
 serde = "1.0"
 ron = "0.7"
 strum = "0.24"

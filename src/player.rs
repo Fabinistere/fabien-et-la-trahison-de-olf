@@ -17,11 +17,13 @@ impl Plugin for PlayerPlugin {
                 )))
                 .unwrap(),
             ))
-            .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(spawn_player))
-            .add_system(animate_player)
-            .add_system(set_player_movement)
-            .add_system(player_movement)
-            .add_system(camera_follow);
+            .add_systems((
+                spawn_player.in_schedule(OnEnter(GameState::Playing)),
+                animate_player,
+                set_player_movement,
+                player_movement,
+                camera_follow,
+            ));
     }
 }
 
