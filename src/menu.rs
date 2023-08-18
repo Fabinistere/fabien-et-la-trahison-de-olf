@@ -12,7 +12,7 @@ impl Plugin for MenuPlugin {
                 setup_menu.in_schedule(OnEnter(GameState::Menu)),
                 destroy_menu.in_schedule(OnExit(GameState::Menu)),
                 language_button_interactions,
-                // game_start,
+                // _game_start,
                 language_changed,
             ));
     }
@@ -186,7 +186,7 @@ fn destroy_menu(mut commands: Commands, mut query: Query<Entity, With<Menu>>) {
     }
 }
 
-fn game_start(
+fn _game_start(
     mut keyboard_inputs: EventReader<KeyboardInput>,
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
