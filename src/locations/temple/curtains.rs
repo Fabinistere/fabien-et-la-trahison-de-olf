@@ -26,27 +26,35 @@ pub fn setup_curtains(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
-    let curtains_texture_atlas =
-        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
+    let curtains_texture_atlas = TextureAtlas::from_grid(
+        curtains_spritesheet,
+        Vec2::new(200.0, 360.0),
+        1,
+        10,
+        None,
+        None,
+    );
     let curtains_texture_atlas_handle = texture_atlases.add(curtains_texture_atlas);
 
     // Left curtain, with a sensor collider to detect when the player passes through it
-    commands
-        .spawn_bundle(SpriteSheetBundle {
+    commands.spawn((
+        SpriteSheetBundle {
             texture_atlas: curtains_texture_atlas_handle.clone(),
             transform: Transform::from_translation(LEFT_CURTAIN_POSITION.into()),
             ..SpriteSheetBundle::default()
-        })
-        .insert(Curtain);
+        },
+        Curtain,
+    ));
 
     // Right curtain
-    commands
-        .spawn_bundle(SpriteSheetBundle {
+    commands.spawn((
+        SpriteSheetBundle {
             texture_atlas: curtains_texture_atlas_handle,
             transform: Transform::from_translation(RIGHT_CURTAIN_POSITION.into()),
             ..SpriteSheetBundle::default()
-        })
-        .insert(Curtain);
+        },
+        Curtain,
+    ));
 }
 
 pub fn curtains_animation(
@@ -122,20 +130,17 @@ pub fn curtains_z_position(
 }
 
 fn spawn_z_timer(commands: &mut Commands, z: f32) {
-    commands
-        .spawn()
-        .insert(CurtainsTimer(Timer::from_seconds(
-            CURTAINS_CHANGE_Z_TIME,
-            false,
-        )))
-        .insert(ZPosition(z));
+    commands.spawn((
+        CurtainsTimer(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, TimerMode::Once)),
+        ZPosition(z),
+    ));
 }
 
 fn insert_curtain_animation(commands: &mut Commands, entity: Entity, start: usize, end: usize) {
     commands.entity(entity).insert(SpriteSheetAnimation {
         start_index: start,
         end_index: end,
-        timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+        timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, TimerMode::Repeating),
         duration: AnimationDuration::Once,
     });
 }

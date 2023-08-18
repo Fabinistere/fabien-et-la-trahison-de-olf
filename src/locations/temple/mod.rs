@@ -82,13 +82,13 @@ pub fn setup_temple(mut commands: Commands, asset_server: Res<AssetServer>) {
     let background = asset_server.load("textures/temple/background.png");
     let corridor_doors = asset_server.load("textures/temple/corridor_doors.png");
 
-    commands.spawn_bundle(SpriteBundle {
+    commands.spawn(SpriteBundle {
         texture: background,
         transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
         ..SpriteBundle::default()
     });
 
-    commands.spawn_bundle(SpriteBundle {
+    commands.spawn(SpriteBundle {
         texture: corridor_doors,
         transform: Transform::from_xyz(0.0, 0.0, CORRIDOR_DOORS_Z),
         ..SpriteBundle::default()

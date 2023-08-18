@@ -23,6 +23,7 @@ struct LanguageChangedEvent;
 #[derive(Component)]
 struct Selected(bool);
 
+#[derive(Resource)]
 struct LanguagesButtonColors {
     normal: Color,
     hovered: Color,
@@ -127,7 +128,7 @@ fn setup_menu(
                     },
                     ..Style::default()
                 },
-                color: Color::NONE.into(),
+                background_color: Color::NONE.into(),
                 ..ButtonBundle::default()
             },
             TextBundle {
@@ -150,37 +151,34 @@ fn setup_menu(
         ));
     }
 
-    commands.spawn_bundle(background_image);
+    commands.spawn(background_image);
     commands
-        .spawn_bundle(NodeBundle {
-            style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                align_items: AlignItems::Center,
-                flex_direction: FlexDirection::ColumnReverse,
-                ..Style::default()
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    align_items: AlignItems::Center,
+                    flex_direction: FlexDirection::ColumnReverse,
+                    ..Style::default()
+                },
+                ..NodeBundle::default()
             },
-            color: Color::NONE.into(),
-            ..NodeBundle::default()
-        })
-        // .with_children(|parent| { parent.spawn_bundle(background_image); })
+            Menu,
+        ))
         .with_children(|parent| {
-            parent.spawn_bundle(title).insert(DialogId::MenuTitle);
-        })
-        .with_children(|parent| {
+            // parent.spawn(background_image);
+            parent.spawn((title, DialogId::MenuTitle));
+
             for (button, text, selected, language) in languages_buttons.into_iter() {
                 parent
-                    .spawn_bundle(button)
+                    .spawn((button, Selected(selected), language.clone()))
                     .with_children(|parent| {
-                        parent.spawn_bundle(text);
-                    })
-                    .insert(Selected(selected))
-                    .insert(language.clone());
+                        parent.spawn(text);
+                    });
             }
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(play_text).insert(DialogId::MenuPlay);
-        })
-        .insert(Menu);
+
+            parent.spawn((play_text, DialogId::MenuPlay));
+        });
 }
 
 fn destroy_menu(mut commands: Commands, mut query: Query<Entity, With<Menu>>) {

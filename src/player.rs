@@ -41,7 +41,7 @@ pub struct PlayerSpriteSheetAnimation {
     delta: f32,
 }
 
-#[derive(Deserialize, Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Deserialize, Copy, Clone, PartialEq, Eq, Debug, Hash, Resource)]
 pub enum PlayerAnimationType {
     RightIdle,
     LeftIdle,
@@ -58,7 +58,7 @@ impl PlayerAnimationType {
     }
 }
 
-#[derive(Deserialize, Component)]
+#[derive(Deserialize, Component, Resource)]
 struct PlayerAnimationData(HashMap<PlayerAnimationType, PlayerSpriteSheetAnimation>);
 
 #[derive(Component)]
@@ -147,7 +147,8 @@ fn set_player_movement(
             let animation_data =
                 &player_animations_data.0[&player_animation.animation_type_queue[0]];
             sprite.index = animation_data.start_index + 1;
-            player_animation.timer = Timer::from_seconds(animation_data.delta, true);
+            player_animation.timer =
+                Timer::from_seconds(animation_data.delta, TimerMode::Repeating);
         }
     }
 }
@@ -208,48 +209,59 @@ fn spawn_player(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let texture_handle = asset_server.load("textures/fabien_info_spritesheet.png");
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT), 4, 4);
+    let texture_atlas = TextureAtlas::from_grid(
+        texture_handle,
+        Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT),
+        4,
+        4,
+        None,
+        None,
+    );
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     commands
-        .spawn()
-        .insert_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlas_handle,
-            transform: Transform {
-                translation: Vec3::new(-200.0, -1500.0, PLAYER_Z),
-                // translation: Vec3::new(0.0, 0.0, PLAYER_Z),
-                scale: Vec3::splat(PLAYER_SCALE),
-                ..Transform::default()
+        .spawn((
+            SpriteSheetBundle {
+                texture_atlas: texture_atlas_handle,
+                transform: Transform {
+                    translation: Vec3::new(-200.0, -1500.0, PLAYER_Z),
+                    // translation: Vec3::new(0.0, 0.0, PLAYER_Z),
+                    scale: Vec3::splat(PLAYER_SCALE),
+                    ..Transform::default()
+                },
+                ..SpriteSheetBundle::default()
             },
-            ..SpriteSheetBundle::default()
-        })
-        .insert(PlayerAnimation {
-            timer: Timer::from_seconds(player_animations_data.0[&STARTING_ANIMATION].delta, true),
-            animation_type_queue: vec![STARTING_ANIMATION].into(),
-        })
-        .insert(RigidBody::Dynamic)
-        .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(Velocity {
-            linvel: Vect::ZERO,
-            angvel: 0.0,
-        })
-        .insert_bundle((Player, Speed(800.0)))
+            PlayerAnimation {
+                timer: Timer::from_seconds(
+                    player_animations_data.0[&STARTING_ANIMATION].delta,
+                    TimerMode::Repeating,
+                ),
+                animation_type_queue: vec![STARTING_ANIMATION].into(),
+            },
+            RigidBody::Dynamic,
+            LockedAxes::ROTATION_LOCKED,
+            Velocity {
+                linvel: Vect::ZERO,
+                angvel: 0.0,
+            },
+            Player,
+            Speed(800.0),
+        ))
         .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::cuboid(PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_HEIGHT))
-                .insert(Transform::from_xyz(0.0, PLAYER_HITBOX_Y_OFFSET, 0.0));
+            parent.spawn((
+                Collider::cuboid(PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_HEIGHT),
+                Transform::from_xyz(0.0, PLAYER_HITBOX_Y_OFFSET, 0.0),
+            ));
 
-            parent
-                .spawn()
-                .insert(Collider::segment(
+            parent.spawn((
+                Collider::segment(
                     Vect::new(-PLAYER_HITBOX_WIDTH, 0.0),
                     Vect::new(PLAYER_HITBOX_WIDTH, 0.0),
-                ))
-                .insert(Sensor)
-                .insert(ActiveEvents::COLLISION_EVENTS)
-                .insert(ActiveCollisionTypes::STATIC_STATIC)
-                .insert(PlayerSensor);
+                ),
+                Sensor,
+                ActiveEvents::COLLISION_EVENTS,
+                ActiveCollisionTypes::STATIC_STATIC,
+                PlayerSensor,
+            ));
         });
 }

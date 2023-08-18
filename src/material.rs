@@ -27,7 +27,7 @@ pub fn material_setup(
     mut cool_material_assets: ResMut<Assets<CoolMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn_bundle(MaterialMesh2dBundle {
+    commands.spawn(MaterialMesh2dBundle {
         mesh: mesh_assets.add(Mesh::from(shape::Quad::default())).into(),
         material: cool_material_assets.add(CoolMaterial {
             progress: 0.5,

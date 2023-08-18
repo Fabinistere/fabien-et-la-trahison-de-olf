@@ -13,7 +13,7 @@ impl Plugin for CharactersPlugin {
 #[derive(Deref, DerefMut)]
 pub struct CharacterTextures(HashMap<Character, CharacterTexture>);
 
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 pub struct CharacterTexture {
     pub normal: Handle<TextureAtlas>,
     pub icon: Handle<Image>,
@@ -41,6 +41,8 @@ fn setup_character_textures(
                 Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT),
                 4,
                 4,
+                None,
+                None,
             )),
             icon: asset_server.load("textures/characters/fabien_random_icon.png"),
         },
@@ -54,6 +56,8 @@ fn setup_character_textures(
                 Vec2::new(16.0, 13.0),
                 1,
                 1,
+                None,
+                None,
             )),
             icon: asset_server.load("textures/characters/panneau_icon.png"),
         },

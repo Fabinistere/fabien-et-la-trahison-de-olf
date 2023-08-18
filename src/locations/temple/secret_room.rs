@@ -39,31 +39,39 @@ pub fn setup_secret_room(
     let secret_room = asset_server.load("textures/temple/secret_room/secret_room.png");
     let olf_cat_spritesheet =
         asset_server.load("textures/temple/secret_room/olf_cat_spritesheet.png");
-    let olf_cat_texture_atlas =
-        TextureAtlas::from_grid(olf_cat_spritesheet, Vec2::new(100.0, 110.0), 2, 1);
+    let olf_cat_texture_atlas = TextureAtlas::from_grid(
+        olf_cat_spritesheet,
+        Vec2::new(100.0, 110.0),
+        2,
+        1,
+        None,
+        None,
+    );
 
     commands
-        .spawn_bundle(SpriteBundle {
-            texture: secret_room,
-            transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
-            ..SpriteBundle::default()
-        })
-        .insert(SecretRoom)
+        .spawn((
+            SpriteBundle {
+                texture: secret_room,
+                transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
+                ..SpriteBundle::default()
+            },
+            SecretRoom,
+        ))
         .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::segment(
+            parent.spawn((
+                Collider::segment(
                     Vect::new(-480.0, SECRET_ROOM_TRIGGER_Y),
                     Vect::new(-400.0, SECRET_ROOM_TRIGGER_Y),
-                ))
-                .insert(Transform::default())
-                .insert(ActiveEvents::COLLISION_EVENTS)
-                .insert(SecretRoomSensor)
-                .insert(Sensor);
+                ),
+                Transform::default(),
+                ActiveEvents::COLLISION_EVENTS,
+                SecretRoomSensor,
+                Sensor,
+            ));
         });
 
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(SECRET_ROOM_COVER_POSITION.into()),
             sprite: Sprite {
                 custom_size: Some(SECRET_ROOM_COVER_SIZE.into()),
@@ -71,29 +79,34 @@ pub fn setup_secret_room(
                 ..Sprite::default()
             },
             ..SpriteBundle::default()
-        })
-        .insert(SecretRoomCover);
+        },
+        SecretRoomCover,
+    ));
 
     commands
-        .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
-            transform: Transform {
-                translation: OLF_CAT_POSITION.into(),
-                scale: Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
-                ..Transform::default()
+        .spawn((
+            SpriteSheetBundle {
+                texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
+                transform: Transform {
+                    translation: OLF_CAT_POSITION.into(),
+                    scale: Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
+                    ..Transform::default()
+                },
+                ..SpriteSheetBundle::default()
             },
-            ..SpriteSheetBundle::default()
-        })
-        .insert(OlfCatTimer(Timer::from_seconds(
-            OLF_CAT_ANIMATION_DELTA,
-            true,
-        )))
+            OlfCatTimer(Timer::from_seconds(
+                OLF_CAT_ANIMATION_DELTA,
+                TimerMode::Repeating,
+            )),
+        ))
         .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::cuboid(25.0, 25.0))
-                .insert(Transform::from_translation(OLF_CAT_HITBOX_POSITION.into()));
+            parent.spawn((
+                Collider::cuboid(25.0, 25.0),
+                Transform::from_translation(OLF_CAT_HITBOX_POSITION.into()),
+            ));
         });
+
+    // REFACTOR: Orphans Colliders
 
     // Top wall of secret room
     spawn_collision_cuboid(&mut commands, -230.0, 1485.0, 1080.0, 10.0);

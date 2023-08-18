@@ -8,7 +8,7 @@ pub struct SpriteSheetAnimation {
     pub duration: AnimationDuration,
 }
 
-#[derive(Component)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Component)]
 pub enum AnimationDuration {
     Infinite,
     Once,

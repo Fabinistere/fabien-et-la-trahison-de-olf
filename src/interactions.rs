@@ -41,6 +41,7 @@ impl Interactible {
     }
 }
 
+#[derive(Resource)]
 pub struct InteractionResources {
     interact_button: Handle<Image>,
 }
@@ -68,7 +69,7 @@ pub fn interaction_icon(
 
         if *entering_range {
             commands.entity(*entity).with_children(|parent| {
-                parent.spawn_bundle(SpriteBundle {
+                parent.spawn(SpriteBundle {
                     texture: interaction_resources.interact_button.clone(),
                     transform: Transform {
                         translation: interactible.icon_translation,

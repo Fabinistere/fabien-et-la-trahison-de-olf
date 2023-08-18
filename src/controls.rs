@@ -199,7 +199,7 @@ impl<'de> Deserialize<'de> for Key {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Resource)]
 pub struct KeyBindings {
     pub up: [Key; 2],
     pub down: [Key; 2],
@@ -230,7 +230,7 @@ impl KeyBindings {
     }
 }
 
-pub fn save_key_bindings(key_bindings: Res<KeyBindings>) {}
+pub fn save_key_bindings(_key_bindings: Res<KeyBindings>) {}
 
 // pub fn load_key_bindings() -> KeyBindings {
 //     ron::de::from_bytes(include_bytes!("data/dialogs.ron")).unwrap()

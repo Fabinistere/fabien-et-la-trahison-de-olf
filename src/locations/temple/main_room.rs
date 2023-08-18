@@ -27,10 +27,10 @@ pub fn enter_main_room(
     let mut door_transform = door_query.single_mut();
 
     if player_transform.translation().y >= MAIN_ROOM_ENTER_Y {
-        corridor_transform.translation().z = SECOND_CORRIDOR_Z_IN_MAIN_ROOM;
+        corridor_transform.translation_mut().z = SECOND_CORRIDOR_Z_IN_MAIN_ROOM;
         door_transform.translation.z = DOOR_Z_IN_MAIN_ROOM;
     } else {
-        corridor_transform.translation().z = SECOND_CORRIDOR_Z;
+        corridor_transform.translation_mut().z = SECOND_CORRIDOR_Z;
         door_transform.translation.z = DOOR_Z;
     }
 }
@@ -71,48 +71,53 @@ pub fn setup_main_room(mut commands: Commands, asset_server: Res<AssetServer>) {
     let pillar = asset_server.load("textures/temple/pillar.png");
     let throne = asset_server.load("textures/temple/throne.png");
 
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             texture: main_room,
             transform: Transform::from_xyz(0.0, 0.0, MAIN_ROOM_Z),
             ..SpriteBundle::default()
-        })
-        .insert(Temple);
+        },
+        Temple,
+    ));
 
     /*
     commands
-        .spawn()
-        .insert(Collider::segment(
-            Vect::new(-320.0, MAIN_ROOM_ENTER_Y),
-            Vect::new(-140.0, MAIN_ROOM_ENTER_Y),
-        ))
-        .insert(Transform::default())
-        .insert(ActiveEvents::COLLISION_EVENTS)
-        .insert(EnterMainRoomSensor)
-        .insert(Sensor(true));
+        .spawn((
+            Collider::segment(
+                Vect::new(-320.0, MAIN_ROOM_ENTER_Y),
+                Vect::new(-140.0, MAIN_ROOM_ENTER_Y),
+            ),
+            Transform::default(),
+            ActiveEvents::COLLISION_EVENTS,
+            EnterMainRoomSensor,
+            Sensor(true),
+        ));
     */
 
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             texture: throne,
             transform: Transform::from_translation(THRONE_POSITION.into()),
             ..SpriteBundle::default()
-        })
-        .insert(Throne);
+        },
+        Throne,
+    ));
 
     for pos in PILLAR_POSITIONS {
         commands
-            .spawn_bundle(SpriteBundle {
-                texture: pillar.clone(),
-                transform: Transform::from_translation(pos.into()),
-                ..SpriteBundle::default()
-            })
-            .insert(Pillar)
+            .spawn((
+                SpriteBundle {
+                    texture: pillar.clone(),
+                    transform: Transform::from_translation(pos.into()),
+                    ..SpriteBundle::default()
+                },
+                Pillar,
+            ))
             .with_children(|parent| {
-                parent
-                    .spawn()
-                    .insert(Collider::cuboid(60.0, 20.0))
-                    .insert(Transform::from_xyz(pos.0, pos.1 - 110.0, 0.0));
+                parent.spawn((
+                    Collider::cuboid(60.0, 20.0),
+                    Transform::from_xyz(pos.0, pos.1 - 110.0, 0.0),
+                ));
             });
     }
 }
