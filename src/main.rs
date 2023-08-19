@@ -11,7 +11,9 @@ mod menu;
 pub mod player;
 mod ui;
 
-use bevy::{prelude::*, render::texture::ImageSettings};
+use std::time::Duration;
+
+use bevy::{asset::ChangeWatcher, ecs::schedule::ScheduleBuildSettings, prelude::*};
 use bevy_rapier2d::prelude::*;
 
 pub use crate::{
@@ -20,9 +22,10 @@ pub use crate::{
     dialogs::{DialogId, Dialogs, Language},
 };
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum GameState {
     Menu,
+    #[default]
     Playing,
 }
 
@@ -31,57 +34,62 @@ struct PlayerCamera;
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(WindowDescriptor {
-        title: "Fabien et le trahison de Olf".to_string(),
-        // vsync: true,
-        // mode: bevy::window::WindowMode::BorderlessFullscreen,
-        ..WindowDescriptor::default()
-    })
-    .insert_resource(ImageSettings::default_nearest())
-    // .insert_resource(Msaa::default())
-    .insert_resource(ClearColor(BACKGROUND_COLOR))
-    .insert_resource(controls::KeyBindings {
-        up: [Key(KeyCode::Z), Key(KeyCode::Up)],
-        down: [Key(KeyCode::S), Key(KeyCode::Down)],
-        right: [Key(KeyCode::D), Key(KeyCode::Right)],
-        left: [Key(KeyCode::Q), Key(KeyCode::Left)],
-        interact: [Key(KeyCode::E), Key(KeyCode::R)],
-    })
-    .add_plugins(DefaultPlugins)
-    .add_plugin(bevy_tweening::TweeningPlugin)
-    .add_plugin(RapierDebugRenderPlugin {
-        depth_test: false,
-        ..RapierDebugRenderPlugin::default()
-    })
-    .add_state(GameState::Playing)
-    .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(game_setup))
-    .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
-    .add_plugin(dialogs::DialogsPlugin)
-    .add_plugin(menu::MenuPlugin)
-    .add_plugin(animations::AnimationPlugin)
-    .add_plugin(player::PlayerPlugin)
-    .add_plugin(locations::LocationsPlugin)
-    .add_plugin(interactions::InteractionsPlugin)
-    .add_plugin(ui::UiPlugin)
-    .add_plugin(collisions::CollisionsPlugin);
+    app
+        // .insert_resource(Msaa::default())
+        .insert_resource(ClearColor(BACKGROUND_COLOR))
+        .insert_resource(controls::KeyBindings {
+            up: [Key(KeyCode::Z), Key(KeyCode::Up)],
+            down: [Key(KeyCode::S), Key(KeyCode::Down)],
+            right: [Key(KeyCode::D), Key(KeyCode::Right)],
+            left: [Key(KeyCode::Q), Key(KeyCode::Left)],
+            interact: [Key(KeyCode::E), Key(KeyCode::R)],
+        })
+        .add_plugins((
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Fabien et le trahison de Olf".to_string(),
+                        // vsync: true,
+                        // mode: bevy::window::WindowMode::BorderlessFullscreen,
+                        ..Window::default()
+                    }),
+                    ..default()
+                })
+                .set(ImagePlugin::default_nearest())
+                .set(AssetPlugin {
+                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(200)),
+                    ..default()
+                }),
+            bevy_tweening::TweeningPlugin,
+            RapierDebugRenderPlugin::default(),
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0),
+            dialogs::DialogsPlugin,
+            menu::MenuPlugin,
+            animations::AnimationPlugin,
+            player::PlayerPlugin,
+            locations::LocationsPlugin,
+            interactions::InteractionsPlugin,
+            ui::UiPlugin,
+            collisions::CollisionsPlugin,
+        ))
+        .add_state::<GameState>()
+        // NOTE: should be on startup
+        .add_systems(OnEnter(GameState::Playing), game_setup);
 
     #[cfg(target_arch = "wasm32")]
-    app.add_plugin(bevy_web_resizer::Plugin);
+    app.add_plugins(bevy_web_resizer::Plugin);
+
+    app.edit_schedule(Main, |schedule| {
+        schedule.set_build_settings(ScheduleBuildSettings {
+            ambiguity_detection: bevy::ecs::schedule::LogLevel::Warn,
+            ..default()
+        });
+    });
 
     app.run();
 }
 
-fn game_setup(
-    mut commands: Commands,
-    mut rapier_config: ResMut<RapierConfiguration>,
-    mut windows: ResMut<Windows>,
-    asset_server: Res<AssetServer>,
-) {
-    asset_server.watch_for_changes().unwrap();
-
-    windows.primary_mut().set_scale_factor_override(Some(1.0));
+fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
     rapier_config.gravity = Vect::ZERO;
-    commands
-        .spawn_bundle(Camera2dBundle::default())
-        .insert(PlayerCamera);
+    commands.spawn((Camera2dBundle::default(), PlayerCamera));
 }

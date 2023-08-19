@@ -16,6 +16,7 @@ pub struct DoorInteract {
     opening: bool,
 }
 
+#[derive(Event)]
 pub struct PropsInteractionEvent;
 
 pub fn setup_first_corridor(
@@ -27,9 +28,9 @@ pub fn setup_first_corridor(
     let props = asset_server.load("textures/temple/first_corridor/props.png");
     let door_spritesheet = asset_server.load("textures/temple/first_corridor/door_spritesheet.png");
     let door_texture_atlas =
-        TextureAtlas::from_grid(door_spritesheet, Vec2::new(120.0, 99.0), 1, 6);
+        TextureAtlas::from_grid(door_spritesheet, Vec2::new(120.0, 99.0), 1, 6, None, None);
 
-    commands.spawn_bundle(SpriteBundle {
+    commands.spawn(SpriteBundle {
         texture: first_corridor,
         // transform: Transform::from_scale(Vec3::new(2.0, 2.0, 2.0)),
         transform: Transform::from_xyz(0.0, 0.0, FIRST_CORRIDOR_Z),
@@ -37,61 +38,53 @@ pub fn setup_first_corridor(
     });
 
     commands
-        .spawn_bundle(SpriteBundle {
-            texture: props,
-            transform: Transform::from_xyz(0.0, 0.0, 2.5),
-            ..SpriteBundle::default()
-        })
+        .spawn((
+            SpriteBundle {
+                texture: props,
+                transform: Transform::from_xyz(0.0, 0.0, 2.5),
+                ..SpriteBundle::default()
+            },
+            Interactible::new(
+                Vec3::new(PROPS_POSITION.0, PROPS_POSITION.1, INTERACT_BUTTON_Z),
+                PROPS_INTERACTION_ID,
+            ),
+        ))
         .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::cuboid(40.0, 105.0))
-                .insert(Transform::from_xyz(
-                    PROPS_POSITION.0 + 140.0,
-                    PROPS_POSITION.1,
-                    0.0,
-                ))
-                .insert(Sensor);
+            parent.spawn((
+                Collider::cuboid(40.0, 105.0),
+                Transform::from_xyz(PROPS_POSITION.0 + 140.0, PROPS_POSITION.1, 0.0),
+                Sensor,
+            ));
 
-            parent
-                .spawn()
-                .insert(Collider::cuboid(100.0, 105.0))
-                .insert(Transform::from_translation(PROPS_POSITION.into()));
-        })
-        .insert(Interactible::new(
-            Vec3::new(PROPS_POSITION.0, PROPS_POSITION.1, INTERACT_BUTTON_Z),
-            PROPS_INTERACTION_ID,
-        ));
+            parent.spawn((
+                Collider::cuboid(100.0, 105.0),
+                Transform::from_translation(PROPS_POSITION.into()),
+            ));
+        });
 
     commands
-        .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.add(door_texture_atlas),
-            transform: Transform::from_translation(DOOR_POSITION.into()),
-            ..SpriteSheetBundle::default()
-        })
-        .insert(Door { open: false })
-        .insert(DoorInteract {
-            opening: true,
-            timer: Timer::from_seconds(DOOR_OPEN_DELTA_S, true),
-        })
+        .spawn((
+            SpriteSheetBundle {
+                texture_atlas: texture_atlases.add(door_texture_atlas),
+                transform: Transform::from_translation(DOOR_POSITION.into()),
+                ..SpriteSheetBundle::default()
+            },
+            Door { open: false },
+            DoorInteract {
+                opening: true,
+                timer: Timer::from_seconds(DOOR_OPEN_DELTA_S, TimerMode::Repeating),
+            },
+        ))
         .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::cuboid(30.0, 50.0))
-                .insert(Transform::from_xyz(
-                    DOOR_POSITION.0 - 30.0,
-                    DOOR_POSITION.1,
-                    0.0,
-                ));
+            parent.spawn((
+                Collider::cuboid(30.0, 50.0),
+                Transform::from_xyz(DOOR_POSITION.0 - 30.0, DOOR_POSITION.1, 0.0),
+            ));
 
-            parent
-                .spawn()
-                .insert(Collider::cuboid(30.0, 50.0))
-                .insert(Transform::from_xyz(
-                    DOOR_POSITION.0 + 30.0,
-                    DOOR_POSITION.1,
-                    0.0,
-                ));
+            parent.spawn((
+                Collider::cuboid(30.0, 50.0),
+                Transform::from_xyz(DOOR_POSITION.0 + 30.0, DOOR_POSITION.1, 0.0),
+            ));
         });
 }
 
@@ -109,7 +102,7 @@ pub fn door_interact(
         } else {
             commands.entity(entity).insert(DoorInteract {
                 opening: !door.open,
-                timer: Timer::from_seconds(DOOR_OPEN_DELTA_S, true),
+                timer: Timer::from_seconds(DOOR_OPEN_DELTA_S, TimerMode::Repeating),
             });
         }
     }

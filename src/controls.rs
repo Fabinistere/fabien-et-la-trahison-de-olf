@@ -138,11 +138,11 @@ impl<'de> Deserialize<'de> for Key {
                     108 => KeyCode::Grave,
                     109 => KeyCode::Kana,
                     110 => KeyCode::Kanji,
-                    111 => KeyCode::LAlt,
-                    112 => KeyCode::LBracket,
-                    113 => KeyCode::LControl,
-                    114 => KeyCode::LShift,
-                    115 => KeyCode::LWin,
+                    111 => KeyCode::AltLeft,
+                    112 => KeyCode::BracketLeft,
+                    113 => KeyCode::ControlLeft,
+                    114 => KeyCode::ShiftLeft,
+                    115 => KeyCode::SuperLeft,
                     116 => KeyCode::Mail,
                     117 => KeyCode::MediaSelect,
                     118 => KeyCode::MediaStop,
@@ -162,11 +162,11 @@ impl<'de> Deserialize<'de> for Key {
                     132 => KeyCode::PlayPause,
                     133 => KeyCode::Power,
                     134 => KeyCode::PrevTrack,
-                    135 => KeyCode::RAlt,
-                    136 => KeyCode::RBracket,
-                    137 => KeyCode::RControl,
-                    138 => KeyCode::RShift,
-                    139 => KeyCode::RWin,
+                    135 => KeyCode::AltRight,
+                    136 => KeyCode::BracketRight,
+                    137 => KeyCode::ControlRight,
+                    138 => KeyCode::ShiftRight,
+                    139 => KeyCode::SuperRight,
                     140 => KeyCode::Semicolon,
                     141 => KeyCode::Slash,
                     142 => KeyCode::Sleep,
@@ -199,7 +199,7 @@ impl<'de> Deserialize<'de> for Key {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Resource)]
 pub struct KeyBindings {
     pub up: [Key; 2],
     pub down: [Key; 2],
@@ -230,7 +230,7 @@ impl KeyBindings {
     }
 }
 
-pub fn save_key_bindings(key_bindings: Res<KeyBindings>) {}
+pub fn save_key_bindings(_key_bindings: Res<KeyBindings>) {}
 
 // pub fn load_key_bindings() -> KeyBindings {
 //     ron::de::from_bytes(include_bytes!("data/dialogs.ron")).unwrap()

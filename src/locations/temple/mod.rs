@@ -6,7 +6,7 @@ pub mod secret_room;
 
 use super::{spawn_collision_cuboid, Location};
 use crate::{constants::locations::temple::*, GameState};
-use bevy::{ecs::schedule::ShouldRun, prelude::*};
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct Temple;
@@ -15,8 +15,9 @@ pub struct Temple;
 pub struct ZPosition(f32);
 
 // States
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum PlayerLocation {
+    #[default]
     Temple,
     SecretRoom,
 }
@@ -25,109 +26,105 @@ pub struct TemplePlugin;
 
 impl Plugin for TemplePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state(PlayerLocation::Temple)
-            .add_state(curtains::PlayerCurtainsPosition::Below)
+        app.add_state::<PlayerLocation>()
+            .add_state::<curtains::PlayerCurtainsPosition>()
             .add_event::<secret_room::SecretRoomTriggerEvent>()
             .add_event::<second_corridor::DoorInteractEvent>()
             .add_event::<first_corridor::PropsInteractionEvent>()
-            .add_system_set(
-                SystemSet::on_enter(Location::Temple)
-                    .with_system(spawn_hitboxes)
-                    .with_system(setup_temple)
-                    .with_system(main_room::setup_main_room)
-                    .with_system(first_corridor::setup_first_corridor)
-                    .with_system(second_corridor::setup_second_corridor)
-                    .with_system(secret_room::setup_secret_room)
-                    .with_system(curtains::setup_curtains),
+            .add_systems(
+                OnEnter(Location::Temple),
+                (
+                    spawn_hitboxes,
+                    setup_temple,
+                    main_room::setup_main_room,
+                    first_corridor::setup_first_corridor,
+                    second_corridor::setup_second_corridor,
+                    secret_room::setup_secret_room,
+                    curtains::setup_curtains,
+                ),
             )
-            .add_system_set(
-                SystemSet::on_enter(PlayerLocation::SecretRoom)
-                    .with_system(secret_room::remove_secret_room_cover),
+            .add_systems(
+                OnEnter(PlayerLocation::SecretRoom),
+                secret_room::remove_secret_room_cover,
             )
-            .add_system_set(
-                SystemSet::on_exit(PlayerLocation::SecretRoom)
-                    .with_system(secret_room::add_secret_room_cover),
+            .add_systems(
+                OnExit(PlayerLocation::SecretRoom),
+                secret_room::add_secret_room_cover,
             )
-            .add_system_set_to_stage(
-                CoreStage::PostUpdate,
-                SystemSet::new()
-                    .with_run_criteria(run_if_in_temple)
-                    .with_system(main_room::enter_main_room)
-                    .with_system(main_room::pillars_position)
-                    .with_system(main_room::throne_position)
-                    .with_system(curtains::curtains_animation)
-                    .with_system(curtains::curtains_z_position)
-                    .with_system(secret_room::secret_room_trigger)
-                    .with_system(secret_room::olf_cat_animation)
-                    .with_system(first_corridor::open_close_door)
-                    .with_system(first_corridor::props_interaction_event)
-                    .with_system(second_corridor::open_close_door)
-                    .with_system(second_corridor::door_interact),
+            .add_systems(
+                PostUpdate,
+                (
+                    main_room::enter_main_room,
+                    main_room::pillars_position,
+                    main_room::throne_position,
+                    curtains::curtains_animation,
+                    curtains::curtains_z_position,
+                    secret_room::secret_room_trigger,
+                    secret_room::olf_cat_animation,
+                    first_corridor::open_close_door,
+                    first_corridor::props_interaction_event,
+                    second_corridor::open_close_door,
+                    second_corridor::door_interact,
+                )
+                    .distributive_run_if(in_temple),
             );
     }
 }
 
-pub fn run_if_in_temple(
-    location: Res<State<Location>>,
-    game_state: Res<State<GameState>>,
-) -> ShouldRun {
-    if location.current() == &Location::Temple && game_state.current() == &GameState::Playing {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
-    }
+pub fn in_temple(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
+    location.get() == &Location::Temple && game_state.get() == &GameState::Playing
 }
 
 pub fn setup_temple(mut commands: Commands, asset_server: Res<AssetServer>) {
     let background = asset_server.load("textures/temple/background.png");
     let corridor_doors = asset_server.load("textures/temple/corridor_doors.png");
 
-    commands.spawn_bundle(SpriteBundle {
+    commands.spawn(SpriteBundle {
         texture: background,
-        transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
+        transform: Transform::from_xyz(0., 0., BACKGROUND_Z),
         ..SpriteBundle::default()
     });
 
-    commands.spawn_bundle(SpriteBundle {
+    commands.spawn(SpriteBundle {
         texture: corridor_doors,
-        transform: Transform::from_xyz(0.0, 0.0, CORRIDOR_DOORS_Z),
+        transform: Transform::from_xyz(0., 0., CORRIDOR_DOORS_Z),
         ..SpriteBundle::default()
     });
 }
 
 fn spawn_hitboxes(mut commands: Commands) {
     // Left wall
-    spawn_collision_cuboid(&mut commands, -1320.0, 80.0, 10.0, 1455.0);
+    spawn_collision_cuboid(&mut commands, -1320., 80., 10., 1455.);
     // Right wall
-    spawn_collision_cuboid(&mut commands, 860.0, 80.0, 10.0, 1455.0);
+    spawn_collision_cuboid(&mut commands, 860., 80., 10., 1455.);
     // Left side of top wall
-    spawn_collision_cuboid(&mut commands, -895.0, 975.0, 415.0, 30.0);
+    spawn_collision_cuboid(&mut commands, -895., 975., 415., 30.);
     // Right side of top wall
-    spawn_collision_cuboid(&mut commands, 225.0, 975.0, 625.0, 30.0);
+    spawn_collision_cuboid(&mut commands, 225., 975., 625., 30.);
     // Left side of bottom wall
-    spawn_collision_cuboid(&mut commands, -815.0, -805.0, 515.0, 30.0);
+    spawn_collision_cuboid(&mut commands, -815., -805., 515., 30.);
     // Right side of bottom wall
-    spawn_collision_cuboid(&mut commands, 355.0, -805.0, 515.0, 30.0);
+    spawn_collision_cuboid(&mut commands, 355., -805., 515., 30.);
     // Throne seat
-    spawn_collision_cuboid(&mut commands, -230.0, 860.0, 70.0, 40.0);
+    spawn_collision_cuboid(&mut commands, -230., 860., 70., 40.);
     // Throne front of seat
-    spawn_collision_cuboid(&mut commands, -230.0, 810.0, 50.0, 10.0);
+    spawn_collision_cuboid(&mut commands, -230., 810., 50., 10.);
     // Throne front of front of seat
-    spawn_collision_cuboid(&mut commands, -230.0, 790.0, 30.0, 10.0);
+    spawn_collision_cuboid(&mut commands, -230., 790., 30., 10.);
     // Throne bump left 1
-    spawn_collision_cuboid(&mut commands, -560.0, 875.0, 1.0, 60.0);
+    spawn_collision_cuboid(&mut commands, -560., 875., 1., 60.);
     // Throne bump right 1
-    spawn_collision_cuboid(&mut commands, 100.0, 875.0, 1.0, 60.0);
+    spawn_collision_cuboid(&mut commands, 100., 875., 1., 60.);
     // Throne bump left 2
-    spawn_collision_cuboid(&mut commands, -540.0, 785.0, 1.0, 30.0);
+    spawn_collision_cuboid(&mut commands, -540., 785., 1., 30.);
     // Throne bump right 2
-    spawn_collision_cuboid(&mut commands, 80.0, 785.0, 1.0, 30.0);
+    spawn_collision_cuboid(&mut commands, 80., 785., 1., 30.);
     // Throne bump left 3
-    spawn_collision_cuboid(&mut commands, -520.0, 710.0, 1.0, 45.0);
+    spawn_collision_cuboid(&mut commands, -520., 710., 1., 45.);
     // Throne bump right 3
-    spawn_collision_cuboid(&mut commands, 60.0, 710.0, 1.0, 45.0);
+    spawn_collision_cuboid(&mut commands, 60., 710., 1., 45.);
     // Throne bump left 4
-    spawn_collision_cuboid(&mut commands, -460.0, 635.0, 1.0, 30.0);
+    spawn_collision_cuboid(&mut commands, -460., 635., 1., 30.);
     // Throne bump right 4
-    spawn_collision_cuboid(&mut commands, 0.0, 635.0, 1.0, 30.0);
+    spawn_collision_cuboid(&mut commands, 0., 635., 1., 30.);
 }

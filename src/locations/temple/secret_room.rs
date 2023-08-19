@@ -18,6 +18,7 @@ use crate::{
 use bevy::{prelude::*, utils::Duration};
 use bevy_rapier2d::prelude::*;
 
+#[derive(Event)]
 pub struct SecretRoomTriggerEvent {
     pub started: bool,
 }
@@ -39,31 +40,39 @@ pub fn setup_secret_room(
     let secret_room = asset_server.load("textures/temple/secret_room/secret_room.png");
     let olf_cat_spritesheet =
         asset_server.load("textures/temple/secret_room/olf_cat_spritesheet.png");
-    let olf_cat_texture_atlas =
-        TextureAtlas::from_grid(olf_cat_spritesheet, Vec2::new(100.0, 110.0), 2, 1);
+    let olf_cat_texture_atlas = TextureAtlas::from_grid(
+        olf_cat_spritesheet,
+        Vec2::new(100.0, 110.0),
+        2,
+        1,
+        None,
+        None,
+    );
 
     commands
-        .spawn_bundle(SpriteBundle {
-            texture: secret_room,
-            transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
-            ..SpriteBundle::default()
-        })
-        .insert(SecretRoom)
+        .spawn((
+            SpriteBundle {
+                texture: secret_room,
+                transform: Transform::from_xyz(0.0, 0.0, SECRET_ROOM_Z),
+                ..SpriteBundle::default()
+            },
+            SecretRoom,
+        ))
         .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::segment(
+            parent.spawn((
+                Collider::segment(
                     Vect::new(-480.0, SECRET_ROOM_TRIGGER_Y),
                     Vect::new(-400.0, SECRET_ROOM_TRIGGER_Y),
-                ))
-                .insert(Transform::default())
-                .insert(ActiveEvents::COLLISION_EVENTS)
-                .insert(SecretRoomSensor)
-                .insert(Sensor);
+                ),
+                Transform::default(),
+                ActiveEvents::COLLISION_EVENTS,
+                SecretRoomSensor,
+                Sensor,
+            ));
         });
 
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(SECRET_ROOM_COVER_POSITION.into()),
             sprite: Sprite {
                 custom_size: Some(SECRET_ROOM_COVER_SIZE.into()),
@@ -71,29 +80,34 @@ pub fn setup_secret_room(
                 ..Sprite::default()
             },
             ..SpriteBundle::default()
-        })
-        .insert(SecretRoomCover);
+        },
+        SecretRoomCover,
+    ));
 
     commands
-        .spawn_bundle(SpriteSheetBundle {
-            texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
-            transform: Transform {
-                translation: OLF_CAT_POSITION.into(),
-                scale: Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
-                ..Transform::default()
+        .spawn((
+            SpriteSheetBundle {
+                texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
+                transform: Transform {
+                    translation: OLF_CAT_POSITION.into(),
+                    scale: Vec3::new(OLF_CAT_SCALE, OLF_CAT_SCALE, 1.0),
+                    ..Transform::default()
+                },
+                ..SpriteSheetBundle::default()
             },
-            ..SpriteSheetBundle::default()
-        })
-        .insert(OlfCatTimer(Timer::from_seconds(
-            OLF_CAT_ANIMATION_DELTA,
-            true,
-        )))
+            OlfCatTimer(Timer::from_seconds(
+                OLF_CAT_ANIMATION_DELTA,
+                TimerMode::Repeating,
+            )),
+        ))
         .with_children(|parent| {
-            parent
-                .spawn()
-                .insert(Collider::cuboid(25.0, 25.0))
-                .insert(Transform::from_translation(OLF_CAT_HITBOX_POSITION.into()));
+            parent.spawn((
+                Collider::cuboid(25.0, 25.0),
+                Transform::from_translation(OLF_CAT_HITBOX_POSITION.into()),
+            ));
         });
+
+    // REFACTOR: Orphans Colliders
 
     // Top wall of secret room
     spawn_collision_cuboid(&mut commands, -230.0, 1485.0, 1080.0, 10.0);
@@ -105,7 +119,8 @@ pub fn secret_room_trigger(
     // player_sensor_query: Query<Entity, With<PlayerSensorCollider>>,
     player_query: Query<&Transform, With<Player>>,
     mut secret_room_trigger_events: EventReader<SecretRoomTriggerEvent>,
-    mut player_location: ResMut<State<PlayerLocation>>,
+    player_location: Res<State<PlayerLocation>>,
+    mut next_player_location: ResMut<NextState<PlayerLocation>>,
 ) {
     for SecretRoomTriggerEvent { started } in secret_room_trigger_events.iter() {
         let transform = player_query.single();
@@ -113,24 +128,24 @@ pub fn secret_room_trigger(
         if *started {
             // When the player goes through the sensor collider, change its location
             // to the secret room or the temple
-            if player_location.current() == &PlayerLocation::Temple {
-                player_location.set(PlayerLocation::SecretRoom).unwrap();
+            if player_location.get() == &PlayerLocation::Temple {
+                next_player_location.set(PlayerLocation::SecretRoom);
             } else {
-                player_location.set(PlayerLocation::Temple).unwrap();
+                next_player_location.set(PlayerLocation::Temple);
             }
         } else {
             // If the player changes direction while the sensor is still in its collider,
             // check if the top of its hitbox is in the temple or the secret room
-            if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
+            if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.
                 > SECRET_ROOM_TRIGGER_Y
-                && player_location.current() == &PlayerLocation::Temple
+                && player_location.get() == &PlayerLocation::Temple
             {
-                player_location.set(PlayerLocation::SecretRoom).unwrap();
-            } else if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
+                next_player_location.set(PlayerLocation::SecretRoom);
+            } else if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.
                 < SECRET_ROOM_TRIGGER_Y
-                && player_location.current() == &PlayerLocation::SecretRoom
+                && player_location.get() == &PlayerLocation::SecretRoom
             {
-                player_location.set(PlayerLocation::Temple).unwrap();
+                next_player_location.set(PlayerLocation::Temple);
             }
         }
     }

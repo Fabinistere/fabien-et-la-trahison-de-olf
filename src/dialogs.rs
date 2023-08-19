@@ -24,7 +24,7 @@ pub enum DialogId {
     MenuPlay,
 }
 
-#[derive(Deserialize, Debug, Deref, DerefMut)]
+#[derive(Deserialize, Debug, Deref, DerefMut, Resource)]
 pub struct Dialogs(HashMap<DialogId, Dialog>);
 
 impl Dialogs {
@@ -33,7 +33,8 @@ impl Dialogs {
     }
 }
 
-#[derive(Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash, Component)]
+/// A component and a Resource...
+#[derive(Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash, Component, Resource)]
 pub enum Language {
     Francais,
     English,

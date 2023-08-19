@@ -14,9 +14,10 @@ pub struct CurtainsTimer(Timer);
 #[derive(Component)]
 pub struct Curtain;
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum PlayerCurtainsPosition {
     Above,
+    #[default]
     Below,
 }
 
@@ -26,39 +27,48 @@ pub fn setup_curtains(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     let curtains_spritesheet = asset_server.load("textures/temple/curtains_sprite_sheet.png");
-    let curtains_texture_atlas =
-        TextureAtlas::from_grid(curtains_spritesheet, Vec2::new(200.0, 360.0), 1, 10);
+    let curtains_texture_atlas = TextureAtlas::from_grid(
+        curtains_spritesheet,
+        Vec2::new(200.0, 360.0),
+        1,
+        10,
+        None,
+        None,
+    );
     let curtains_texture_atlas_handle = texture_atlases.add(curtains_texture_atlas);
 
     // Left curtain, with a sensor collider to detect when the player passes through it
-    commands
-        .spawn_bundle(SpriteSheetBundle {
+    commands.spawn((
+        SpriteSheetBundle {
             texture_atlas: curtains_texture_atlas_handle.clone(),
             transform: Transform::from_translation(LEFT_CURTAIN_POSITION.into()),
             ..SpriteSheetBundle::default()
-        })
-        .insert(Curtain);
+        },
+        Curtain,
+    ));
 
     // Right curtain
-    commands
-        .spawn_bundle(SpriteSheetBundle {
+    commands.spawn((
+        SpriteSheetBundle {
             texture_atlas: curtains_texture_atlas_handle,
             transform: Transform::from_translation(RIGHT_CURTAIN_POSITION.into()),
             ..SpriteSheetBundle::default()
-        })
-        .insert(Curtain);
+        },
+        Curtain,
+    ));
 }
 
 pub fn curtains_animation(
     mut commands: Commands,
     mut curtains_query: Query<(Entity, &Transform, &mut TextureAtlasSprite), With<Curtain>>,
-    mut curtains_state: ResMut<State<PlayerCurtainsPosition>>,
+    curtains_state: Res<State<PlayerCurtainsPosition>>,
+    mut next_curtains_state: ResMut<NextState<PlayerCurtainsPosition>>,
     player_query: Query<&GlobalTransform, With<Player>>,
 ) {
     let player_transform = player_query.single();
 
     for (curtain_entity, curtain_transform, mut sprite) in curtains_query.iter_mut() {
-        let half_player_width = (PLAYER_WIDTH * PLAYER_SCALE) / 2.0;
+        let half_player_width = (PLAYER_WIDTH * PLAYER_SCALE) / 2.;
         let in_range_left =
             curtain_transform.translation.x < player_transform.translation().x + half_player_width;
         let in_range_right =
@@ -72,11 +82,9 @@ pub fn curtains_animation(
             };
 
         if player_transform.translation().y >= CURTAINS_TRIGGER_Y
-            && curtains_state.current() == &PlayerCurtainsPosition::Below
+            && curtains_state.get() == &PlayerCurtainsPosition::Below
         {
-            curtains_state
-                .overwrite_set(PlayerCurtainsPosition::Above)
-                .unwrap();
+            next_curtains_state.set(PlayerCurtainsPosition::Above);
             spawn_z_timer(&mut commands, CURTAINS_Z_FRONT);
 
             if in_range_left && in_range_right {
@@ -85,11 +93,9 @@ pub fn curtains_animation(
                 insert_curtain_animation(&mut commands, curtain_entity, anim_start, anim_end);
             }
         } else if player_transform.translation().y < CURTAINS_TRIGGER_Y
-            && curtains_state.current() == &PlayerCurtainsPosition::Above
+            && curtains_state.get() == &PlayerCurtainsPosition::Above
         {
-            curtains_state
-                .overwrite_set(PlayerCurtainsPosition::Below)
-                .unwrap();
+            next_curtains_state.set(PlayerCurtainsPosition::Below);
             spawn_z_timer(&mut commands, CURTAINS_Z_BACK);
 
             if in_range_left && in_range_right {
@@ -122,20 +128,17 @@ pub fn curtains_z_position(
 }
 
 fn spawn_z_timer(commands: &mut Commands, z: f32) {
-    commands
-        .spawn()
-        .insert(CurtainsTimer(Timer::from_seconds(
-            CURTAINS_CHANGE_Z_TIME,
-            false,
-        )))
-        .insert(ZPosition(z));
+    commands.spawn((
+        CurtainsTimer(Timer::from_seconds(CURTAINS_CHANGE_Z_TIME, TimerMode::Once)),
+        ZPosition(z),
+    ));
 }
 
 fn insert_curtain_animation(commands: &mut Commands, entity: Entity, start: usize, end: usize) {
     commands.entity(entity).insert(SpriteSheetAnimation {
         start_index: start,
         end_index: end,
-        timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, true),
+        timer: Timer::from_seconds(CURTAINS_ANIMATION_DELTA, TimerMode::Repeating),
         duration: AnimationDuration::Once,
     });
 }

@@ -22,7 +22,7 @@ impl DialogBox {
     pub fn new(text: String, update_time: f32) -> Self {
         DialogBox {
             text,
-            update_timer: Timer::from_seconds(update_time, true),
+            update_timer: Timer::from_seconds(update_time, TimerMode::Repeating),
             finished: false,
             progress: 0,
         }
@@ -45,6 +45,7 @@ pub struct ScrollTimer(Timer);
 /// Read in
 ///   - ui::dialog_box::create_dialog_box
 ///     - for a given String, creates a ui + fx
+#[derive(Event)]
 pub struct CreateDialogBoxEvent {
     dialog: String,
 }
@@ -55,8 +56,10 @@ pub struct CreateDialogBoxEvent {
 /// Read in
 ///   - ui::dialog_box::close_dialog_box
 ///     - close ui
+#[derive(Event)]
 pub struct CloseDialogBoxEvent;
 
+#[derive(Resource)]
 pub struct DialogBoxResources {
     text_font: Handle<Font>,
     appartements: Handle<Image>,
@@ -72,10 +75,10 @@ pub struct DialogBoxResources {
 pub fn load_textures(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     // let scroll_texture = asset_server.load("textures/hud/scroll_animation.png");
-    // let scroll_atlas = TextureAtlas::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45);
+    // let scroll_atlas = TextureAtlas::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45, None, None);
 
     let mut scroll_animation_frames = vec![];
     for i in 0..SCROLL_ANIMATION_FRAMES_NUMBER {
@@ -104,7 +107,7 @@ pub fn create_dialog_box_on_key_press(
 ) {
     if keyboard_input.just_pressed(KeyCode::O) {
         if let Ok((_entity, animator, _style)) = query.get_single() {
-            if animator.tweenable().unwrap().progress() >= 1.0 {
+            if animator.tweenable().progress() >= 1.0 {
                 close_dialog_box_event.send(CloseDialogBoxEvent);
             }
         } else {
@@ -126,10 +129,14 @@ pub fn close_dialog_box(
         if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
             let dialog_box_tween = Tween::new(
                 EaseFunction::QuadraticIn,
-                TweeningType::Once,
                 Duration::from_millis(DIALOG_BOX_ANIMATION_TIME_MS),
                 UiPositionLens {
-                    start: style.position,
+                    start: UiRect {
+                        left: style.left,
+                        right: style.right,
+                        top: style.top,
+                        bottom: style.bottom,
+                    },
                     end: UiRect {
                         left: Val::Auto,
                         top: Val::Px(0.0),
@@ -170,7 +177,6 @@ pub fn create_dialog_box(
         info!("open dialog event");
         let dialog_box_tween = Tween::new(
             EaseFunction::QuadraticOut,
-            TweeningType::Once,
             Duration::from_millis(DIALOG_BOX_ANIMATION_TIME_MS),
             UiPositionLens {
                 start: UiRect {
@@ -190,7 +196,6 @@ pub fn create_dialog_box(
 
         let panels_tween = Tween::new(
             EaseMethod::Linear,
-            TweeningType::Once,
             Duration::from_millis(1000),
             UiPositionLens {
                 start: UiRect {
@@ -206,94 +211,98 @@ pub fn create_dialog_box(
         );
 
         commands
-            .spawn_bundle(ImageBundle {
-                image: dialog_box_resources.appartements.clone().into(),
-                style: Style {
-                    display: Display::Flex,
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    position_type: PositionType::Relative,
-                    position: UiRect {
-                        top: Val::Px(0.0),
-                        left: Val::Auto,
+            .spawn((
+                ImageBundle {
+                    image: dialog_box_resources.appartements.clone().into(),
+                    style: Style {
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        position_type: PositionType::Relative,
+                        top: Val::Px(0.),
                         right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
-                        bottom: Val::Px(0.0),
+                        bottom: Val::Px(0.),
+                        margin: UiRect {
+                            left: Val::Auto,
+                            right: Val::Px(0.),
+                            top: Val::Px(0.),
+                            bottom: Val::Px(0.),
+                        },
+                        height: Val::Percent(100.),
+                        aspect_ratio: Some(284. / 400.),
+                        ..Style::default()
                     },
-                    margin: UiRect {
-                        left: Val::Auto,
-                        right: Val::Px(0.0),
-                        top: Val::Px(0.0),
-                        bottom: Val::Px(0.0),
-                    },
-                    size: Size::new(Val::Auto, Val::Percent(100.0)),
-                    aspect_ratio: Some(284.0 / 400.0),
-                    ..Style::default()
+                    ..ImageBundle::default()
                 },
-                ..ImageBundle::default()
-            })
-            .insert(Name::new("UI Wall"))
+                Name::new("UI Wall"),
+                DialogPanel,
+                Animator::new(dialog_box_tween),
+            ))
             .with_children(|parent| {
                 let child_sprite_style = Style {
                     position_type: PositionType::Absolute,
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    width: Val::Percent(100.),
+                    height: Val::Percent(100.),
                     ..Style::default()
                 };
 
                 // panels under the wall to prevent them from sticking out of the window after being lifted.
-                parent
-                    .spawn_bundle(ImageBundle {
+                parent.spawn((
+                    ImageBundle {
                         image: dialog_box_resources.stained_glass_panels.clone().into(),
                         style: child_sprite_style.clone(),
                         ..ImageBundle::default()
-                    })
-                    .insert(Animator::new(panels_tween));
+                    },
+                    Animator::new(panels_tween),
+                ));
+
+                parent.spawn(ImageBundle {
+                    image: dialog_box_resources.background.clone().into(),
+                    style: child_sprite_style.clone(),
+                    ..ImageBundle::default()
+                });
+
+                parent.spawn(ImageBundle {
+                    image: dialog_box_resources.stained_glass_opened.clone().into(),
+                    style: child_sprite_style.clone(),
+                    ..ImageBundle::default()
+                });
+
+                parent.spawn(ImageBundle {
+                    image: dialog_box_resources.chandelier.clone().into(),
+                    style: child_sprite_style.clone(),
+                    ..ImageBundle::default()
+                });
 
                 parent
-                    .spawn_bundle(ImageBundle {
-                        image: dialog_box_resources.background.clone().into(),
-                        style: child_sprite_style.clone(),
-                        ..ImageBundle::default()
-                    });
-
-                parent
-                    .spawn_bundle(ImageBundle {
-                        image: dialog_box_resources.stained_glass_opened.clone().into(),
-                        style: child_sprite_style.clone(),
-                        ..ImageBundle::default()
-                    });
-
-                parent
-                    .spawn_bundle(ImageBundle {
-                        image: dialog_box_resources.chandelier.clone().into(),
-                        style: child_sprite_style.clone(),
-                        ..ImageBundle::default()
-                    });
-
-                parent
-                    .spawn_bundle(ImageBundle {
-                        image: dialog_box_resources.scroll_animation[0].clone().into(),
-                        style: Style {
-                            position_type: PositionType::Absolute,
-                            size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                            display: Display::Flex,
-                            flex_direction: FlexDirection::Column,
-                            align_items: AlignItems::FlexStart,
-                            justify_content: JustifyContent::FlexEnd,
-                            ..Style::default()
+                    .spawn((
+                        ImageBundle {
+                            image: dialog_box_resources.scroll_animation[0].clone().into(),
+                            style: Style {
+                                position_type: PositionType::Absolute,
+                                width: Val::Percent(100.),
+                                height: Val::Percent(100.),
+                                display: Display::Flex,
+                                flex_direction: FlexDirection::Column,
+                                align_items: AlignItems::FlexStart,
+                                justify_content: JustifyContent::FlexEnd,
+                                ..Style::default()
+                            },
+                            ..ImageBundle::default()
                         },
-                        ..ImageBundle::default()
-                    })
-                    .insert(Scroll {
-                        current_frame: 0,
-                        reverse: false,
-                    })
-                    .insert(ScrollTimer(Timer::from_seconds(
-                        SCROLL_ANIMATION_DELTA_S,
-                        false,
-                    )))
+                        Scroll {
+                            current_frame: 0,
+                            reverse: false,
+                        },
+                        ScrollTimer(Timer::from_seconds(
+                            SCROLL_ANIMATION_DELTA_S,
+                            TimerMode::Once,
+                        )),
+                        DialogBox::new(dialog.clone(), DIALOG_BOX_UPDATE_DELTA_S),
+                    ))
                     .with_children(|parent| {
-                        parent.spawn_bundle(TextBundle {
+                        parent.spawn(TextBundle {
                             text: Text::from_section(
                                 "",
                                 TextStyle {
@@ -302,10 +311,7 @@ pub fn create_dialog_box(
                                     color: Color::BLACK,
                                 },
                             )
-                            .with_alignment(TextAlignment {
-                                vertical: VerticalAlign::Top,
-                                horizontal: HorizontalAlign::Left,
-                            }),
+                            .with_alignment(TextAlignment::Left),
                             style: Style {
                                 flex_wrap: FlexWrap::Wrap,
                                 margin: UiRect {
@@ -313,15 +319,15 @@ pub fn create_dialog_box(
                                     left: Val::Percent(24.0),
                                     ..UiRect::default()
                                 },
-                                max_size: Size::new(Val::Px(450.0), Val::Percent(100.0)),
+                                max_width: Val::Percent(450.),
+                                max_height: Val::Percent(100.),
                                 ..Style::default()
                             },
                             ..TextBundle::default()
                         });
-                    })
-                    .insert(DialogBox::new(dialog.clone(), DIALOG_BOX_UPDATE_DELTA_S));
+                    });
 
-                // parent.spawn_bundle(ImageBundle {
+                // parent.spawn(ImageBundle {
                 //     image: texture_atlases
                 //         .get(dialog_box_resources.scroll_animation.clone())
                 //         .unwrap()
@@ -331,9 +337,7 @@ pub fn create_dialog_box(
                 //     style: child_sprite_style.clone(),
                 //     ..ImageBundle::default()
                 // });
-            })
-            .insert(DialogPanel)
-            .insert(Animator::new(dialog_box_tween));
+            });
     }
 }
 
@@ -360,7 +364,7 @@ pub fn update_dialog_box(
 
 pub fn animate_scroll(
     time: Res<Time>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
+    // texture_atlases: Res<Assets<TextureAtlas>>,
     dialog_box_resources: Res<DialogBoxResources>,
     mut commands: Commands,
     mut scroll_query: Query<(&mut UiImage, &mut Scroll, &mut ScrollTimer, Entity)>,
@@ -383,7 +387,7 @@ pub fn animate_scroll(
                 }
             }
 
-            image.0 = dialog_box_resources.scroll_animation[scroll.current_frame].clone();
+            image.texture = dialog_box_resources.scroll_animation[scroll.current_frame].clone();
         }
     }
 }

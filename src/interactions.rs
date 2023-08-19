@@ -12,13 +12,12 @@ pub struct InteractionsPlugin;
 impl Plugin for InteractionsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<InteractionIconEvent>()
-            .add_startup_system(setup_interactions)
-            .add_system(interaction_icon)
-            .add_system(interaction);
+            .add_systems(Startup, setup_interactions)
+            .add_systems(Update, (interaction_icon, interaction));
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct InteractionIconEvent {
     pub entering_range: bool,
     pub entity: Entity,
@@ -41,6 +40,7 @@ impl Interactible {
     }
 }
 
+#[derive(Resource)]
 pub struct InteractionResources {
     interact_button: Handle<Image>,
 }
@@ -68,7 +68,7 @@ pub fn interaction_icon(
 
         if *entering_range {
             commands.entity(*entity).with_children(|parent| {
-                parent.spawn_bundle(SpriteBundle {
+                parent.spawn(SpriteBundle {
                     texture: interaction_resources.interact_button.clone(),
                     transform: Transform {
                         translation: interactible.icon_translation,

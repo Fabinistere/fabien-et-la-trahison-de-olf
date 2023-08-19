@@ -9,7 +9,7 @@ pub struct CollisionsPlugin;
 
 impl Plugin for CollisionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(collision_events);
+        app.add_systems(Update, collision_events);
     }
 }
 
