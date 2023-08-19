@@ -11,7 +11,9 @@ mod menu;
 pub mod player;
 mod ui;
 
-use bevy::{ecs::schedule::ScheduleBuildSettings, prelude::*};
+use std::time::Duration;
+
+use bevy::{asset::ChangeWatcher, ecs::schedule::ScheduleBuildSettings, prelude::*};
 use bevy_rapier2d::prelude::*;
 
 pub use crate::{
@@ -42,7 +44,7 @@ fn main() {
             left: [Key(KeyCode::Q), Key(KeyCode::Left)],
             interact: [Key(KeyCode::E), Key(KeyCode::R)],
         })
-        .add_plugins(
+        .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
@@ -55,28 +57,29 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest())
                 .set(AssetPlugin {
-                    watch_for_changes: true,
+                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(200)),
                     ..default()
                 }),
-        )
-        .add_plugin(bevy_tweening::TweeningPlugin)
-        .add_plugin(RapierDebugRenderPlugin::default())
+            bevy_tweening::TweeningPlugin,
+            RapierDebugRenderPlugin::default(),
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0),
+            dialogs::DialogsPlugin,
+            menu::MenuPlugin,
+            animations::AnimationPlugin,
+            player::PlayerPlugin,
+            locations::LocationsPlugin,
+            interactions::InteractionsPlugin,
+            ui::UiPlugin,
+            collisions::CollisionsPlugin,
+        ))
         .add_state::<GameState>()
-        .add_system(game_setup.in_schedule(OnEnter(GameState::Playing)))
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0))
-        .add_plugin(dialogs::DialogsPlugin)
-        .add_plugin(menu::MenuPlugin)
-        .add_plugin(animations::AnimationPlugin)
-        .add_plugin(player::PlayerPlugin)
-        .add_plugin(locations::LocationsPlugin)
-        .add_plugin(interactions::InteractionsPlugin)
-        .add_plugin(ui::UiPlugin)
-        .add_plugin(collisions::CollisionsPlugin);
+        // NOTE: should be on startup
+        .add_systems(OnEnter(GameState::Playing), game_setup);
 
     #[cfg(target_arch = "wasm32")]
-    app.add_plugin(bevy_web_resizer::Plugin);
+    app.add_plugins(bevy_web_resizer::Plugin);
 
-    app.edit_schedule(CoreSchedule::Main, |schedule| {
+    app.edit_schedule(Main, |schedule| {
         schedule.set_build_settings(ScheduleBuildSettings {
             ambiguity_detection: bevy::ecs::schedule::LogLevel::Warn,
             ..default()

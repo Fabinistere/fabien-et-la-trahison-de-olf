@@ -110,10 +110,10 @@ pub fn ui_slide_animations(
         }
 
         match slide_data.ui_slide_type {
-            UiSlideType::ToRight => style.position.left = Val::Px(current_offset),
-            UiSlideType::ToLeft => style.position.right = Val::Px(current_offset),
-            UiSlideType::ToBottom => style.position.top = Val::Px(current_offset),
-            UiSlideType::ToTop => style.position.bottom = Val::Px(current_offset),
+            UiSlideType::ToRight => style.left = Val::Px(current_offset),
+            UiSlideType::ToLeft => style.right = Val::Px(current_offset),
+            UiSlideType::ToBottom => style.top = Val::Px(current_offset),
+            UiSlideType::ToTop => style.bottom = Val::Px(current_offset),
         }
 
         if slide_data.elapsed > slide_data.duration {

@@ -68,7 +68,7 @@ pub fn curtains_animation(
     let player_transform = player_query.single();
 
     for (curtain_entity, curtain_transform, mut sprite) in curtains_query.iter_mut() {
-        let half_player_width = (PLAYER_WIDTH * PLAYER_SCALE) / 2.0;
+        let half_player_width = (PLAYER_WIDTH * PLAYER_SCALE) / 2.;
         let in_range_left =
             curtain_transform.translation.x < player_transform.translation().x + half_player_width;
         let in_range_right =
@@ -82,7 +82,7 @@ pub fn curtains_animation(
             };
 
         if player_transform.translation().y >= CURTAINS_TRIGGER_Y
-            && curtains_state.0 == PlayerCurtainsPosition::Below
+            && curtains_state.get() == &PlayerCurtainsPosition::Below
         {
             next_curtains_state.set(PlayerCurtainsPosition::Above);
             spawn_z_timer(&mut commands, CURTAINS_Z_FRONT);
@@ -93,7 +93,7 @@ pub fn curtains_animation(
                 insert_curtain_animation(&mut commands, curtain_entity, anim_start, anim_end);
             }
         } else if player_transform.translation().y < CURTAINS_TRIGGER_Y
-            && curtains_state.0 == PlayerCurtainsPosition::Above
+            && curtains_state.get() == &PlayerCurtainsPosition::Above
         {
             next_curtains_state.set(PlayerCurtainsPosition::Below);
             spawn_z_timer(&mut commands, CURTAINS_Z_BACK);

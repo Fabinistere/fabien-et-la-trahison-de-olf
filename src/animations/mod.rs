@@ -11,9 +11,14 @@ pub struct AnimationPlugin;
 
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(fade::fade_animations)
-            .add_system(slide::slide_animations)
-            .add_system(slide::ui_slide_animations)
-            .add_system(sprite_sheet_animation::animate_sprite_sheet);
+        app.add_systems(
+            Update,
+            (
+                fade::fade_animations,
+                slide::slide_animations,
+                slide::ui_slide_animations,
+                sprite_sheet_animation::animate_sprite_sheet,
+            ),
+        );
     }
 }

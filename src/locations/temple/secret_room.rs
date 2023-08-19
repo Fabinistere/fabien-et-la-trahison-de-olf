@@ -18,6 +18,7 @@ use crate::{
 use bevy::{prelude::*, utils::Duration};
 use bevy_rapier2d::prelude::*;
 
+#[derive(Event)]
 pub struct SecretRoomTriggerEvent {
     pub started: bool,
 }
@@ -127,7 +128,7 @@ pub fn secret_room_trigger(
         if *started {
             // When the player goes through the sensor collider, change its location
             // to the secret room or the temple
-            if player_location.0 == PlayerLocation::Temple {
+            if player_location.get() == &PlayerLocation::Temple {
                 next_player_location.set(PlayerLocation::SecretRoom);
             } else {
                 next_player_location.set(PlayerLocation::Temple);
@@ -135,14 +136,14 @@ pub fn secret_room_trigger(
         } else {
             // If the player changes direction while the sensor is still in its collider,
             // check if the top of its hitbox is in the temple or the secret room
-            if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
+            if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.
                 > SECRET_ROOM_TRIGGER_Y
-                && player_location.0 == PlayerLocation::Temple
+                && player_location.get() == &PlayerLocation::Temple
             {
                 next_player_location.set(PlayerLocation::SecretRoom);
-            } else if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.0
+            } else if transform.translation.y + PLAYER_HITBOX_Y_OFFSET + PLAYER_HITBOX_WIDTH / 2.
                 < SECRET_ROOM_TRIGGER_Y
-                && player_location.0 == PlayerLocation::SecretRoom
+                && player_location.get() == &PlayerLocation::SecretRoom
             {
                 next_player_location.set(PlayerLocation::Temple);
             }

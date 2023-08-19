@@ -8,19 +8,22 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LanguageChangedEvent>()
             .init_resource::<LanguagesButtonColors>()
-            .add_systems((
-                setup_menu.in_schedule(OnEnter(GameState::Menu)),
-                destroy_menu.in_schedule(OnExit(GameState::Menu)),
-                language_button_interactions,
-                // _game_start,
-                language_changed,
-            ));
+            .add_systems(OnEnter(GameState::Menu), setup_menu)
+            .add_systems(OnExit(GameState::Menu), destroy_menu)
+            .add_systems(
+                Update,
+                (
+                    language_button_interactions,
+                    // _game_start,
+                    language_changed,
+                ),
+            );
     }
 }
 
 #[derive(Component)]
 struct Menu;
-#[derive(Component)]
+#[derive(Event)]
 struct LanguageChangedEvent;
 #[derive(Component)]
 struct Selected(bool);
@@ -38,8 +41,8 @@ impl Default for LanguagesButtonColors {
         LanguagesButtonColors {
             normal: Color::rgb(0.9, 0.9, 0.9),
             hovered: Color::rgb(0.8, 0.8, 0.8),
-            selected: Color::rgb(1.0, 0.9, 0.0),
-            hovered_selected: Color::rgb(0.9, 0.8, 0.0),
+            selected: Color::rgb(1., 0.9, 0.),
+            hovered_selected: Color::rgb(0.9, 0.8, 0.),
         }
     }
 }
@@ -57,8 +60,11 @@ fn setup_menu(
     let background_image = ImageBundle {
         style: Style {
             position_type: PositionType::Absolute,
-            position: UiRect::all(Val::Px(0.0)),
-            aspect_ratio: Some(10.0 / 9.0),
+            top: Val::Px(0.),
+            bottom: Val::Px(0.),
+            left: Val::Px(0.),
+            right: Val::Px(0.),
+            aspect_ratio: Some(10. / 9.),
             ..Style::default()
         },
         image: background_image.into(),
@@ -72,7 +78,7 @@ fn setup_menu(
                     value: format!("{}\n", dialogs.get(DialogId::MenuTitle01, *language)),
                     style: TextStyle {
                         font: font.clone(),
-                        font_size: 100.0,
+                        font_size: 100.,
                         color: Color::WHITE,
                     },
                 },
@@ -80,7 +86,7 @@ fn setup_menu(
                     value: dialogs.get(DialogId::MenuTitle02, *language),
                     style: TextStyle {
                         font: font.clone(),
-                        font_size: 60.0,
+                        font_size: 60.,
                         color: Color::RED,
                     },
                 },
@@ -95,7 +101,7 @@ fn setup_menu(
         style: Style {
             margin: UiRect {
                 top: Val::Auto,
-                bottom: Val::Percent(5.0),
+                bottom: Val::Percent(5.),
                 ..UiRect::default()
             },
             ..Style::default()
@@ -104,7 +110,7 @@ fn setup_menu(
             dialogs.get(DialogId::MenuPlay, *language),
             TextStyle {
                 font: font.clone(),
-                font_size: 30.0,
+                font_size: 30.,
                 color: Color::YELLOW,
             },
         ),
@@ -116,15 +122,13 @@ fn setup_menu(
         languages_buttons.push((
             ButtonBundle {
                 style: Style {
-                    size: Size::new(Val::Px(100.0), Val::Px(20.0)),
+                    width: Val::Px(100.),
+                    height: Val::Px(20.),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     position_type: PositionType::Absolute,
-                    position: UiRect {
-                        right: Val::Px(15.0),
-                        bottom: Val::Px(i as f32 * 20.0 + 5.0),
-                        ..UiRect::default()
-                    },
+                    right: Val::Px(15.),
+                    bottom: Val::Px(i as f32 * 20. + 5.),
                     ..Style::default()
                 },
                 background_color: Color::NONE.into(),
@@ -135,7 +139,7 @@ fn setup_menu(
                     language.to_string(),
                     TextStyle {
                         font: font.clone(),
-                        font_size: 20.0,
+                        font_size: 20.,
                         color: if language == language {
                             languages_button_colors.selected
                         } else {
@@ -155,7 +159,8 @@ fn setup_menu(
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    width: Val::Percent(100.),
+                    height: Val::Percent(100.),
                     align_items: AlignItems::Center,
                     flex_direction: FlexDirection::ColumnReverse,
                     ..Style::default()
@@ -191,7 +196,7 @@ fn _game_start(
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if game_state.0 == GameState::Menu {
+    if game_state.get() == &GameState::Menu {
         for _ in keyboard_inputs.iter() {
             next_game_state.set(GameState::Playing);
             break;
@@ -215,7 +220,7 @@ fn language_button_interactions(
     let mut reset_selected = false;
 
     for (interaction, ..) in buttons_query.p0().iter_mut() {
-        if *interaction == Interaction::Clicked {
+        if *interaction == Interaction::Pressed {
             reset_selected = true;
         }
     }
@@ -231,7 +236,7 @@ fn language_button_interactions(
     for (interaction, mut selected, children, button_language) in buttons_query.p0().iter_mut() {
         let mut text = text_query.get_mut(children[0]).unwrap();
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 selected.0 = true;
                 text.sections[0].style.color = button_colors.selected;
                 *language = *button_language;

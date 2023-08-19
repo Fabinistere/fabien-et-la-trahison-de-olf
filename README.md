@@ -1,6 +1,6 @@
 # Fabien et la trahison de Olf
 
-[![v0.2.0-alpha](https://img.shields.io/badge/v0.2.0%20alpha-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.2.0-alpha)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.2.0-alpha)
+[![v0.3.8](https://img.shields.io/badge/v0.3.8-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.8)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.8)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-0.8-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 [![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf#license)
 

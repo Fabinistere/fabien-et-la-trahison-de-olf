@@ -13,7 +13,8 @@ pub struct LocationsPlugin;
 
 impl Plugin for LocationsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<Location>().add_plugin(temple::TemplePlugin);
+        app.add_state::<Location>()
+            .add_plugins(temple::TemplePlugin);
     }
 }
 

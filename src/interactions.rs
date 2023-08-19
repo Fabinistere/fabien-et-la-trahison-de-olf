@@ -12,12 +12,12 @@ pub struct InteractionsPlugin;
 impl Plugin for InteractionsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<InteractionIconEvent>()
-            .add_startup_system(setup_interactions)
-            .add_systems((interaction_icon, interaction));
+            .add_systems(Startup, setup_interactions)
+            .add_systems(Update, (interaction_icon, interaction));
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct InteractionIconEvent {
     pub entering_range: bool,
     pub entity: Entity,

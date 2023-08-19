@@ -16,6 +16,7 @@ pub struct DoorInteract {
     opening: bool,
 }
 
+#[derive(Event)]
 pub struct PropsInteractionEvent;
 
 pub fn setup_first_corridor(

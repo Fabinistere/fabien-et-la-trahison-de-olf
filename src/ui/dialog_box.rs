@@ -45,6 +45,7 @@ pub struct ScrollTimer(Timer);
 /// Read in
 ///   - ui::dialog_box::create_dialog_box
 ///     - for a given String, creates a ui + fx
+#[derive(Event)]
 pub struct CreateDialogBoxEvent {
     dialog: String,
 }
@@ -55,6 +56,7 @@ pub struct CreateDialogBoxEvent {
 /// Read in
 ///   - ui::dialog_box::close_dialog_box
 ///     - close ui
+#[derive(Event)]
 pub struct CloseDialogBoxEvent;
 
 #[derive(Resource)]
@@ -129,7 +131,12 @@ pub fn close_dialog_box(
                 EaseFunction::QuadraticIn,
                 Duration::from_millis(DIALOG_BOX_ANIMATION_TIME_MS),
                 UiPositionLens {
-                    start: style.position,
+                    start: UiRect {
+                        left: style.left,
+                        right: style.right,
+                        top: style.top,
+                        bottom: style.bottom,
+                    },
                     end: UiRect {
                         left: Val::Auto,
                         top: Val::Px(0.0),
@@ -213,20 +220,17 @@ pub fn create_dialog_box(
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,
                         position_type: PositionType::Relative,
-                        position: UiRect {
-                            top: Val::Px(0.0),
-                            left: Val::Auto,
-                            right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
-                            bottom: Val::Px(0.0),
-                        },
+                        top: Val::Px(0.),
+                        right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
+                        bottom: Val::Px(0.),
                         margin: UiRect {
                             left: Val::Auto,
-                            right: Val::Px(0.0),
-                            top: Val::Px(0.0),
-                            bottom: Val::Px(0.0),
+                            right: Val::Px(0.),
+                            top: Val::Px(0.),
+                            bottom: Val::Px(0.),
                         },
-                        size: Size::new(Val::Auto, Val::Percent(100.0)),
-                        aspect_ratio: Some(284.0 / 400.0),
+                        height: Val::Percent(100.),
+                        aspect_ratio: Some(284. / 400.),
                         ..Style::default()
                     },
                     ..ImageBundle::default()
@@ -238,7 +242,8 @@ pub fn create_dialog_box(
             .with_children(|parent| {
                 let child_sprite_style = Style {
                     position_type: PositionType::Absolute,
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    width: Val::Percent(100.),
+                    height: Val::Percent(100.),
                     ..Style::default()
                 };
 
@@ -276,7 +281,8 @@ pub fn create_dialog_box(
                             image: dialog_box_resources.scroll_animation[0].clone().into(),
                             style: Style {
                                 position_type: PositionType::Absolute,
-                                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                                width: Val::Percent(100.),
+                                height: Val::Percent(100.),
                                 display: Display::Flex,
                                 flex_direction: FlexDirection::Column,
                                 align_items: AlignItems::FlexStart,
@@ -313,7 +319,8 @@ pub fn create_dialog_box(
                                     left: Val::Percent(24.0),
                                     ..UiRect::default()
                                 },
-                                max_size: Size::new(Val::Px(450.0), Val::Percent(100.0)),
+                                max_width: Val::Percent(450.),
+                                max_height: Val::Percent(100.),
                                 ..Style::default()
                             },
                             ..TextBundle::default()

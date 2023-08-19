@@ -20,6 +20,7 @@ pub struct DoorInteract {
 #[derive(Component)]
 pub struct SecondCorridor;
 
+#[derive(Event)]
 pub struct DoorInteractEvent;
 
 pub fn setup_second_corridor(
