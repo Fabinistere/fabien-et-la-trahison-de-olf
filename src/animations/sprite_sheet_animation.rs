@@ -23,7 +23,7 @@ pub fn animate_sprite_sheet(
         animation.timer.tick(time.delta());
 
         if animation.timer.finished() {
-            if sprite.index == animation.end_index {
+            if sprite.index >= animation.end_index {
                 if animation.duration == AnimationDuration::Once {
                     commands.entity(entity).remove::<SpriteSheetAnimation>();
                 } else {

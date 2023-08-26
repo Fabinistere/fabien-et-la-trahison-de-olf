@@ -34,8 +34,11 @@ impl Dialogs {
 }
 
 /// A component and a Resource...
-#[derive(Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash, Component, Resource)]
+#[derive(
+    Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash, Default, Component, Resource,
+)]
 pub enum Language {
+    #[default]
     Francais,
     English,
     FabienAncien,
@@ -47,11 +50,5 @@ impl fmt::Display for Language {
             Language::FabienAncien => write!(f, "Fabien Ancien"),
             _ => write!(f, "{:?}", self),
         }
-    }
-}
-
-impl Default for Language {
-    fn default() -> Self {
-        Language::Francais
     }
 }

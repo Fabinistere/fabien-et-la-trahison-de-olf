@@ -1,14 +1,15 @@
 #![allow(clippy::type_complexity)]
 
 pub mod animations;
+pub mod characters;
 mod collisions;
 pub mod constants;
 pub mod controls;
+pub mod debug;
 pub mod dialogs;
 pub mod interactions;
 mod locations;
 mod menu;
-pub mod player;
 mod ui;
 
 use std::time::Duration;
@@ -16,13 +17,13 @@ use std::time::Duration;
 use bevy::{asset::ChangeWatcher, ecs::schedule::ScheduleBuildSettings, prelude::*};
 use bevy_rapier2d::prelude::*;
 
-pub use crate::{
+use crate::{
     constants::BACKGROUND_COLOR,
     controls::Key,
     dialogs::{DialogId, Dialogs, Language},
 };
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
 pub enum GameState {
     Menu,
     #[default]
@@ -34,9 +35,8 @@ struct PlayerCamera;
 
 fn main() {
     let mut app = App::new();
-    app
-        // .insert_resource(Msaa::default())
-        .insert_resource(ClearColor(BACKGROUND_COLOR))
+    app.insert_resource(Msaa::Off)
+        .insert_resource(ClearColor(BACKGROUND_COLOR)) // BACKGROUND_COLOR
         .insert_resource(controls::KeyBindings {
             up: [Key(KeyCode::Z), Key(KeyCode::Up)],
             down: [Key(KeyCode::S), Key(KeyCode::Down)],
@@ -62,15 +62,17 @@ fn main() {
                 }),
             bevy_tweening::TweeningPlugin,
             RapierDebugRenderPlugin::default(),
-            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.0),
-            dialogs::DialogsPlugin,
-            menu::MenuPlugin,
+            RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.),
+            // ----- Our plugins -----
             animations::AnimationPlugin,
-            player::PlayerPlugin,
-            locations::LocationsPlugin,
-            interactions::InteractionsPlugin,
-            ui::UiPlugin,
+            dialogs::DialogsPlugin,
+            debug::DebugPlugin,
             collisions::CollisionsPlugin,
+            interactions::InteractionsPlugin,
+            locations::LocationsPlugin,
+            menu::MenuPlugin,
+            characters::CharactersPlugin,
+            ui::UiPlugin,
         ))
         .add_state::<GameState>()
         // NOTE: should be on startup
@@ -91,5 +93,8 @@ fn main() {
 
 fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
     rapier_config.gravity = Vect::ZERO;
-    commands.spawn((Camera2dBundle::default(), PlayerCamera));
+
+    let mut camera = Camera2dBundle::default();
+    camera.projection.scale = 0.1;
+    commands.spawn((camera, PlayerCamera));
 }

@@ -7,9 +7,9 @@ pub fn ease_in_cubic(t: f32) -> f32 {
 }
 
 pub fn ease_in_sine(t: f32) -> f32 {
-    1.0 - ((t * std::f32::consts::PI) / 2.0).cos()
+    1. - ((t * std::f32::consts::PI) / 2.).cos()
 }
 
 pub fn ease_out_sine(t: f32) -> f32 {
-    ((t * std::f32::consts::PI) / 2.0).sin()
+    ((t * std::f32::consts::PI) / 2.).sin()
 }

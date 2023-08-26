@@ -1,4 +1,7 @@
-use crate::constants::player::{PLAYER_HEIGHT, PLAYER_WIDTH};
+pub mod movement;
+pub mod player;
+
+use crate::constants::character::player::{PLAYER_HEIGHT, PLAYER_WIDTH};
 use bevy::prelude::*;
 use std::collections::HashMap;
 
@@ -6,14 +9,18 @@ pub struct CharactersPlugin;
 
 impl Plugin for CharactersPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup_character_textures);
+        app.add_plugins(player::PlayerPlugin)
+            .add_systems(Startup, setup_character_textures);
     }
 }
 
-#[derive(Deref, DerefMut)]
+#[derive(Component)]
+pub struct CharacterHitbox;
+
+#[derive(Deref, DerefMut, Resource)]
 pub struct CharacterTextures(HashMap<Character, CharacterTexture>);
 
-#[derive(Debug, Resource)]
+#[derive(Debug)]
 pub struct CharacterTexture {
     pub normal: Handle<TextureAtlas>,
     pub icon: Handle<Image>,
@@ -53,7 +60,7 @@ fn setup_character_textures(
         CharacterTexture {
             normal: texture_atlases.add(TextureAtlas::from_grid(
                 asset_server.load("textures/characters/panneau_spritesheet.png"),
-                Vec2::new(16.0, 13.0),
+                Vec2::new(16., 13.),
                 1,
                 1,
                 None,
