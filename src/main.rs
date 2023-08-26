@@ -78,9 +78,6 @@ fn main() {
         // NOTE: should be on startup
         .add_systems(OnEnter(GameState::Playing), game_setup);
 
-    #[cfg(target_arch = "wasm32")]
-    app.add_plugins(bevy_web_resizer::Plugin);
-
     app.edit_schedule(Main, |schedule| {
         schedule.set_build_settings(ScheduleBuildSettings {
             ambiguity_detection: bevy::ecs::schedule::LogLevel::Warn,
