@@ -1,5 +1,12 @@
-use super::PlayerCamera;
-use crate::{constants::player::*, controls::KeyBindings, GameState};
+use crate::{
+    characters::{
+        movement::{MovementBundle, Speed},
+        CharacterHitbox,
+    },
+    constants::character::{player::*, *},
+    controls::KeyBindings,
+    GameState, PlayerCamera,
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use serde::Deserialize;
@@ -32,10 +39,10 @@ impl Plugin for PlayerPlugin {
 
 #[derive(Component)]
 pub struct Player;
-#[derive(Component, Deref, DerefMut)]
-struct Speed(f32);
+
 #[derive(Component)]
 struct Immobilized;
+
 #[derive(Component)]
 pub struct PlayerSensor;
 
@@ -176,8 +183,8 @@ fn player_movement(
         let mut vel_y = y_axis as f32 * **speed;
 
         if x_axis != 0 && y_axis != 0 {
-            vel_x *= (std::f32::consts::PI / 4.0).cos();
-            vel_y *= (std::f32::consts::PI / 4.0).cos();
+            vel_x *= (std::f32::consts::PI / 4.).cos();
+            vel_y *= (std::f32::consts::PI / 4.).cos();
         }
 
         rb_vel.linvel.x = vel_x;
@@ -229,12 +236,11 @@ fn spawn_player(
             SpriteSheetBundle {
                 texture_atlas: texture_atlas_handle,
                 transform: Transform {
-                    translation: Vec3::new(-200.0, -1500.0, PLAYER_Z),
-                    // translation: Vec3::new(0.0, 0.0, PLAYER_Z),
+                    translation: PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),
                     ..Transform::default()
                 },
-                ..SpriteSheetBundle::default()
+                ..default()
             },
             PlayerAnimation {
                 timer: Timer::from_seconds(
@@ -245,28 +251,34 @@ fn spawn_player(
             },
             RigidBody::Dynamic,
             LockedAxes::ROTATION_LOCKED,
-            Velocity {
-                linvel: Vect::ZERO,
-                angvel: 0.0,
+            MovementBundle {
+                speed: Speed::default(),
+                velocity: Velocity {
+                    linvel: Vect::ZERO,
+                    angvel: 0.,
+                },
             },
             Player,
-            Speed(800.0),
+            Name::new("Player"),
         ))
         .with_children(|parent| {
             parent.spawn((
-                Collider::cuboid(PLAYER_HITBOX_WIDTH, PLAYER_HITBOX_HEIGHT),
-                Transform::from_xyz(0.0, PLAYER_HITBOX_Y_OFFSET, 0.0),
+                Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
+                Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
+                CharacterHitbox,
+                Name::new("Player Hitbox"),
             ));
 
             parent.spawn((
                 Collider::segment(
-                    Vect::new(-PLAYER_HITBOX_WIDTH, 0.0),
-                    Vect::new(PLAYER_HITBOX_WIDTH, 0.0),
+                    Vect::new(-CHAR_HITBOX_WIDTH, 0.),
+                    Vect::new(CHAR_HITBOX_WIDTH, 0.),
                 ),
                 Sensor,
                 ActiveEvents::COLLISION_EVENTS,
                 ActiveCollisionTypes::STATIC_STATIC,
                 PlayerSensor,
+                Name::new("Player Sensor"),
             ));
         });
 }

@@ -34,8 +34,8 @@ pub fn material_setup(
             texture: asset_server.load("textures/characters/panneau_icon.png"),
         }),
         transform: Transform {
-            scale: Vec3::new(1000.0, 1000.0, 0.0),
-            translation: Vec3::new(0.0, 0.0, 30.0),
+            scale: Vec3::new(1000., 1000., 0.),
+            translation: Vec3::new(0., 0., 30.),
             ..Transform::default()
         },
         ..MaterialMesh2dBundle::default()

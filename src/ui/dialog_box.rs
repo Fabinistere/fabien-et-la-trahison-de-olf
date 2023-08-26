@@ -107,7 +107,7 @@ pub fn create_dialog_box_on_key_press(
 ) {
     if keyboard_input.just_pressed(KeyCode::O) {
         if let Ok((_entity, animator, _style)) = query.get_single() {
-            if animator.tweenable().progress() >= 1.0 {
+            if animator.tweenable().progress() >= 1. {
                 close_dialog_box_event.send(CloseDialogBoxEvent);
             }
         } else {
@@ -139,9 +139,9 @@ pub fn close_dialog_box(
                     },
                     end: UiRect {
                         left: Val::Auto,
-                        top: Val::Px(0.0),
+                        top: Val::Px(0.),
                         right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
-                        bottom: Val::Px(0.0),
+                        bottom: Val::Px(0.),
                     },
                 },
             )
@@ -181,15 +181,15 @@ pub fn create_dialog_box(
             UiPositionLens {
                 start: UiRect {
                     left: Val::Auto,
-                    top: Val::Px(0.0),
+                    top: Val::Px(0.),
                     right: Val::Px(DIALOG_BOX_ANIMATION_OFFSET),
-                    bottom: Val::Px(0.0),
+                    bottom: Val::Px(0.),
                 },
                 end: UiRect {
                     left: Val::Auto,
-                    top: Val::Px(0.0),
-                    right: Val::Px(0.0),
-                    bottom: Val::Px(0.0),
+                    top: Val::Px(0.),
+                    right: Val::Px(0.),
+                    bottom: Val::Px(0.),
                 },
             },
         );
@@ -199,12 +199,12 @@ pub fn create_dialog_box(
             Duration::from_millis(1000),
             UiPositionLens {
                 start: UiRect {
-                    top: Val::Px(0.0),
+                    top: Val::Px(0.),
                     ..UiRect::default()
                 },
                 end: UiRect {
                     // TODO Magical Number
-                    top: Val::Px(-200.0),
+                    top: Val::Px(-200.),
                     ..UiRect::default()
                 },
             },
@@ -307,7 +307,7 @@ pub fn create_dialog_box(
                                 "",
                                 TextStyle {
                                     font: dialog_box_resources.text_font.clone(),
-                                    font_size: 30.0,
+                                    font_size: 30.,
                                     color: Color::BLACK,
                                 },
                             )
@@ -315,8 +315,8 @@ pub fn create_dialog_box(
                             style: Style {
                                 flex_wrap: FlexWrap::Wrap,
                                 margin: UiRect {
-                                    top: Val::Percent(74.0),
-                                    left: Val::Percent(24.0),
+                                    top: Val::Percent(74.),
+                                    left: Val::Percent(24.),
                                     ..UiRect::default()
                                 },
                                 max_width: Val::Percent(450.),
