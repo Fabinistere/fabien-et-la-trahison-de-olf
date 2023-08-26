@@ -286,7 +286,6 @@ pub fn setup_hall(
                                     vertice_separation: 0.,
                                     ..default()
                                 },
-                                ..default()
                             },
                             Transform::default(),
                             WallCollider(PlayerLocation::Hall),
@@ -324,7 +323,6 @@ pub fn setup_hall(
                                 vertice_separation: 0.,
                                 ..default()
                             },
-                            ..default()
                         },
                         Transform::IDENTITY,
                     ));
@@ -358,7 +356,6 @@ pub fn setup_hall(
                                 vertice_separation: 0.,
                                 ..default()
                             },
-                            ..default()
                         },
                         Transform::IDENTITY,
                         DoorCollider,
@@ -398,20 +395,17 @@ pub fn setup_hall(
                                 vertice_separation: 0.,
                                 ..default()
                             },
-                            ..default()
                         },
                         Transform::IDENTITY,
                     ));
                 });
 
-            for count in 0..4 {
+            for (count, wall_light_position) in WALL_LIGHT_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
                         SpriteSheetBundle {
                             texture_atlas: texture_atlases.add(small_flame_texture_atlas.clone()),
-                            transform: Transform::from_translation(
-                                WALL_LIGHT_POSITIONS[count].into(),
-                            ),
+                            transform: Transform::from_translation((*wall_light_position).into()),
                             ..default()
                         },
                         SpriteSheetAnimation {
@@ -435,13 +429,13 @@ pub fn setup_hall(
                     });
             }
 
-            for count in 0..2 {
+            for (count, hall_chancelier_position) in HALL_CHANDELIER_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
                         SpriteBundle {
                             texture: chandelier.clone(),
                             transform: Transform {
-                                translation: HALL_CHANDELIER_POSITIONS[count].into(),
+                                translation: (*hall_chancelier_position).into(),
                                 ..default()
                             },
                             ..default()
@@ -451,13 +445,15 @@ pub fn setup_hall(
                     ))
                     .with_children(|parent| {
                         // spawn 3 flame
-                        for flame_number in 0..3 {
+                        for (flame_number, chancelier_flame_position) in
+                            CHANDELIER_FLAME_POSITIONS.iter().enumerate()
+                        {
                             parent.spawn((
                                 SpriteSheetBundle {
                                     texture_atlas: texture_atlases
                                         .add(small_flame_texture_atlas.clone()),
                                     transform: Transform::from_translation(
-                                        CHANDELIER_FLAME_POSITIONS[flame_number].into(),
+                                        (*chancelier_flame_position).into(),
                                     ),
                                     ..default()
                                 },

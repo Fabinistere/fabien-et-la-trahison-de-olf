@@ -111,7 +111,7 @@ pub fn olf_cat_animation(
 
         if timer.finished() {
             let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            sprite.index = (sprite.index as usize + 1) % texture_atlas.textures.len();
+            sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
         }
     }
 }
@@ -349,7 +349,6 @@ pub fn setup_secret_room(
                                     vertice_separation: 0.,
                                     ..default()
                                 },
-                                ..default()
                             },
                             Transform::default(),
                             WallCollider(PlayerLocation::SecretRoom),
@@ -405,7 +404,6 @@ pub fn setup_secret_room(
                                     vertice_separation: 0.,
                                     ..default()
                                 },
-                                ..default()
                             },
                             Transform::default(),
                         ));

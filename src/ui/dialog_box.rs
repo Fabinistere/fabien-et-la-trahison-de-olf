@@ -271,7 +271,7 @@ pub fn create_dialog_box(
 
                 parent.spawn(ImageBundle {
                     image: dialog_box_resources.chandelier.clone().into(),
-                    style: child_sprite_style.clone(),
+                    style: child_sprite_style,
                     ..ImageBundle::default()
                 });
 

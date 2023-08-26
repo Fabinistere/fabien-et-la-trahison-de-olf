@@ -52,7 +52,7 @@ fn setup_menu(
     asset_server: Res<AssetServer>,
     dialogs: Res<Dialogs>,
     languages_button_colors: Res<LanguagesButtonColors>,
-    language: Res<Language>,
+    current_language: Res<Language>,
 ) {
     let font = asset_server.load("fonts/dpcomic.ttf");
     let background_image = asset_server.load("textures/Monkey_ULTIME.png");
@@ -75,7 +75,10 @@ fn setup_menu(
         text: Text {
             sections: vec![
                 TextSection {
-                    value: format!("{}\n", dialogs.get(DialogId::MenuTitle01, *language)),
+                    value: format!(
+                        "{}\n",
+                        dialogs.get(DialogId::MenuTitle01, *current_language)
+                    ),
                     style: TextStyle {
                         font: font.clone(),
                         font_size: 100.,
@@ -83,7 +86,7 @@ fn setup_menu(
                     },
                 },
                 TextSection {
-                    value: dialogs.get(DialogId::MenuTitle02, *language),
+                    value: dialogs.get(DialogId::MenuTitle02, *current_language),
                     style: TextStyle {
                         font: font.clone(),
                         font_size: 60.,
@@ -107,7 +110,7 @@ fn setup_menu(
             ..Style::default()
         },
         text: Text::from_section(
-            dialogs.get(DialogId::MenuPlay, *language),
+            dialogs.get(DialogId::MenuPlay, *current_language),
             TextStyle {
                 font: font.clone(),
                 font_size: 30.,
@@ -140,7 +143,7 @@ fn setup_menu(
                     TextStyle {
                         font: font.clone(),
                         font_size: 20.,
-                        color: if language == language {
+                        color: if *current_language == language {
                             languages_button_colors.selected
                         } else {
                             languages_button_colors.normal
@@ -175,7 +178,7 @@ fn setup_menu(
 
             for (button, text, selected, language) in languages_buttons.into_iter() {
                 parent
-                    .spawn((button, Selected(selected), language.clone()))
+                    .spawn((button, Selected(selected), language))
                     .with_children(|parent| {
                         parent.spawn(text);
                     });
@@ -196,11 +199,8 @@ fn _game_start(
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if game_state.get() == &GameState::Menu {
-        for _ in keyboard_inputs.iter() {
-            next_game_state.set(GameState::Playing);
-            break;
-        }
+    if game_state.get() == &GameState::Menu && keyboard_inputs.iter().next().is_some() {
+        next_game_state.set(GameState::Playing);
     }
 }
 

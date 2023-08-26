@@ -225,7 +225,6 @@ pub fn setup_main_room(
                                     vertice_separation: 0.,
                                     ..default()
                                 },
-                                ..default()
                             },
                             Transform::default(),
                             WallCollider(PlayerLocation::Temple),
@@ -264,7 +263,6 @@ pub fn setup_main_room(
                                 vertice_separation: 0.,
                                 ..default()
                             },
-                            ..default()
                         },
                         Transform::from_translation(BANNER_COLLIDER_OFFSET.into()),
                         DoorCollider,
@@ -365,13 +363,13 @@ pub fn setup_main_room(
 
             // TODO: CHECK https://bevy-cheatbook.github.io/features/parent-child.html
             // 6 PILLARS
-            for count in 0..6 {
+            for (count, pillar_position) in PILLAR_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
                         SpriteBundle {
                             texture: column.clone(),
                             transform: Transform {
-                                translation: PILLAR_POSITIONS[count].into(),
+                                translation: (*pillar_position).into(),
                                 ..default()
                             },
                             ..default()
@@ -392,7 +390,6 @@ pub fn setup_main_room(
                                     vertice_separation: 0.,
                                     ..default()
                                 },
-                                ..default()
                             },
                             Transform::from_xyz(0., PILLAR_HITBOX_Y_OFFSET, 0.),
                             Name::new(format!("Column {} Hitbox", count + 1)),
@@ -401,13 +398,15 @@ pub fn setup_main_room(
             }
 
             // 4 Chandeliers
-            for count in 0..4 {
+            for (count, temple_chandelier_position) in
+                TEMPLE_CHANDELIER_POSITIONS.iter().enumerate()
+            {
                 parent
                     .spawn((
                         SpriteBundle {
                             texture: chandelier.clone(),
                             transform: Transform::from_translation(
-                                TEMPLE_CHANDELIER_POSITIONS[count].into(),
+                                (*temple_chandelier_position).into(),
                             ),
                             ..default()
                         },
@@ -416,13 +415,15 @@ pub fn setup_main_room(
                     ))
                     .with_children(|parent| {
                         // spawn 3 flame
-                        for flame_number in 0..3 {
+                        for (flame_number, chandelier_flame_position) in
+                            CHANDELIER_FLAME_POSITIONS.iter().enumerate()
+                        {
                             parent.spawn((
                                 SpriteSheetBundle {
                                     texture_atlas: texture_atlases
                                         .add(small_flame_texture_atlas.clone()),
                                     transform: Transform::from_translation(
-                                        CHANDELIER_FLAME_POSITIONS[flame_number].into(),
+                                        (*chandelier_flame_position).into(),
                                     ),
                                     ..default()
                                 },
@@ -467,7 +468,6 @@ pub fn setup_main_room(
                                     vertice_separation: 0.,
                                     ..default()
                                 },
-                                ..default()
                             },
                             Transform::IDENTITY,
                             Name::new(format!("Pot {} Hitbox", count + 1)),
@@ -476,14 +476,12 @@ pub fn setup_main_room(
             }
 
             // 4 Braziers
-            for count in 0..4 {
+            for (count, brazier_position) in BRAZIERS_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
                         SpriteBundle {
                             texture: brazier_back.clone(),
-                            transform: Transform::from_translation(
-                                BRAZIERS_POSITIONS[count].into(),
-                            ),
+                            transform: Transform::from_translation((*brazier_position).into()),
                             ..default()
                         },
                         RigidBody::Fixed,
@@ -526,7 +524,6 @@ pub fn setup_main_room(
                                     vertice_separation: 0.,
                                     ..default()
                                 },
-                                ..default()
                             },
                             Transform::IDENTITY,
                             Name::new(format!("Brazier {} Hitbox", count + 1)),
@@ -558,7 +555,6 @@ pub fn setup_main_room(
                                 vertice_separation: 0.,
                                 ..default()
                             },
-                            ..default()
                         },
                         Transform::IDENTITY,
                         Name::new("Cat Statue Collider"),
@@ -588,7 +584,6 @@ pub fn setup_main_room(
                                 vertice_separation: 0.,
                                 ..default()
                             },
-                            ..default()
                         },
                         Transform::IDENTITY,
                         Name::new("Fabien Statue Collider"),
