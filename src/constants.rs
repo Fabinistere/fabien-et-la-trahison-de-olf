@@ -8,8 +8,11 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color =
 //     alpha: 1.,
 // };
 
-pub const RESOLUTION: f32 = 16. / 9.;
+// pub const RESOLUTION: f32 = 16. / 9.;
+pub const RESOLUTION: f32 = 9. / 16.;
 pub const TILE_SIZE: f32 = 1.;
+
+pub mod title_screen {}
 
 pub mod interactions {
     pub const INTERACT_BUTTON_Z: f32 = 20.;

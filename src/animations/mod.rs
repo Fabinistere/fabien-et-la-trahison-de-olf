@@ -18,6 +18,7 @@ impl Plugin for AnimationPlugin {
                 slide::slide_animations,
                 slide::ui_slide_animations,
                 sprite_sheet_animation::animate_sprite_sheet,
+                sprite_sheet_animation::animate_ui_atlas,
             ),
         );
     }

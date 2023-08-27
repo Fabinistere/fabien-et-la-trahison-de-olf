@@ -25,8 +25,8 @@ use crate::{
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
 pub enum GameState {
-    Menu,
     #[default]
+    Menu,
     Playing,
 }
 
@@ -75,8 +75,7 @@ fn main() {
             ui::UiPlugin,
         ))
         .add_state::<GameState>()
-        // NOTE: should be on startup
-        .add_systems(OnEnter(GameState::Playing), game_setup);
+        .add_systems(Startup, game_setup);
 
     app.edit_schedule(Main, |schedule| {
         schedule.set_build_settings(ScheduleBuildSettings {
@@ -94,4 +93,12 @@ fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfigurat
     let mut camera = Camera2dBundle::default();
     camera.projection.scale = 0.1;
     commands.spawn((camera, PlayerCamera));
+}
+
+pub fn playing(game_state: Res<State<GameState>>) -> bool {
+    game_state.get() == &GameState::Playing
+}
+
+pub fn in_menu(game_state: Res<State<GameState>>) -> bool {
+    game_state.get() == &GameState::Menu
 }

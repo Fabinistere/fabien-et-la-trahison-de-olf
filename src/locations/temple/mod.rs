@@ -8,7 +8,7 @@ use crate::{
             *,
         },
     },
-    GameState,
+    playing, GameState,
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{CollisionEvent, Sensor};
@@ -60,7 +60,8 @@ impl Plugin for TemplePlugin {
                     location_event,
                     secret_room::remove_secret_room_cover,
                     secret_room::add_secret_room_cover
-                ),
+                )
+                    .run_if(playing),
             )
             .add_systems(
                 PostUpdate,
@@ -69,6 +70,7 @@ impl Plugin for TemplePlugin {
                     open_close_door,
                     main_room::secret_banner_interaction,
                 )
+                    .run_if(playing)
             )
             .add_systems(
                 PostUpdate,
@@ -87,18 +89,19 @@ impl Plugin for TemplePlugin {
             )
             .add_systems(
                 OnEnter(PlayerLocation::Hall),
-                control_wall_collider,
+                control_wall_collider.run_if(playing),
             )
             .add_systems(
                 OnEnter(PlayerLocation::Temple),
-                control_wall_collider,
+                control_wall_collider.run_if(playing),
             )
             .add_systems(
                 OnEnter(PlayerLocation::SecretRoom),
                 (
                     control_wall_collider,
                     // secret_room::remove_secret_room_cover,
-                ),
+                )
+                    .run_if(playing),
             )
             // .add_systems(
             //     OnExit(PlayerLocation::SecretRoom),
