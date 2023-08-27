@@ -1,4 +1,32 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
+
+use crate::{characters::player::Player, constants::FRAME_TIME};
+
+#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Reflect, Component)]
+pub enum CharacterState {
+    #[default]
+    Idle,
+    Run,
+}
+
+#[derive(Deref, DerefMut, Component)]
+pub struct AnimationTimer(pub Timer);
+
+impl Default for AnimationTimer {
+    fn default() -> Self {
+        AnimationTimer(Timer::from_seconds(FRAME_TIME, TimerMode::Repeating))
+    }
+}
+
+/// A CharacterState is linked to
+///
+/// - a start_index (first frame),
+/// - a end_index (last frame),
+/// - the next CharacterState (after the anim ended)
+#[derive(Deref, DerefMut, Clone, Reflect, Default, Component)]
+pub struct AnimationIndices(pub HashMap<CharacterState, (usize, usize, CharacterState)>);
 
 #[derive(Component)]
 pub struct SpriteSheetAnimation {
@@ -31,6 +59,74 @@ pub fn animate_sprite_sheet(
                 }
             } else {
                 sprite.index += 1;
+            }
+        }
+    }
+}
+
+/// Jump directly to the correct frame when the state has changed.
+pub fn jump_frame_character_state(
+    mut query: Query<
+        (&AnimationIndices, &mut TextureAtlasSprite, &CharacterState),
+        Changed<CharacterState>,
+    >,
+) {
+    for (indices, mut sprite, character_state) in &mut query {
+        // info!("{character_state:#?}",);
+        let (first_indice, _, _) = &indices.get(&character_state).unwrap();
+        sprite.index = *first_indice;
+    }
+}
+
+pub fn animate_character(
+    time: Res<Time>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    mut query: Query<
+        (
+            Entity,
+            &AnimationIndices,
+            &mut AnimationTimer,
+            &mut TextureAtlasSprite,
+            &Handle<TextureAtlas>,
+            &mut CharacterState,
+            &Name,
+        ),
+        With<Player>,
+    >,
+) {
+    for (
+        _character,
+        indices,
+        mut timer,
+        mut sprite,
+        texture_atlas_handle,
+        mut character_state,
+        name,
+    ) in &mut query
+    {
+        timer.tick(time.delta());
+
+        if timer.just_finished() {
+            let (_first_frame, last_frame, next_phase) = &indices.get(&character_state).unwrap();
+            // info!(
+            //     "({_first_frame}, {last_frame}, {next_phase:#?}): {}",
+            //     sprite.index
+            // );
+            // eprintln!("{:#?}", sprite);
+
+            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+
+            if sprite.index == *last_frame {
+                // update state
+                sprite.index = indices.get(next_phase).unwrap().0;
+                *character_state = next_phase.clone();
+            } else if sprite.index + 1 < texture_atlas.textures.len() {
+                sprite.index = sprite.index + 1
+            } else {
+                error!("anim limit reached: {}", name);
+                // commands.entity(character).remove::<AnimationTimer>();
+                *character_state = next_phase.clone();
+                sprite.index = indices.get(next_phase).unwrap().0;
             }
         }
     }

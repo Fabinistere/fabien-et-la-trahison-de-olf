@@ -11,6 +11,8 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color =
 pub const RESOLUTION: f32 = 16. / 9.;
 pub const TILE_SIZE: f32 = 1.;
 
+pub const FRAME_TIME: f32 = 0.1;
+
 pub mod interactions {
     pub const INTERACT_BUTTON_Z: f32 = 20.;
     pub const INTERACT_BUTTON_SCALE: f32 = 0.25;
@@ -34,12 +36,12 @@ pub mod character {
 
     pub const CHAR_HITBOX_HEIGHT: f32 = 1.5 * CHAR_SCALE;
     pub const CHAR_HITBOX_WIDTH: f32 = 5. * CHAR_SCALE;
-    pub const CHAR_HITBOX_Y_OFFSET: f32 = -3.5;
+    pub const CHAR_HITBOX_Y_OFFSET: f32 = -6.25;
+    pub const CHAR_SENSOR_Y_OFFSET: f32 = -1.25;
 
     pub mod player {
-        use crate::characters::player::PlayerAnimationType;
+        use crate::animations::sprite_sheet_animation::CharacterState;
 
-        pub const STARTING_ANIMATION: PlayerAnimationType = PlayerAnimationType::RightIdle;
         pub const PLAYER_WIDTH: f32 = 12.;
         pub const PLAYER_HEIGHT: f32 = 15.;
         pub const PLAYER_SCALE: f32 = super::CHAR_SCALE;
@@ -47,6 +49,15 @@ pub mod character {
         pub const PLAYER_SPAWN: (f32, f32, f32) = (-24., -150., PLAYER_Z);
 
         pub const CAMERA_INTERPOLATION: f32 = 0.1;
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  Animation                                 */
+        /* -------------------------------------------------------------------------- */
+
+        // (start_frame, end_frame, next_state)
+        pub const PLAYER_RUN_FRAMES: (usize, usize, CharacterState) = (6, 9, CharacterState::Idle);
+        pub const PLAYER_IDLE_FRAMES: (usize, usize, CharacterState) =
+            (10, 10, CharacterState::Idle);
     }
 }
 

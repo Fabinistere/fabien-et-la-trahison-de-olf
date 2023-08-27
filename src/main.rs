@@ -38,10 +38,10 @@ fn main() {
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(BACKGROUND_COLOR)) // BACKGROUND_COLOR
         .insert_resource(controls::KeyBindings {
-            up: [Key(KeyCode::Z), Key(KeyCode::Up)],
+            up: [Key(KeyCode::W), Key(KeyCode::Z), Key(KeyCode::Up)],
             down: [Key(KeyCode::S), Key(KeyCode::Down)],
             right: [Key(KeyCode::D), Key(KeyCode::Right)],
-            left: [Key(KeyCode::Q), Key(KeyCode::Left)],
+            left: [Key(KeyCode::A), Key(KeyCode::Q), Key(KeyCode::Left)],
             interact: [Key(KeyCode::E), Key(KeyCode::R)],
         })
         .add_plugins((
