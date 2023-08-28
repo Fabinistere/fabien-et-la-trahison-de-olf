@@ -12,7 +12,23 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color =
 pub const RESOLUTION: f32 = 9. / 16.;
 pub const TILE_SIZE: f32 = 1.;
 
-pub mod title_screen {}
+pub mod title_screen {
+    pub const FULL_LIGHTS_INDEX: (usize, usize) = (0, 0);
+    pub const BOT_SHUTDOWN_INDEX: (usize, usize) = (1, 1);
+    pub const TOP_SHUTDOWN_INDEX: (usize, usize) = (2, 2);
+    pub const TOWER_RESET_INDEX: (usize, usize) = (3, 3);
+    pub const SMALL_SHUTDOWN_INDEX: (usize, usize) = (4, 12);
+    pub const LEFT_SHUTDOWN_INDEX: (usize, usize) = (13, 20);
+
+    pub const MANOR_LIGHTS_PATTERN_INDEXES: &[(usize, usize); 6] = &[
+        FULL_LIGHTS_INDEX,
+        TOWER_RESET_INDEX,
+        SMALL_SHUTDOWN_INDEX,
+        TOP_SHUTDOWN_INDEX,
+        BOT_SHUTDOWN_INDEX,
+        LEFT_SHUTDOWN_INDEX,
+    ];
+}
 
 pub mod interactions {
     pub const INTERACT_BUTTON_Z: f32 = 20.;

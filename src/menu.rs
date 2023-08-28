@@ -2,9 +2,14 @@ use std::time::Duration;
 
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
+    constants::title_screen::FULL_LIGHTS_INDEX,
     in_menu, DialogId, Dialogs, GameState, Language,
 };
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
 use strum::IntoEnumIterator;
 
 pub struct MenuPlugin;
@@ -60,6 +65,35 @@ impl Default for LanguagesButtonColors {
             hovered: Color::rgb(0.8, 0.8, 0.8),
             selected: Color::rgb(1., 0.9, 0.),
             hovered_selected: Color::rgb(0.9, 0.8, 0.),
+        }
+    }
+}
+
+#[derive(Deref, DerefMut, Reflect, Component)]
+pub struct ManorLightsTimer {
+    pub timer: Timer,
+}
+
+#[derive(Copy, Clone, Default, Reflect, Debug, Component)]
+pub enum ManorLightsPattern {
+    #[default]
+    FullLights,
+    TowerReset,
+    SmallShutdown,
+    TopShutdown,
+    BotShutdown,
+    LeftShutdown,
+}
+
+/// Won't draw `ManorLightsPattern::FullLights`
+impl Distribution<ManorLightsPattern> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ManorLightsPattern {
+        match rng.gen_range(1..=5) {
+            1 => ManorLightsPattern::TowerReset,
+            2 => ManorLightsPattern::SmallShutdown,
+            3 => ManorLightsPattern::TopShutdown,
+            4 => ManorLightsPattern::BotShutdown,
+            _ => ManorLightsPattern::LeftShutdown,
         }
     }
 }
@@ -181,7 +215,18 @@ fn setup_menu(
     let french_title = asset_server.load("textures/title_screen/title_fr_white.png");
     let moon = asset_server.load("textures/title_screen/moon.png");
 
-    let foreground = asset_server.load("textures/title_screen/static_landscape_big_picture_with_lights.png");
+    let foreground = asset_server.load("textures/title_screen/static_landscape_big_picture.png");
+    let manor_lights_spritesheet =
+        asset_server.load("textures/title_screen/manor_lights_sheet.png");
+    let manor_lights_texture_atlas = TextureAtlas::from_grid(
+        manor_lights_spritesheet,
+        Vec2::new(426., 280.),
+        21,
+        1,
+        None,
+        None,
+    );
+    let manor_lights_texture_atlas_handle = texture_atlases.add(manor_lights_texture_atlas.clone());
 
     let title = TextBundle {
         text: Text {
@@ -274,6 +319,8 @@ fn setup_menu(
             NodeBundle {
                 style: Style {
                     width: Val::Percent(100.),
+                    // TODO: Animate Transi Start
+                    // bottom: Val::Percent(-40.),
                     ..default()
                 },
                 ..default()
@@ -313,8 +360,12 @@ fn setup_menu(
                                     justify_content: JustifyContent::Center,
                                     flex_shrink: 0.,
                                     width: Val::Percent(100.),
+                                    // TODO: Animate Title
+                                    bottom: Val::Percent(35.5),
+                                    // bottom: Val::Percent(-25.5),
                                     ..default()
                                 },
+                                transform: Transform::from_scale((4., 4., 4.).into()),
                                 ..default()
                             },
                             Name::new("Title Node"),
@@ -342,6 +393,7 @@ fn setup_menu(
                                     width: Val::Percent(100.),
                                     flex_shrink: 0.,
                                     right: Val::Percent(100.),
+                                    top: Val::Percent(5.5),
                                     ..default()
                                 },
                                 ..default()
@@ -349,27 +401,39 @@ fn setup_menu(
                             Name::new("Foreground - Mounts and Manor"),
                         ))
                         .with_children(|parent| {
-                            // parent.spawn((
-                            //     ImageBundle {
-                            //         image: manor_lights.into(),
-                            //         style: Style {
-                            //             flex_shrink: 0.,
-                            //             ..default()
-                            //         },
-                            //         ..default()
-                            //     },
-                            //     Name::new("Manor Lights"),
-                            // ));
+                            parent.spawn((
+                                AtlasImageBundle {
+                                    style: Style {
+                                        width: Val::Percent(100.),
+                                        flex_shrink: 0.,
+                                        ..default()
+                                    },
+                                    texture_atlas: manor_lights_texture_atlas_handle,
+                                    texture_atlas_image: UiTextureAtlasImage::default(),
+                                    ..default()
+                                },
+                                ManorLightsTimer {
+                                    timer: Timer::new(
+                                        Duration::from_millis(200),
+                                        TimerMode::Repeating,
+                                    ),
+                                },
+                                ManorLightsPattern::default(),
+                                Name::new("Manor Lights"),
+                            ));
                         });
 
+                    // TODO: Moon
                     parent.spawn((
                         ImageBundle {
                             image: moon.into(),
                             style: Style {
                                 flex_shrink: 0.,
+                                right: Val::Percent(129.),
+                                bottom: Val::Percent(54.),
                                 ..default()
                             },
-                            // transform: Transform::from_translation(translation),
+                            transform: Transform::from_scale((0.4, 0.4, 0.4).into()),
                             ..default()
                         },
                         Name::new("Moon"),

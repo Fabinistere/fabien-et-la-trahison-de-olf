@@ -36,6 +36,7 @@ serde = "1.0"
 ron = "0.7"
 strum = "0.24"
 strum_macros = "0.24"
+rand = "0.8.5"
 
 # ----------- Debug -----------
 # until a clear release, we're tracking `main`

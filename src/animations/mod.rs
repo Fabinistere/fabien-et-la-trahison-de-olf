@@ -18,6 +18,11 @@ impl Plugin for AnimationPlugin {
                 slide::slide_animations,
                 slide::ui_slide_animations,
                 sprite_sheet_animation::animate_sprite_sheet,
+                sprite_sheet_animation::jump_frame_manor_lights_state,
+                sprite_sheet_animation::tempo_animation_timer
+                    .after(sprite_sheet_animation::jump_frame_manor_lights_state),
+                sprite_sheet_animation::animate_manor_lights
+                    .after(sprite_sheet_animation::tempo_animation_timer),
                 sprite_sheet_animation::animate_ui_atlas,
             ),
         );

@@ -5,6 +5,7 @@ use crate::{
     animations::sprite_sheet_animation::SpriteSheetAnimation,
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     locations::temple::{OverlappingProps, PlayerLocation},
+    menu::{ManorLightsPattern, ManorLightsTimer},
     GameState,
 };
 
@@ -20,6 +21,11 @@ impl Plugin for DebugPlugin {
                     StateInspectorPlugin::<GameState>::default(),
                     StateInspectorPlugin::<PlayerLocation>::default(),
                 ))
+                /* -------------------------------------------------------------------------- */
+                /*                                    Menu                                    */
+                /* -------------------------------------------------------------------------- */
+                .register_type::<ManorLightsTimer>()
+                .register_type::<ManorLightsPattern>()
                 .register_type::<SpriteSheetAnimation>()
                 .register_type::<OverlappingProps>()
                 /* -------------------------------------------------------------------------- */
