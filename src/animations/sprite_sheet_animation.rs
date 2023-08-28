@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use bevy::prelude::*;
+use rand::Rng;
 
 use crate::{characters::player::Player, constants::FRAME_TIME};
 
@@ -42,6 +43,9 @@ pub enum AnimationDuration {
     Once,
 }
 
+#[derive(Deref, DerefMut, Reflect, Component)]
+pub struct TempoAnimation(pub Timer);
+
 pub fn animate_sprite_sheet(
     mut commands: Commands,
     time: Res<Time>,
@@ -66,22 +70,57 @@ pub fn animate_sprite_sheet(
 
 /// Jump directly to the correct frame when the state has changed.
 pub fn jump_frame_character_state(
+    mut commands: Commands,
     mut query: Query<
-        (&AnimationIndices, &mut TextureAtlasSprite, &CharacterState),
+        (
+            Entity,
+            &AnimationIndices,
+            &mut TextureAtlasSprite,
+            &CharacterState,
+            &Name,
+        ),
         Changed<CharacterState>,
     >,
 ) {
-    for (indices, mut sprite, character_state) in &mut query {
+    for (character, indices, mut sprite, character_state, name) in &mut query {
         // info!("{character_state:#?}",);
         let (first_indice, _, _) = &indices.get(&character_state).unwrap();
         sprite.index = *first_indice;
+
+        match character_state {
+            // when running each time the anim loops it triggers this match arm
+            CharacterState::Idle => {
+                // info!("{name} tempo {tempo_secs} before flexing.")
+                commands.entity(character).insert(TempoAnimation(Timer::new(
+                    Duration::from_secs_f32(rand::thread_rng().gen_range(0.1..=5.)),
+                    TimerMode::Once,
+                )));
+            }
+            _ => {
+                commands.entity(character).remove::<TempoAnimation>();
+            }
+        }
+    }
+}
+
+/// Could be a character or a menu entity
+pub fn tempo_animation_timer(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut temporized_query: Query<(Entity, &mut TempoAnimation)>,
+) {
+    for (entity, mut timer) in &mut temporized_query {
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            commands.entity(entity).remove::<TempoAnimation>();
+        }
     }
 }
 
 pub fn animate_character(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<
+    mut characters_query: Query<
         (
             Entity,
             &AnimationIndices,
@@ -91,7 +130,7 @@ pub fn animate_character(
             &mut CharacterState,
             &Name,
         ),
-        With<Player>,
+        (With<Player>, Without<TempoAnimation>),
     >,
 ) {
     for (
@@ -102,7 +141,7 @@ pub fn animate_character(
         texture_atlas_handle,
         mut character_state,
         name,
-    ) in &mut query
+    ) in &mut characters_query
     {
         timer.tick(time.delta());
 

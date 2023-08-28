@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    animations::sprite_sheet_animation::{AnimationIndices, CharacterState},
+    animations::{
+        sprite_sheet_animation::{AnimationIndices, CharacterState},
+        CharacterSpriteSheet,
+    },
     characters::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
@@ -119,11 +122,7 @@ fn camera_follow(
     }
 }
 
-fn spawn_player(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-) {
+fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpriteSheet>) {
     /* -------------------------------------------------------------------------- */
     /*                              Animation Indices                             */
     /* -------------------------------------------------------------------------- */
@@ -136,15 +135,10 @@ fn spawn_player(
     /*                                  Textures                                  */
     /* -------------------------------------------------------------------------- */
 
-    let texture_handle = asset_server.load("textures/characters/big_spritesheet_v6.png");
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(34., 34.), 6, 16, None, None);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
-
     commands
         .spawn((
             SpriteSheetBundle {
-                texture_atlas: texture_atlas_handle,
+                texture_atlas: characters_spritesheet.texture_atlas.clone(),
                 transform: Transform {
                     translation: PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),

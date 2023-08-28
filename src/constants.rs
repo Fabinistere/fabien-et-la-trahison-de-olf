@@ -57,7 +57,7 @@ pub mod character {
         // (start_frame, end_frame, next_state)
         pub const PLAYER_RUN_FRAMES: (usize, usize, CharacterState) = (6, 9, CharacterState::Idle);
         pub const PLAYER_IDLE_FRAMES: (usize, usize, CharacterState) =
-            (10, 10, CharacterState::Idle);
+            (10, 11, CharacterState::Idle);
     }
 }
 
