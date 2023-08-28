@@ -3,9 +3,15 @@ use std::{collections::HashMap, time::Duration};
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{characters::player::Player, constants::FRAME_TIME};
+use crate::{
+    characters::{
+        npcs::{OlfCat, NPC},
+        player::Player,
+    },
+    constants::FRAME_TIME,
+};
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Reflect, Component)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Reflect, Component)]
 pub enum CharacterState {
     #[default]
     Idle,
@@ -128,7 +134,10 @@ pub fn animate_character(
             &mut CharacterState,
             &Name,
         ),
-        (With<Player>, Without<TempoAnimation>),
+        (
+            Or<(With<Player>, With<NPC>, With<OlfCat>)>,
+            Without<TempoAnimation>,
+        ),
     >,
 ) {
     for (

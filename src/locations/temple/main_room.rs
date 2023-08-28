@@ -293,7 +293,7 @@ pub fn setup_main_room(
                     Throne,
                     OverlappingProps {
                         layer: super::Layer::Second,
-                        switch_offset_y: THRONE_SWITCH_Z_OFFSET,
+                        switch_offset_y: THRONE_SWITCH_Y_OFFSET,
                     },
                     Name::new("Throne"),
                 ))
@@ -378,7 +378,7 @@ pub fn setup_main_room(
                         Pillar,
                         OverlappingProps {
                             layer: super::Layer::First,
-                            switch_offset_y: PILLAR_SWITCH_Z_OFFSET,
+                            switch_offset_y: PILLAR_SWITCH_Y_OFFSET,
                         },
                         Name::new(format!("Column {}", count + 1)),
                     ))
@@ -456,7 +456,7 @@ pub fn setup_main_room(
                         // Plant,
                         OverlappingProps {
                             layer: super::Layer::Second,
-                            switch_offset_y: PLANTS_SWITCH_Z_OFFSET,
+                            switch_offset_y: PLANTS_SWITCH_Y_OFFSET,
                         },
                         Name::new(format!("Plants {}", count + 1)),
                     ))
@@ -543,7 +543,7 @@ pub fn setup_main_room(
                     // Statue,
                     OverlappingProps {
                         layer: super::Layer::Third,
-                        switch_offset_y: STATUE_SWITCH_Z_OFFSET,
+                        switch_offset_y: STATUE_SWITCH_Y_OFFSET,
                     },
                     Name::new("Cat Statue"),
                 ))
@@ -572,7 +572,7 @@ pub fn setup_main_room(
                     // Statue,
                     OverlappingProps {
                         layer: super::Layer::Third,
-                        switch_offset_y: STATUE_SWITCH_Z_OFFSET,
+                        switch_offset_y: STATUE_SWITCH_Y_OFFSET,
                     },
                     Name::new("Fabien Statue"),
                 ))

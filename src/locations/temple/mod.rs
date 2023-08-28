@@ -79,13 +79,6 @@ impl Plugin for TemplePlugin {
                     .distributive_run_if(in_hall),
             )
             .add_systems(
-                PostUpdate,
-                (
-                    secret_room::olf_cat_animation,
-                )
-                    .distributive_run_if(in_secret_room),
-            )
-            .add_systems(
                 OnEnter(PlayerLocation::Hall),
                 control_wall_collider,
             )
@@ -116,7 +109,7 @@ pub fn in_hall(location: Res<State<PlayerLocation>>, game_state: Res<State<GameS
     location.get() == &PlayerLocation::Hall && game_state.get() == &GameState::Playing
 }
 
-pub fn in_secret_room(
+pub fn _in_secret_room(
     location: Res<State<PlayerLocation>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
