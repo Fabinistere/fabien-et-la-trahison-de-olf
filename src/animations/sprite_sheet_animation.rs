@@ -77,12 +77,11 @@ pub fn jump_frame_character_state(
             &AnimationIndices,
             &mut TextureAtlasSprite,
             &CharacterState,
-            &Name,
         ),
         Changed<CharacterState>,
     >,
 ) {
-    for (character, indices, mut sprite, character_state, name) in &mut query {
+    for (character, indices, mut sprite, character_state) in &mut query {
         // info!("{character_state:#?}",);
         let (first_indice, _, _) = &indices.get(&character_state).unwrap();
         sprite.index = *first_indice;
@@ -90,7 +89,6 @@ pub fn jump_frame_character_state(
         match character_state {
             // when running each time the anim loops it triggers this match arm
             CharacterState::Idle => {
-                // info!("{name} tempo {tempo_secs} before flexing.")
                 commands.entity(character).insert(TempoAnimation(Timer::new(
                     Duration::from_secs_f32(rand::thread_rng().gen_range(0.1..=5.)),
                     TimerMode::Once,
