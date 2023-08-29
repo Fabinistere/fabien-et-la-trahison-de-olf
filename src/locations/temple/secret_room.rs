@@ -1,3 +1,6 @@
+use bevy::{prelude::*, utils::Duration};
+use bevy_rapier2d::prelude::*;
+
 use crate::{
     animations::{
         functions::{ease_in_sine, ease_out_sine},
@@ -6,10 +9,8 @@ use crate::{
     },
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{locations::secret_room::*, BACKGROUND_COLOR},
-    locations::temple::{LocationSensor, OverlappingProps, PlayerLocation, WallCollider},
+    locations::temple::{LocationSensor, OverlappingEntity, PlayerLocation, WallCollider},
 };
-use bevy::{prelude::*, utils::Duration};
-use bevy_rapier2d::prelude::*;
 
 /* -------------------------------------------------------------------------- */
 /*                                 Components                                 */
@@ -30,6 +31,9 @@ pub struct FlowerPanel;
 
 #[derive(Component)]
 pub struct FlowerPot;
+
+#[derive(Component)]
+pub struct SecondLayerFakeWall;
 
 /* -------------------------------------------------------------------------- */
 /*                                   Events                                   */
@@ -88,6 +92,20 @@ pub fn add_secret_room_cover(
                 ));
             }
         }
+    }
+}
+
+/// OPTIMIZE: OnEnter of secretRoom => visibility on, OnExit => off
+pub fn second_layer_fake_wall_visibility(
+    location: Res<State<PlayerLocation>>,
+    mut second_layer_fake_wall_query: Query<&mut Visibility, With<SecondLayerFakeWall>>,
+) {
+    if location.is_changed() {
+        let mut visibility = second_layer_fake_wall_query.single_mut();
+        *visibility = match location.get() {
+            PlayerLocation::SecretRoom => Visibility::Inherited,
+            _ => Visibility::Hidden,
+        };
     }
 }
 
@@ -174,6 +192,9 @@ pub fn setup_secret_room(
     let wall_pot_spritesheet = asset_server.load("textures/v4.0.0/Secret_Room/wall_pot.png");
     let wall_pot_texture_atlas =
         TextureAtlas::from_grid(wall_pot_spritesheet, Vec2::new(21., 11.), 16, 1, None, None);
+
+    let second_layer_fake_wall =
+        asset_server.load("textures/v4.0.0/Secret_Room/2nd_layer_fake_wall.png");
 
     /* -------------------------------------------------------------------------- */
     /*                               Wall Colliders                               */
@@ -323,10 +344,7 @@ pub fn setup_secret_room(
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },
-                        OverlappingProps {
-                            layer: super::Layer::Second,
-                            switch_offset_y: FLOWER_PANEL_SWITCH_Y_OFFSET,
-                        },
+                        OverlappingEntity::new(FLOWER_PANEL_SWITCH_Z_OFFSET),
                         FlowerPanel,
                         Name::new(format!("Flower Panel°{}", count + 1)),
                     ))
@@ -355,10 +373,7 @@ pub fn setup_secret_room(
                     transform: Transform::from_translation(FAKE_STONE_POSITION.into()),
                     ..default()
                 },
-                OverlappingProps {
-                    layer: super::Layer::First,
-                    switch_offset_y: FAKE_STONE_SWITCH_Y_OFFSET,
-                },
+                OverlappingEntity::new(FAKE_STONE_SWITCH_Z_OFFSET),
                 Name::new("Fake Stone"),
             ));
 
@@ -376,6 +391,23 @@ pub fn setup_secret_room(
                 },
                 FlowerPot,
                 Name::new("Flower Wall Pot"),
+            ));
+
+            // Cause the y switch of the temple is too high
+            // (up to the stairs)
+            // Being in the secret Room behind the Temple Wall
+            // Make your character above (cause under the y switch of the Temple)
+            // Also, to avoid having this second layer above us caus we are in the stairs,
+            // we only display it when we are in the SecretRoom.
+            parent.spawn((
+                SpriteBundle {
+                    texture: second_layer_fake_wall,
+                    transform: Transform::default(),
+                    ..default()
+                },
+                OverlappingEntity::new(SECOND_FAKE_WALL_SWITCH_Z_OFFSET),
+                SecondLayerFakeWall,
+                Name::new("2nd layer of the Fake Wall"),
             ));
         });
 

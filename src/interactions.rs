@@ -2,7 +2,7 @@ use crate::{
     constants::{
         interactions::INTERACT_BUTTON_SCALE,
         locations::{
-            hall::{DOOR_INTERACTION_ID, DOOR_OPEN_DELTA_S, PROPS_INTERACTION_ID},
+            hall::{BOX_INTERACTION_ID, DOOR_INTERACTION_ID, DOOR_OPEN_DELTA_S},
             main_room::{BANNER_INTERACTION_ID, BANNER_OPEN_DELTA_S},
         },
     },
@@ -171,7 +171,7 @@ pub fn interaction(
         for interactible in interactibles_query.iter() {
             if interactible.in_range {
                 match interactible.interaction_id {
-                    PROPS_INTERACTION_ID => {
+                    BOX_INTERACTION_ID => {
                         props_interaction_event.send(PropsInteractionEvent);
                     }
                     DOOR_INTERACTION_ID => {

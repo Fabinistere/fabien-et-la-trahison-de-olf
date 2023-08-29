@@ -1,3 +1,5 @@
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 use std::collections::HashMap;
 
 use crate::{
@@ -13,8 +15,6 @@ use crate::{
     controls::KeyBindings,
     GameState, PlayerCamera,
 };
-use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
 pub struct PlayerPlugin;
 
@@ -150,7 +150,6 @@ fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpr
             Name::new("Player"),
             // -- Animation --
             MovementBundle {
-                velocity: Velocity::zero(),
                 animation_indices,
                 ..default()
             },

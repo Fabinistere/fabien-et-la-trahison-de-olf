@@ -56,8 +56,7 @@ pub mod character {
         pub const PLAYER_WIDTH: f32 = 12.;
         pub const PLAYER_HEIGHT: f32 = 15.;
         pub const PLAYER_SCALE: f32 = super::CHAR_SCALE;
-        pub const PLAYER_Z: f32 = 5.;
-        pub const PLAYER_SPAWN: (f32, f32, f32) = (-24., -150., PLAYER_Z);
+        pub const PLAYER_SPAWN: (f32, f32, f32) = (-24., -150., 0.);
 
         pub const CAMERA_INTERPOLATION: f32 = 0.1;
 
@@ -80,13 +79,11 @@ pub mod character {
     }
 
     pub mod npc {
-
-        use crate::constants::locations::{secret_room::SECRET_ROOM_Z, PROPS_Z_BACK};
+        use crate::constants::locations::main_room::THRONE_POSITION;
 
         pub const NPC_SCALE: f32 = super::CHAR_SCALE;
 
-        pub const NPC_Z_BACK: f32 = 3.;
-        pub const NPC_Z_FRONT: f32 = 8.;
+        pub const SUPREME_GOD_SPAWN_POSITION: (f32, f32, f32) = THRONE_POSITION;
 
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */
@@ -108,11 +105,10 @@ pub mod character {
         pub const BLACK_CAT_LINE: usize = 14;
         pub const BLUE_CAT_LINE: usize = 15;
 
-        pub const CAT_SWITCH_Y_OFFSET: f32 = 0.;
-        pub const OLF_CAT_Z: f32 = SECRET_ROOM_Z + PROPS_Z_BACK;
+        pub const CAT_SWITCH_Z_OFFSET: f32 = 0.;
         pub const OLF_CAT_SCALE: f32 = 0.5;
         pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
-        pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., OLF_CAT_Z);
+        pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., 0.);
         pub const OLF_CAT_HITBOX_OFFSET: (f32, f32, f32) = (0., -5., 0.);
     }
 }
@@ -122,8 +118,9 @@ pub mod locations {
     /*
     | Layer              | Back Z, Front Z |
     | ------------------ | --------------- |
-    | Player             |       5.0       |
+    | Character          |      depend     |
     | Balcony            | 3.0,        --- |
+    | Balcony Doors      | 3.0,        11. |
     | Hall               | 3.5,        8.0 |
     | Hall Props         | 3.6,        8.1 |
     | Hall Statue        | 3.6,        8.1 |
@@ -138,12 +135,19 @@ pub mod locations {
     | Temple Chandeliers | ---,        7.3 |
     | Secret Room        | 1.0,        6.0 |
     | Secret Room Panels | 1.1,        6.1 |
+    | Roof               | ---,        11. |
      */
 
-    // We encapsulate all props/objects in the parent room
-    // It herits its parent's transform
-    pub const PROPS_Z_BACK: f32 = 0.1;
-    // pub const PROPS_Z_FRONT: f32 = PLAYER_Z + PROPS_Z_BACK;
+    pub const MAP_START_Y: f32 = -170.;
+    pub const MAP_END_Y: f32 = 165.;
+    pub const MAP_START_Z: f32 = 11.;
+    pub const MAP_END_Z: f32 = 1.;
+    pub const MAP_DISTANCE_IN_Y: f32 = MAP_END_Y - MAP_START_Y;
+    pub const MAP_DISTANCE_IN_Z: f32 = MAP_END_Z - MAP_START_Z;
+    // `Z_UNIT` is the equivalent of the y value of 1 z
+    pub const Z_UNIT: f32 = MAP_DISTANCE_IN_Y / MAP_DISTANCE_IN_Z;
+    // `Y_UNIT` is the equivalent of the z value of 1 y
+    pub const Y_UNIT: f32 = 1. / Z_UNIT;
 
     pub const CHANDELIER_SIZE: (f32, f32) = (20., 10.);
     pub const CHANDELIER_TRANSPARENCY_COLOR: f32 = 170. / 255.;
@@ -155,17 +159,20 @@ pub mod locations {
     ];
 
     pub const GROUND_Z: f32 = 0.5;
+    pub const ROOF_Z: f32 = 11.;
+    // just enoguht to be above parent :) (smile from Horor Humanum Est <3)
+    pub const PROPS_Z: f32 = 0.01;
 
     pub mod hall {
-        use crate::constants::{
-            character::player::PLAYER_Z, interactions::INTERACT_BUTTON_Z, TILE_SIZE,
-        };
+        use crate::constants::{interactions::INTERACT_BUTTON_Z, TILE_SIZE};
 
-        use super::PROPS_Z_BACK;
+        use super::{MAP_DISTANCE_IN_Z, MAP_START_Y, PROPS_Z, ROOF_Z, Y_UNIT};
 
-        pub const HALL_Z: f32 = 3.5;
-        pub const HALL_Z_IN_MAIN_ROOM: f32 = 8.;
-        pub const UP_DOOR_Z: f32 = PLAYER_Z;
+        // HALL_END_Y
+        // FIXME: hair hang over the temple door (could be like the second_layer of fake wall)
+        pub const HALL_EXIT_Y: f32 = -89.; // -92.
+        pub const HALL_Z: f32 = (HALL_EXIT_Y - MAP_START_Y) * Y_UNIT - MAP_DISTANCE_IN_Z;
+        pub const UP_DOOR_Z: f32 = 10.;
         pub const UP_DOOR_POSITION: (f32, f32, f32) = (0., 0., UP_DOOR_Z);
         pub const BALCONY_Z: f32 = 3.;
         pub const BALCONY_POSITION: (f32, f32, f32) = (0., 0., BALCONY_Z - HALL_Z);
@@ -178,9 +185,8 @@ pub mod locations {
         pub const BALCONY_LOCATION_SENSOR_SIZE: (f32, f32) = (13., 6.5);
         pub const BALCONY_LOCATION_SENSOR_POSITION: (f32, f32, f32) = (95., -162.5, 0.);
 
-        pub const PROPS_INTERACTION_ID: u32 = 0;
-        pub const PROPS_POSITION: (f32, f32, f32) =
-            (-121.5 * TILE_SIZE, -158. * TILE_SIZE, PROPS_Z_BACK);
+        pub const BOX_INTERACTION_ID: u32 = 0;
+        pub const BOX_POSITION: (f32, f32, f32) = (-121.5 * TILE_SIZE, -158. * TILE_SIZE, 0.);
         pub const BOX_SENSOR_OFFSET: (f32, f32, f32) = (0., -10. * TILE_SIZE, 0.);
         pub const BOX_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
             (12. * TILE_SIZE, 7. * TILE_SIZE, INTERACT_BUTTON_Z);
@@ -188,18 +194,19 @@ pub mod locations {
         pub const DOOR_INTERACTION_ID: u32 = 1;
         pub const DOOR_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
             (17.5 * TILE_SIZE, -3.5 * TILE_SIZE, INTERACT_BUTTON_Z);
-        pub const DOOR_POSITION: (f32, f32, f32) =
-            (-24. * TILE_SIZE, -88. * TILE_SIZE, PROPS_Z_BACK);
+        pub const DOOR_POSITION: (f32, f32, f32) = (-24. * TILE_SIZE, -88. * TILE_SIZE, 0.);
         pub const DOOR_SENSOR_OFFSET: (f32, f32, f32) = (0., -10. * TILE_SIZE, 0.);
         pub const DOOR_COLLIDER_OFFSET: (f32, f32, f32) = (0., -10. * TILE_SIZE, 0.);
         pub const DOOR_OPEN_DELTA_S: f32 = 0.2;
+        pub const TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED: f32 = 0.25;
+        pub const TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED: f32 = 0.3;
 
-        pub const STATUE_POSITION: (f32, f32, f32) = (59., -101., PROPS_Z_BACK);
+        pub const STATUE_POSITION: (f32, f32, f32) = (59., -101., 0.);
         pub const STATUE_INTERACTION_ID: u32 = 2;
         pub const STATUE_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
             (-8.3 * TILE_SIZE, 0., INTERACT_BUTTON_Z);
 
-        const LIGHT_Z: f32 = HALL_Z_IN_MAIN_ROOM + PROPS_Z_BACK;
+        const LIGHT_Z: f32 = ROOF_Z;
         pub const HALL_CHANDELIER_POSITIONS: [(f32, f32, f32); 2] = [
             (-77.5 * TILE_SIZE, -125. * TILE_SIZE, LIGHT_Z), // left
             (29.5 * TILE_SIZE, -125. * TILE_SIZE, LIGHT_Z),  // right
@@ -210,42 +217,40 @@ pub mod locations {
             (-2. * TILE_SIZE, -74. * TILE_SIZE, LIGHT_Z),  // center right
             (38. * TILE_SIZE, -74. * TILE_SIZE, LIGHT_Z),  // far right
         ];
-        pub const LIGHT_SUPPORT_OFFSET: (f32, f32, f32) = (0.5, -4.5, 0.);
+        pub const LIGHT_SUPPORT_OFFSET: (f32, f32, f32) = (0.5, -4.5, PROPS_Z);
     }
 
     pub mod main_room {
         use crate::constants::{interactions::INTERACT_BUTTON_Z, TILE_SIZE};
 
-        use super::PROPS_Z_BACK;
+        use super::{MAP_DISTANCE_IN_Z, MAP_START_Y, PROPS_Z, ROOF_Z, Y_UNIT};
 
-        pub const MAIN_ROOM_Z: f32 = 2.;
-        pub const MAIN_ROOM_Z_WHEN_IN_SECRET_ROOM: f32 = 7.;
+        pub const TEMPLE_EXIT_Y: f32 = 87.;
+        pub const MAIN_ROOM_Z: f32 = (TEMPLE_EXIT_Y - MAP_START_Y) * Y_UNIT - MAP_DISTANCE_IN_Z;
 
         pub const TEMPLE_HALL_LOCATION_SENSOR_POSITION: (f32, f32, f32) = (-24., -94., 0.);
         pub const TEMPLE_SECRET_LOCATION_SENSOR_POSITION: (f32, f32, f32) = (-44.5, 80., 0.);
 
-        pub const PILLAR_SWITCH_Y_OFFSET: f32 = 5.;
+        pub const PILLAR_SWITCH_Z_OFFSET: f32 = 0.1;
         pub const PILLAR_HITBOX_Y_OFFSET: f32 = -12.5;
         pub const PILLAR_POSITIONS: [(f32, f32, f32); 6] = [
             // 1    4
             // 2    5
             // 3    6
-            (-49.5 * TILE_SIZE, 25.5 * TILE_SIZE, PROPS_Z_BACK), // 1
-            (-49.5 * TILE_SIZE, -14.5 * TILE_SIZE, PROPS_Z_BACK), // 2
-            (-49.5 * TILE_SIZE, -54.5 * TILE_SIZE, PROPS_Z_BACK), // 3
-            (1.5 * TILE_SIZE, 25.5 * TILE_SIZE, PROPS_Z_BACK),   // 4
-            (1.5 * TILE_SIZE, -14.5 * TILE_SIZE, PROPS_Z_BACK),  // 5
-            (1.5 * TILE_SIZE, -54.5 * TILE_SIZE, PROPS_Z_BACK),  // 6
+            (-49.5 * TILE_SIZE, 25.5 * TILE_SIZE, 0.),  // 1
+            (-49.5 * TILE_SIZE, -14.5 * TILE_SIZE, 0.), // 2
+            (-49.5 * TILE_SIZE, -54.5 * TILE_SIZE, 0.), // 3
+            (1.5 * TILE_SIZE, 25.5 * TILE_SIZE, 0.),    // 4
+            (1.5 * TILE_SIZE, -14.5 * TILE_SIZE, 0.),   // 5
+            (1.5 * TILE_SIZE, -54.5 * TILE_SIZE, 0.),   // 6
         ];
 
-        pub const BANNERS_POSITION: (f32, f32, f32) =
-            (-20. * TILE_SIZE, 80. * TILE_SIZE, PROPS_Z_BACK);
+        pub const BANNERS_POSITION: (f32, f32, f32) = (-20. * TILE_SIZE, 80. * TILE_SIZE, 0.);
 
-        pub const THRONE_SWITCH_Y_OFFSET: f32 = -3.5;
-        pub const THRONE_POSITION: (f32, f32, f32) =
-            (-24. * TILE_SIZE, 71.5 * TILE_SIZE, PROPS_Z_BACK);
+        pub const THRONE_SWITCH_Z_OFFSET: f32 = -0.1;
+        pub const THRONE_POSITION: (f32, f32, f32) = (-24. * TILE_SIZE, 71.5 * TILE_SIZE, 0.);
 
-        const CHANDELIER_Z: f32 = 7.1;
+        const CHANDELIER_Z: f32 = ROOF_Z;
         pub const TEMPLE_CHANDELIER_POSITIONS: [(f32, f32, f32); 4] = [
             (-77.5 * TILE_SIZE, 6. * TILE_SIZE, CHANDELIER_Z), // left top
             (-77.5 * TILE_SIZE, -40. * TILE_SIZE, CHANDELIER_Z), // left bottom
@@ -253,31 +258,31 @@ pub mod locations {
             (29.5 * TILE_SIZE, -40. * TILE_SIZE, CHANDELIER_Z), // right bottom
         ];
 
-        pub const PLANTS_SWITCH_Y_OFFSET: f32 = 29.;
+        pub const PLANTS_SWITCH_Z_OFFSET: f32 = 0.5;
         pub const PLANTS_POSITIONS: [(f32, f32, f32); 4] = [
-            (-125.5 * TILE_SIZE, 44. * TILE_SIZE, PROPS_Z_BACK), // TopLeft
-            (-125.5 * TILE_SIZE, -27. * TILE_SIZE, PROPS_Z_BACK), // BottomLeft
-            (77.5 * TILE_SIZE, 44. * TILE_SIZE, PROPS_Z_BACK),   // TopRight
-            (77.5 * TILE_SIZE, -27. * TILE_SIZE, PROPS_Z_BACK),  // BottomRight
+            (-125.5 * TILE_SIZE, 44. * TILE_SIZE, 0.),  // TopLeft
+            (-125.5 * TILE_SIZE, -27. * TILE_SIZE, 0.), // BottomLeft
+            (77.5 * TILE_SIZE, 44. * TILE_SIZE, 0.),    // TopRight
+            (77.5 * TILE_SIZE, -27. * TILE_SIZE, 0.),   // BottomRight
         ];
 
-        pub const BRAZIER_FLAME_OFFSET: (f32, f32, f32) = (0., 11.5, 0.1);
+        pub const BRAZIER_Z_OFFSET: f32 = -0.1;
+        pub const BRAZIER_FLAME_OFFSET: (f32, f32, f32) = (0., 11.5, 0.);
         pub const BRAZIERS_POSITIONS: [(f32, f32, f32); 4] = [
-            (-116.5 * TILE_SIZE, 63.5 * TILE_SIZE, PROPS_Z_BACK), // LeftLeft
-            (-83.5 * TILE_SIZE, 63.5 * TILE_SIZE, PROPS_Z_BACK),  // LeftRight
-            (35.5 * TILE_SIZE, 63.5 * TILE_SIZE, PROPS_Z_BACK),   // RightLeft
-            (68.5 * TILE_SIZE, 63.5 * TILE_SIZE, PROPS_Z_BACK),   // RightRight
+            (-116.5 * TILE_SIZE, 63.5 * TILE_SIZE, 0.), // LeftLeft
+            (-83.5 * TILE_SIZE, 63.5 * TILE_SIZE, 0.),  // LeftRight
+            (35.5 * TILE_SIZE, 63.5 * TILE_SIZE, 0.),   // RightLeft
+            (68.5 * TILE_SIZE, 63.5 * TILE_SIZE, 0.),   // RightRight
         ];
 
-        pub const STATUE_SWITCH_Y_OFFSET: f32 = 3.;
-        pub const CAT_STATUE_POSITION: (f32, f32, f32) = (-100., 75., PROPS_Z_BACK);
-        pub const FABIEN_STATUE_POSITION: (f32, f32, f32) = (52., 77., PROPS_Z_BACK);
+        // pub const STATUE_SWITCH_Z_OFFSET: f32 = 0.;
+        pub const CAT_STATUE_POSITION: (f32, f32, f32) = (-100., 75., 0.);
+        pub const FABIEN_STATUE_POSITION: (f32, f32, f32) = (52., 77., 0.);
 
         pub const BANNER_INTERACTION_ID: u32 = 3;
         pub const BANNER_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
             (0. * TILE_SIZE, 0. * TILE_SIZE, INTERACT_BUTTON_Z);
-        pub const BANNER_POSITION: (f32, f32, f32) =
-            (-44.5 * TILE_SIZE, 91. * TILE_SIZE, PROPS_Z_BACK);
+        pub const BANNER_POSITION: (f32, f32, f32) = (-44.5 * TILE_SIZE, 91. * TILE_SIZE, PROPS_Z);
         pub const BANNER_SENSOR_OFFSET: (f32, f32, f32) = (0., 0., 0.);
         pub const BANNER_COLLIDER_OFFSET: (f32, f32, f32) = (0., 0.5 * TILE_SIZE, 0.);
         pub const BANNER_OPEN_DELTA_S: f32 = 0.1;
@@ -286,10 +291,11 @@ pub mod locations {
     pub mod secret_room {
         use crate::constants::TILE_SIZE;
 
-        use super::PROPS_Z_BACK;
+        use super::{MAP_DISTANCE_IN_Z, MAP_END_Y, MAP_START_Y, PROPS_Z, Y_UNIT};
 
-        pub const SECRET_ROOM_Z: f32 = 1.;
-        pub const SECRET_ROOM_Z_WHEN_OUTSIDE: f32 = 6.;
+        pub const SECRET_ROOM_EXIT_Y: f32 = MAP_END_Y;
+        pub const SECRET_ROOM_Z: f32 =
+            (SECRET_ROOM_EXIT_Y - MAP_START_Y) * Y_UNIT - MAP_DISTANCE_IN_Z;
 
         pub const SECRET_LOCATION_SENSOR_POSITION: (f32, f32, f32) =
             (-44.5, SECRET_ROOM_TRIGGER_Y, 0.);
@@ -298,24 +304,24 @@ pub mod locations {
         pub const SECRET_ROOM_TRIGGER_CUBOID: (f32, f32) = (7., 5.);
         pub const SECRET_ROOM_TRIGGER_POSITION: (f32, f32, f32) =
             (-44.5, SECRET_ROOM_TRIGGER_Y, 0.);
-        pub const SECRET_ROOM_COVER_POSITION: (f32, f32, f32) =
-            (-24., 160., SECRET_ROOM_Z_WHEN_OUTSIDE + 0.9);
+        pub const SECRET_ROOM_COVER_POSITION: (f32, f32, f32) = (-24., 161., 6.9);
         pub const SECRET_ROOM_COVER_SIZE: (f32, f32) = (250., 100.);
 
-        pub const FAKE_STONE_POSITION: (f32, f32, f32) = (0., 0., PROPS_Z_BACK);
-        pub const FAKE_STONE_SWITCH_Y_OFFSET: f32 = -80.;
+        pub const SECOND_FAKE_WALL_SWITCH_Z_OFFSET: f32 = -2.4;
 
-        pub const FLOWER_PANEL_SWITCH_Y_OFFSET: f32 = 13.;
+        pub const FAKE_STONE_POSITION: (f32, f32, f32) = (0., 0., 0.);
+        pub const FAKE_STONE_SWITCH_Z_OFFSET: f32 = -2.5;
+
+        pub const FLOWER_PANEL_SWITCH_Z_OFFSET: f32 = 0.3;
         pub const FLOWER_PANEL_POSITIONS: [(f32, f32, f32); 5] = [
-            (-116. * TILE_SIZE, 100.5 * TILE_SIZE, PROPS_Z_BACK), // 1
-            (-83. * TILE_SIZE, 100.5 * TILE_SIZE, PROPS_Z_BACK),  // 2
-            (35. * TILE_SIZE, 100.5 * TILE_SIZE, PROPS_Z_BACK),   // 3
-            (68. * TILE_SIZE, 100.5 * TILE_SIZE, PROPS_Z_BACK),   // 4
-            (-105.5 * TILE_SIZE, 165.5 * TILE_SIZE, PROPS_Z_BACK), // Repair
+            (-116. * TILE_SIZE, 100.5 * TILE_SIZE, 0.),  // 1
+            (-83. * TILE_SIZE, 100.5 * TILE_SIZE, 0.),   // 2
+            (35. * TILE_SIZE, 100.5 * TILE_SIZE, 0.),    // 3
+            (68. * TILE_SIZE, 100.5 * TILE_SIZE, 0.),    // 4
+            (-105.5 * TILE_SIZE, 165.5 * TILE_SIZE, 0.), // Repair
         ];
 
-        // TODO: when outside change the wall_pot Z to `SECRET_ROOM_Z_WHEN_OUTSIDE`
         pub const WALL_POT_POSITION: (f32, f32, f32) =
-            (-59.5 * TILE_SIZE, 171.5 * TILE_SIZE, SECRET_ROOM_Z);
+            (-59.5 * TILE_SIZE, 171.5 * TILE_SIZE, PROPS_Z);
     }
 }
