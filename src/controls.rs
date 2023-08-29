@@ -201,9 +201,9 @@ impl<'de> Deserialize<'de> for Key {
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Resource)]
 pub struct KeyBindings {
-    pub up: [Key; 2],
+    pub up: [Key; 3],
     pub down: [Key; 2],
-    pub left: [Key; 2],
+    pub left: [Key; 3],
     pub right: [Key; 2],
     pub interact: [Key; 2],
 }

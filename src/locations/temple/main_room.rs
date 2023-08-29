@@ -1,18 +1,18 @@
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 use std::time::Duration;
 
-use super::{
-    hall::DoorCollider,
-    secret_room::{AddSecretRoomCoverEvent, RemoveSecretRoomCoverEvent},
-    Chandelier, DoorState, Flame, LocationSensor, OverlappingProps, PlayerLocation, WallCollider,
-};
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::locations::{main_room::*, CHANDELIER_FLAME_POSITIONS},
     interactions::{Interactible, InteractionSensor},
+    locations::temple::{
+        secret_room::{AddSecretRoomCoverEvent, RemoveSecretRoomCoverEvent},
+        Chandelier, DoorColliderClosed, DoorState, Flame, LocationSensor, OverlappingEntity,
+        PlayerLocation, WallCollider,
+    },
 };
-use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
 /* -------------------------------------------------------------------------- */
 /*                                 Components                                 */
@@ -174,19 +174,6 @@ pub fn setup_main_room(
             Name::new("Temple"),
         ))
         .with_children(|parent| {
-            // TEMP: Indicators
-            let indicators =
-                asset_server.load("textures/v4.0.0/Temple/indicators/deco_indicators.png");
-            parent.spawn((
-                SpriteBundle {
-                    texture: indicators,
-                    transform: Transform::from_xyz(0., 0., 0.1),
-                    visibility: Visibility::Hidden,
-                    ..default()
-                },
-                Name::new("Indicators"),
-            ));
-
             // --- Temple Sensors ---
             parent.spawn((
                 Collider::cuboid(10., 3.),
@@ -265,7 +252,7 @@ pub fn setup_main_room(
                             },
                         },
                         Transform::from_translation(BANNER_COLLIDER_OFFSET.into()),
-                        DoorCollider,
+                        DoorColliderClosed,
                     ));
                 });
 
@@ -291,10 +278,7 @@ pub fn setup_main_room(
                     },
                     RigidBody::Fixed,
                     Throne,
-                    OverlappingProps {
-                        layer: super::Layer::Second,
-                        switch_offset_y: THRONE_SWITCH_Z_OFFSET,
-                    },
+                    OverlappingEntity::new(THRONE_SWITCH_Z_OFFSET),
                     Name::new("Throne"),
                 ))
                 .with_children(|parent| {
@@ -376,10 +360,7 @@ pub fn setup_main_room(
                         },
                         RigidBody::Fixed,
                         Pillar,
-                        OverlappingProps {
-                            layer: super::Layer::First,
-                            switch_offset_y: PILLAR_SWITCH_Z_OFFSET,
-                        },
+                        OverlappingEntity::new(PILLAR_SWITCH_Z_OFFSET),
                         Name::new(format!("Column {}", count + 1)),
                     ))
                     .with_children(|parent| {
@@ -454,10 +435,7 @@ pub fn setup_main_room(
                         },
                         RigidBody::Fixed,
                         // Plant,
-                        OverlappingProps {
-                            layer: super::Layer::Second,
-                            switch_offset_y: PLANTS_SWITCH_Z_OFFSET,
-                        },
+                        OverlappingEntity::new(PLANTS_SWITCH_Z_OFFSET),
                         Name::new(format!("Plants {}", count + 1)),
                     ))
                     .with_children(|parent| {
@@ -486,10 +464,7 @@ pub fn setup_main_room(
                         },
                         RigidBody::Fixed,
                         // Brazier,
-                        OverlappingProps {
-                            layer: super::Layer::Third,
-                            switch_offset_y: 0.,
-                        },
+                        OverlappingEntity::new(BRAZIER_Z_OFFSET),
                         Name::new(format!("Braizier {}", count + 1)),
                     ))
                     .with_children(|parent| {
@@ -541,10 +516,7 @@ pub fn setup_main_room(
                     },
                     RigidBody::Fixed,
                     // Statue,
-                    OverlappingProps {
-                        layer: super::Layer::Third,
-                        switch_offset_y: STATUE_SWITCH_Z_OFFSET,
-                    },
+                    OverlappingEntity::default(),
                     Name::new("Cat Statue"),
                 ))
                 .with_children(|parent| {
@@ -570,10 +542,7 @@ pub fn setup_main_room(
                     },
                     RigidBody::Fixed,
                     // Statue,
-                    OverlappingProps {
-                        layer: super::Layer::Third,
-                        switch_offset_y: STATUE_SWITCH_Z_OFFSET,
-                    },
+                    OverlappingEntity::default(),
                     Name::new("Fabien Statue"),
                 ))
                 .with_children(|parent| {

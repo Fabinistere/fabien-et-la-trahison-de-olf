@@ -1,22 +1,16 @@
-use crate::{
-    characters::{player::Player, CharacterHitbox},
-    constants::{
-        character::player::PLAYER_Z,
-        locations::{
-            hall::{HALL_Z, HALL_Z_IN_MAIN_ROOM},
-            main_room::{MAIN_ROOM_Z, MAIN_ROOM_Z_WHEN_IN_SECRET_ROOM},
-            *,
-        },
-    },
-    GameState,
-};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::{CollisionEvent, Sensor};
 
-use self::{
-    hall::{DoorCollider, Hall},
-    main_room::Temple,
+use crate::{
+    characters::{player::Player, CharacterHitbox},
+    constants::locations::{
+        hall::{TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED, TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED},
+        *,
+    },
+    GameState,
 };
+
+use self::hall::TempleDoor;
 
 pub mod hall;
 pub mod main_room;
@@ -38,12 +32,12 @@ pub struct TemplePlugin;
 impl Plugin for TemplePlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<PlayerLocation>()
+            .add_event::<main_room::SecretBannerEvent>()
+            .add_event::<hall::PropsInteractionEvent>()
             .add_event::<secret_room::SecretRoomTriggerEvent>()
             .add_event::<secret_room::RemoveSecretRoomCoverEvent>()
             .add_event::<secret_room::AddSecretRoomCoverEvent>()
             .add_event::<DoorInteractEvent>()
-            .add_event::<hall::PropsInteractionEvent>()
-            .add_event::<main_room::SecretBannerEvent>()
             .add_systems(
                 OnEnter(GameState::Playing),
                 (
@@ -56,71 +50,70 @@ impl Plugin for TemplePlugin {
                 PostUpdate,
                 (
                     chandeliers_opacity,
-                    overlapping_props,
+                    y_to_z_conversion,
                     location_event,
+                    door_interact,
+                    open_close_door,
+                    secret_room::second_layer_fake_wall_visibility,
                     secret_room::remove_secret_room_cover,
-                    secret_room::add_secret_room_cover
+                    secret_room::add_secret_room_cover,
                 ),
             )
             .add_systems(
                 PostUpdate,
-                (
-                    door_interact,
-                    open_close_door,
-                    main_room::secret_banner_interaction,
-                )
-            )
-            .add_systems(
-                PostUpdate,
-                (
-                    hall::props_interaction_event,
-                    hall::remove_balcony_cover,
-                )
+                (hall::props_interaction_event, hall::remove_balcony_cover)
                     .distributive_run_if(in_hall),
             )
             .add_systems(
                 PostUpdate,
-                (
-                    secret_room::olf_cat_animation,
-                )
-                    .distributive_run_if(in_secret_room),
+                main_room::secret_banner_interaction.run_if(in_temple_or_secret_room),
             )
-            .add_systems(
-                OnEnter(PlayerLocation::Hall),
-                control_wall_collider,
-            )
-            .add_systems(
-                OnEnter(PlayerLocation::Temple),
-                control_wall_collider,
-            )
-            .add_systems(
-                OnEnter(PlayerLocation::SecretRoom),
-                (
-                    control_wall_collider,
-                    // secret_room::remove_secret_room_cover,
-                ),
-            )
-            // .add_systems(
-            //     OnExit(PlayerLocation::SecretRoom),
-            //     secret_room::add_secret_room_cover,
-            // )
-            ;
+            .add_systems(OnEnter(PlayerLocation::Hall), control_wall_collider)
+            .add_systems(OnEnter(PlayerLocation::Temple), control_wall_collider)
+            .add_systems(OnEnter(PlayerLocation::SecretRoom), control_wall_collider);
     }
 }
 
-pub fn _in_temple(location: Res<State<PlayerLocation>>, game_state: Res<State<GameState>>) -> bool {
-    location.get() == &PlayerLocation::Temple && game_state.get() == &GameState::Playing
-}
+/* -------------------------------------------------------------------------- */
+/*                               Run If Systems                               */
+/* -------------------------------------------------------------------------- */
 
-pub fn in_hall(location: Res<State<PlayerLocation>>, game_state: Res<State<GameState>>) -> bool {
+fn in_hall(location: Res<State<PlayerLocation>>, game_state: Res<State<GameState>>) -> bool {
     location.get() == &PlayerLocation::Hall && game_state.get() == &GameState::Playing
 }
 
-pub fn in_secret_room(
+fn _in_temple(location: Res<State<PlayerLocation>>, game_state: Res<State<GameState>>) -> bool {
+    location.get() == &PlayerLocation::Temple && game_state.get() == &GameState::Playing
+}
+
+fn _in_secret_room(
     location: Res<State<PlayerLocation>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
     location.get() == &PlayerLocation::SecretRoom && game_state.get() == &GameState::Playing
+}
+
+fn in_temple_or_secret_room(
+    location: Res<State<PlayerLocation>>,
+    game_state: Res<State<GameState>>,
+) -> bool {
+    (location.get() == &PlayerLocation::SecretRoom || location.get() == &PlayerLocation::Temple)
+        && game_state.get() == &GameState::Playing
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                 Global ECS                                 */
+/* -------------------------------------------------------------------------- */
+
+#[derive(Deref, DerefMut, Reflect, Default, Component)]
+pub struct OverlappingEntity {
+    pub z_offset: f32,
+}
+
+impl OverlappingEntity {
+    pub fn new(z_offset: f32) -> Self {
+        OverlappingEntity { z_offset }
+    }
 }
 
 #[derive(Component)]
@@ -137,42 +130,7 @@ pub struct LocationSensor {
     pub location: PlayerLocation,
 }
 
-/// Sprite which can change between, in front and dehind an entity.
-#[derive(Copy, Clone, Reflect, Component)]
-pub struct OverlappingProps {
-    /// Prop's layer within the room.
-    /// Used to mul to the const `PROPS_Z_BACK`,
-    /// to order props together.
-    ///
-    /// # Exaustive table
-    ///
-    /// | layer   | result |
-    /// | ------- | ------ |
-    /// | First   | .5     |
-    /// | Seconds | .4     |
-    /// | Third   | .3     |
-    /// | Fourth  | .2     |
-    /// | Fifth   | .1     |
-    ///
-    /// # Example
-    ///
-    /// If x, layer: `Layer::First`
-    /// and y, layer: `Layer::Second`,
-    /// y will be behind x.
-    pub layer: Layer,
-    /// Put the switch limit at the correct height
-    pub switch_offset_y: f32,
-}
-
-#[derive(Copy, Clone, Reflect)]
-pub enum Layer {
-    Fifth,
-    Fourth,
-    Third,
-    Second,
-    First,
-}
-
+/// TODO: make it work
 pub fn chandeliers_opacity(
     mut chandeliers_query: Query<(&mut Sprite, &Transform), With<Chandelier>>,
     player_query: Query<&Transform, With<Player>>,
@@ -199,22 +157,29 @@ pub fn chandeliers_opacity(
     }
 }
 
-pub fn overlapping_props(
-    player_query: Query<&GlobalTransform, With<Player>>,
-    mut overlapping_props_query: Query<(&mut Transform, &OverlappingProps)>,
+/// The more y you have the less z you will have.
+/// The more you go up, the more you will be below things, in the farground.
+///
+/// # Map Elements
+///
+/// We encapsulate all props/objects in the parent room
+/// It herits its parent's transform.
+/// Or exclude Map elements from this system.
+pub fn y_to_z_conversion(
+    mut small_entity_query: Query<
+        (&mut Transform, &OverlappingEntity, Option<&Parent>),
+        Or<(Changed<Transform>, Changed<OverlappingEntity>)>,
+    >,
+    transform_query: Query<&Transform, Without<OverlappingEntity>>,
 ) {
-    if let Ok(player_transform) = player_query.get_single() {
-        for (mut props_transform, props_properties) in overlapping_props_query.iter_mut() {
-            if player_transform.translation().y + props_properties.switch_offset_y
-                > props_transform.translation.y
-            {
-                props_transform.translation.z =
-                    PLAYER_Z + (props_properties.layer as i32) as f32 * PROPS_Z_BACK;
-            } else {
-                props_transform.translation.z =
-                    (props_properties.layer as i32) as f32 * PROPS_Z_BACK;
-            }
-        }
+    for (mut transform, overlapping, potential_parent) in &mut small_entity_query {
+        let parent_z = match potential_parent {
+            None => 0.,
+            Some(parent) => transform_query.get(**parent).unwrap().translation.z,
+        };
+        transform.translation.z =
+            (transform.translation.y - MAP_START_Y) * Y_UNIT - MAP_DISTANCE_IN_Z - parent_z
+                + overlapping.z_offset;
     }
 }
 
@@ -227,8 +192,6 @@ pub fn location_event(
 
     location: Res<State<PlayerLocation>>,
     mut next_location: ResMut<NextState<PlayerLocation>>,
-    mut temple_query: Query<&mut Transform, (With<Temple>, Without<Hall>)>,
-    mut hall_query: Query<&mut Transform, (With<Hall>, Without<Temple>)>,
 ) {
     for collision_event in collision_events.iter() {
         match collision_event {
@@ -256,24 +219,6 @@ pub fn location_event(
                         {
                             if location.get() != &location_point.location {
                                 next_location.set(location_point.location.clone());
-                                // REFACTOR: maybe but i'm lazy (or famish and sleepy idk)
-                                let mut hall_transform = hall_query.single_mut();
-                                let mut temple_transform = temple_query.single_mut();
-                                match location_point.location {
-                                    PlayerLocation::Hall => {
-                                        hall_transform.translation.z = HALL_Z;
-                                        temple_transform.translation.z = MAIN_ROOM_Z;
-                                    }
-                                    PlayerLocation::Temple => {
-                                        hall_transform.translation.z = HALL_Z_IN_MAIN_ROOM;
-                                        temple_transform.translation.z = MAIN_ROOM_Z;
-                                    }
-                                    PlayerLocation::SecretRoom => {
-                                        hall_transform.translation.z = HALL_Z_IN_MAIN_ROOM;
-                                        temple_transform.translation.z =
-                                            MAIN_ROOM_Z_WHEN_IN_SECRET_ROOM;
-                                    }
-                                }
                             }
                             break;
                         }
@@ -286,6 +231,7 @@ pub fn location_event(
     }
 }
 
+/// NOTE: Instead of OnEnter(...), just check if the state has changed
 fn control_wall_collider(
     mut commands: Commands,
     player_location: Res<State<PlayerLocation>>,
@@ -326,19 +272,23 @@ pub struct DoorInteractEvent {
     pub open_delta_s: f32,
 }
 
+#[derive(Component)]
+pub struct DoorColliderClosed;
+
+#[derive(Component)]
+pub struct DoorColliderOpened;
+
 pub fn door_interact(
     mut commands: Commands,
     mut door_interact_events: EventReader<DoorInteractEvent>,
-    mut doors_query: Query<(Entity, &mut DoorState, Option<&mut DoorInteract>, &Children)>,
-    door_collider_query: Query<Entity, With<DoorCollider>>,
+    mut doors_query: Query<(Entity, &mut DoorState, Option<&mut DoorInteract>)>,
 ) {
     for DoorInteractEvent {
         door_entity,
         open_delta_s,
     } in door_interact_events.iter()
     {
-        let (entity, mut door_state, door_interact, children) =
-            doors_query.get_mut(*door_entity).unwrap();
+        let (entity, mut door_state, door_interact) = doors_query.get_mut(*door_entity).unwrap();
 
         match door_interact {
             Some(_) => {
@@ -350,12 +300,6 @@ pub fn door_interact(
             }
             None => {
                 if *door_state == DoorState::Opened {
-                    match door_collider_query.get(children[1]) {
-                        Err(e) => warn!("{}", e),
-                        Ok(collider) => {
-                            commands.entity(collider).insert(Sensor);
-                        }
-                    }
                     *door_state = DoorState::Closing;
                 } else {
                     *door_state = DoorState::Opening;
@@ -381,7 +325,10 @@ pub fn open_close_door(
         &Handle<TextureAtlas>,
         &Children,
     )>,
-    door_collider_query: Query<Entity, With<DoorCollider>>,
+    door_collider_closed_query: Query<Entity, With<DoorColliderClosed>>,
+
+    mut temple_door_query: Query<&mut OverlappingEntity, With<TempleDoor>>,
+    door_collider_opened_query: Query<Entity, With<DoorColliderOpened>>,
 ) {
     for (
         entity,
@@ -402,26 +349,54 @@ pub fn open_close_door(
 
                 if sprite.index >= texture_atlas.len() - 1 {
                     commands.entity(entity).remove::<DoorInteract>();
-                    match door_collider_query.get(children[1]) {
+                    match door_collider_closed_query.get(children[1]) {
                         Err(e) => warn!("{}", e),
                         Ok(collider) => {
                             commands.entity(collider).insert(Sensor);
                         }
                     }
                     *door_state = DoorState::Opened;
+
+                    match temple_door_query.get_mut(entity) {
+                        Err(_) => {}
+                        Ok(mut ovelapping_setting) => {
+                            match door_collider_opened_query.get_many([children[2], children[3]]) {
+                                Err(e) => warn!("{}", e),
+                                Ok([collider_1, collider_2]) => {
+                                    commands.entity(collider_1).remove::<Sensor>();
+                                    commands.entity(collider_2).remove::<Sensor>();
+                                }
+                            }
+                            ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
+                        }
+                    }
                 }
             } else if *door_state == DoorState::Closing {
                 sprite.index -= 1;
 
                 if sprite.index == 0 {
                     commands.entity(entity).remove::<DoorInteract>();
-                    match door_collider_query.get(children[1]) {
+                    match door_collider_closed_query.get(children[1]) {
                         Err(e) => warn!("{}", e),
                         Ok(collider) => {
                             commands.entity(collider).remove::<Sensor>();
                         }
                     }
                     *door_state = DoorState::Closed;
+
+                    match temple_door_query.get_mut(entity) {
+                        Err(_) => {}
+                        Ok(mut ovelapping_setting) => {
+                            match door_collider_opened_query.get_many([children[2], children[3]]) {
+                                Err(e) => warn!("{}", e),
+                                Ok([collider_1, collider_2]) => {
+                                    commands.entity(collider_1).insert(Sensor);
+                                    commands.entity(collider_2).insert(Sensor);
+                                }
+                            }
+                            ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
+                        }
+                    }
                 }
             }
         }
