@@ -1,4 +1,10 @@
+use std::collections::HashMap;
+
 use crate::{
+    animations::{
+        sprite_sheet_animation::{AnimationIndices, CharacterState},
+        CharacterSpriteSheet,
+    },
     characters::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
@@ -9,31 +15,13 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use serde::Deserialize;
-use std::collections::{HashMap, VecDeque};
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(PlayerAnimationType::RightIdle)
-            .insert_resource(PlayerAnimationData(
-                ron::de::from_bytes(include_bytes!(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/data/player_animations.ron"
-                )))
-                .unwrap(),
-            ))
-            .add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(
-                Update,
-                (
-                    animate_player,
-                    set_player_movement,
-                    player_movement,
-                    camera_follow,
-                ),
-            );
+        app.add_systems(OnEnter(GameState::Playing), spawn_player)
+            .add_systems(Update, (player_movement, camera_follow));
     }
 }
 
@@ -46,131 +34,23 @@ struct Immobilized;
 #[derive(Component)]
 pub struct PlayerSensor;
 
-#[derive(Deserialize, Debug)]
-pub struct PlayerSpriteSheetAnimation {
-    start_index: usize,
-    end_index: usize,
-    delta: f32,
-}
-
-#[derive(Deserialize, Copy, Clone, PartialEq, Eq, Debug, Hash, Resource)]
-pub enum PlayerAnimationType {
-    RightIdle,
-    LeftIdle,
-    RightRun,
-    LeftRun,
-}
-
-impl PlayerAnimationType {
-    pub fn is_idle(&self) -> bool {
-        matches!(
-            &self,
-            PlayerAnimationType::LeftIdle | PlayerAnimationType::RightIdle
-        )
-    }
-}
-
-#[derive(Deserialize, Component, Resource)]
-struct PlayerAnimationData(HashMap<PlayerAnimationType, PlayerSpriteSheetAnimation>);
-
-#[derive(Component)]
-struct PlayerAnimation {
-    timer: Timer,
-    animation_type_queue: VecDeque<PlayerAnimationType>,
-}
-
-fn animate_player(
-    time: Res<Time>,
-    player_animations_data: Res<PlayerAnimationData>,
-    mut query: Query<
-        (&mut PlayerAnimation, &mut TextureAtlasSprite),
-        (With<Player>, Without<Immobilized>),
-    >,
-) {
-    for (mut player_animation, mut sprite) in query.iter_mut() {
-        player_animation.timer.tick(time.delta());
-
-        if let Some(animation_type) = player_animation.animation_type_queue.get(0) {
-            if player_animation.timer.finished() {
-                if sprite.index == player_animations_data.0[animation_type].end_index {
-                    sprite.index = player_animations_data.0[animation_type].start_index;
-                } else {
-                    sprite.index += 1;
-                }
-            }
-        }
-    }
-}
-
-fn set_player_movement(
-    key_bindings: Res<KeyBindings>,
-    keyboard_input: Res<Input<KeyCode>>,
-    player_animations_data: Res<PlayerAnimationData>,
-    mut query: Query<
-        (&mut PlayerAnimation, &mut TextureAtlasSprite),
-        (With<Player>, Without<Immobilized>),
-    >,
-) {
-    for (mut player_animation, mut sprite) in query.iter_mut() {
-        let mut restart_animation = false;
-        let start_anim_type = player_animation.animation_type_queue[0];
-
-        if keyboard_input.any_just_released(key_bindings.right()) {
-            // player_animation.animation_type_queue.retain(|t| t.is_idle());
-            player_animation
-                .animation_type_queue
-                .retain(|t| *t != PlayerAnimationType::RightRun);
-            player_animation
-                .animation_type_queue
-                .push_back(PlayerAnimationType::RightIdle);
-            restart_animation = true;
-        } else if keyboard_input.any_just_released(key_bindings.left()) {
-            player_animation
-                .animation_type_queue
-                .retain(|t| *t != PlayerAnimationType::LeftRun);
-            // player_animation.animation_type_queue.retain(|t| t.is_idle());
-            player_animation
-                .animation_type_queue
-                .push_back(PlayerAnimationType::LeftIdle);
-            restart_animation = true;
-        } else if keyboard_input.any_just_pressed([key_bindings.up(), key_bindings.down()].concat())
-        {
-            restart_animation = true;
-        }
-
-        if keyboard_input.any_just_pressed(key_bindings.right()) {
-            player_animation
-                .animation_type_queue
-                .retain(|t| !t.is_idle());
-            player_animation
-                .animation_type_queue
-                .push_front(PlayerAnimationType::RightRun);
-            restart_animation = true;
-        } else if keyboard_input.any_just_pressed(key_bindings.left()) {
-            player_animation
-                .animation_type_queue
-                .retain(|t| !t.is_idle());
-            player_animation
-                .animation_type_queue
-                .push_front(PlayerAnimationType::LeftRun);
-            restart_animation = true;
-        }
-        if restart_animation && start_anim_type != player_animation.animation_type_queue[0] {
-            let animation_data =
-                &player_animations_data.0[&player_animation.animation_type_queue[0]];
-            sprite.index = animation_data.start_index + 1;
-            player_animation.timer =
-                Timer::from_seconds(animation_data.delta, TimerMode::Repeating);
-        }
-    }
-}
-
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(&Speed, &mut Velocity), (With<Player>, Without<Immobilized>)>,
+    mut player_query: Query<
+        (
+            Entity,
+            &Speed,
+            &mut Velocity,
+            &mut TextureAtlasSprite,
+            &mut CharacterState,
+        ),
+        With<Player>,
+    >,
 ) {
-    for (speed, mut rb_vel) in player_query.iter_mut() {
+    if let Ok((_player, speed, mut rb_vel, mut texture_atlas_sprite, mut player_state)) =
+        player_query.get_single_mut()
+    {
         let up = keyboard_input.any_pressed(key_bindings.up());
         let down = keyboard_input.any_pressed(key_bindings.down());
         let left = keyboard_input.any_pressed(key_bindings.left());
@@ -187,8 +67,36 @@ fn player_movement(
             vel_y *= (std::f32::consts::PI / 4.).cos();
         }
 
+        // rb_vel.linvel.x = x_axis as f32 * **speed * 200. * time.delta_seconds();
         rb_vel.linvel.x = vel_x;
         rb_vel.linvel.y = vel_y;
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  Animation                                 */
+        /* -------------------------------------------------------------------------- */
+
+        // if there is any movement
+        if (left || right || up || down) && *player_state != CharacterState::Run {
+            *player_state = CharacterState::Run;
+        } else if !(left || right || up || down)
+            && *player_state == CharacterState::Run
+            && *player_state != CharacterState::Idle
+        {
+            // IDEA: Polish #visual - When we reach max speed (one full run loop), whenever you stop there is a smoke anim (sudden braking)
+            *player_state = CharacterState::Idle;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  Direction                                 */
+        /* -------------------------------------------------------------------------- */
+
+        if !(left && right) {
+            if right {
+                texture_atlas_sprite.flip_x = false;
+            } else if left {
+                texture_atlas_sprite.flip_x = true;
+            }
+        }
     }
 }
 
@@ -214,27 +122,23 @@ fn camera_follow(
     }
 }
 
-fn spawn_player(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    player_animations_data: Res<PlayerAnimationData>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-) {
-    let texture_handle = asset_server.load("textures/fabien_info_spritesheet.png");
-    let texture_atlas = TextureAtlas::from_grid(
-        texture_handle,
-        Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT),
-        4,
-        4,
-        None,
-        None,
-    );
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpriteSheet>) {
+    /* -------------------------------------------------------------------------- */
+    /*                              Animation Indices                             */
+    /* -------------------------------------------------------------------------- */
+
+    let mut animation_indices = AnimationIndices(HashMap::new());
+    animation_indices.insert(CharacterState::Idle, PLAYER_IDLE_FRAMES);
+    animation_indices.insert(CharacterState::Run, PLAYER_RUN_FRAMES);
+
+    /* -------------------------------------------------------------------------- */
+    /*                                  Textures                                  */
+    /* -------------------------------------------------------------------------- */
 
     commands
         .spawn((
             SpriteSheetBundle {
-                texture_atlas: texture_atlas_handle,
+                texture_atlas: characters_spritesheet.texture_atlas.clone(),
                 transform: Transform {
                     translation: PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),
@@ -242,24 +146,17 @@ fn spawn_player(
                 },
                 ..default()
             },
-            PlayerAnimation {
-                timer: Timer::from_seconds(
-                    player_animations_data.0[&STARTING_ANIMATION].delta,
-                    TimerMode::Repeating,
-                ),
-                animation_type_queue: vec![STARTING_ANIMATION].into(),
-            },
-            RigidBody::Dynamic,
-            LockedAxes::ROTATION_LOCKED,
-            MovementBundle {
-                speed: Speed::default(),
-                velocity: Velocity {
-                    linvel: Vect::ZERO,
-                    angvel: 0.,
-                },
-            },
             Player,
             Name::new("Player"),
+            // -- Animation --
+            MovementBundle {
+                velocity: Velocity::zero(),
+                animation_indices,
+                ..default()
+            },
+            // -- Hitbox --
+            RigidBody::Dynamic,
+            LockedAxes::ROTATION_LOCKED,
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -271,8 +168,8 @@ fn spawn_player(
 
             parent.spawn((
                 Collider::segment(
-                    Vect::new(-CHAR_HITBOX_WIDTH, 0.),
-                    Vect::new(CHAR_HITBOX_WIDTH, 0.),
+                    Vect::new(-CHAR_HITBOX_WIDTH, CHAR_SENSOR_Y_OFFSET),
+                    Vect::new(CHAR_HITBOX_WIDTH, CHAR_SENSOR_Y_OFFSET),
                 ),
                 Sensor,
                 ActiveEvents::COLLISION_EVENTS,

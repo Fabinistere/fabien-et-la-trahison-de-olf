@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_inspector_egui::quick::{StateInspectorPlugin, WorldInspectorPlugin};
 
 use crate::{
+    animations::sprite_sheet_animation::{AnimationIndices, CharacterState, TempoAnimation},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     locations::temple::{OverlappingProps, PlayerLocation},
     GameState,
@@ -19,6 +20,18 @@ impl Plugin for DebugPlugin {
                     StateInspectorPlugin::<GameState>::default(),
                     StateInspectorPlugin::<PlayerLocation>::default(),
                 ))
+                /* -------------------------------------------------------------------------- */
+                /*                              Global Animation                              */
+                /* -------------------------------------------------------------------------- */
+                .register_type::<TempoAnimation>()
+                /* -------------------------------------------------------------------------- */
+                /*                                  Character                                 */
+                /* -------------------------------------------------------------------------- */
+                .register_type::<AnimationIndices>()
+                .register_type::<CharacterState>()
+                /* -------------------------------------------------------------------------- */
+                /*                                     Map                                    */
+                /* -------------------------------------------------------------------------- */
                 .register_type::<OverlappingProps>()
                 /* -------------------------------------------------------------------------- */
                 /*                                   Hitbox                                   */

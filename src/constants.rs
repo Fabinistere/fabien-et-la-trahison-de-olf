@@ -11,6 +11,8 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color =
 pub const RESOLUTION: f32 = 16. / 9.;
 pub const TILE_SIZE: f32 = 1.;
 
+pub const FRAME_TIME: f32 = 0.1;
+
 pub mod interactions {
     pub const INTERACT_BUTTON_Z: f32 = 20.;
     pub const INTERACT_BUTTON_SCALE: f32 = 0.25;
@@ -34,12 +36,23 @@ pub mod character {
 
     pub const CHAR_HITBOX_HEIGHT: f32 = 1.5 * CHAR_SCALE;
     pub const CHAR_HITBOX_WIDTH: f32 = 5. * CHAR_SCALE;
-    pub const CHAR_HITBOX_Y_OFFSET: f32 = -3.5;
+    pub const CHAR_HITBOX_Y_OFFSET: f32 = -6.25;
+    pub const CHAR_SENSOR_Y_OFFSET: f32 = -1.25;
+
+    pub const COLUMN_FRAME_RUN_END: usize = 3;
+    pub const COLUMN_FRAME_IDLE_START: usize = 4;
+    pub const COLUMN_FRAME_IDLE_END: usize = 5;
+
+    pub const SPRITESHEET_COLUMN_NUMBER: usize = 6;
 
     pub mod player {
-        use crate::characters::player::PlayerAnimationType;
+        use crate::animations::sprite_sheet_animation::CharacterState;
 
-        pub const STARTING_ANIMATION: PlayerAnimationType = PlayerAnimationType::RightIdle;
+        use super::{
+            COLUMN_FRAME_IDLE_END, COLUMN_FRAME_IDLE_START, COLUMN_FRAME_RUN_END,
+            SPRITESHEET_COLUMN_NUMBER,
+        };
+
         pub const PLAYER_WIDTH: f32 = 12.;
         pub const PLAYER_HEIGHT: f32 = 15.;
         pub const PLAYER_SCALE: f32 = super::CHAR_SCALE;
@@ -47,6 +60,60 @@ pub mod character {
         pub const PLAYER_SPAWN: (f32, f32, f32) = (-24., -150., PLAYER_Z);
 
         pub const CAMERA_INTERPOLATION: f32 = 0.1;
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  Animation                                 */
+        /* -------------------------------------------------------------------------- */
+
+        pub const PLAYER_LINE_START: usize = 1 * SPRITESHEET_COLUMN_NUMBER;
+        // (start_frame, end_frame, next_state)
+        pub const PLAYER_RUN_FRAMES: (usize, usize, CharacterState) = (
+            PLAYER_LINE_START,
+            PLAYER_LINE_START + COLUMN_FRAME_RUN_END,
+            CharacterState::Idle,
+        );
+        pub const PLAYER_IDLE_FRAMES: (usize, usize, CharacterState) = (
+            PLAYER_LINE_START + COLUMN_FRAME_IDLE_START,
+            PLAYER_LINE_START + COLUMN_FRAME_IDLE_END,
+            CharacterState::Idle,
+        );
+    }
+
+    pub mod npc {
+
+        use crate::constants::locations::{secret_room::SECRET_ROOM_Z, PROPS_Z_BACK};
+
+        pub const NPC_SCALE: f32 = super::CHAR_SCALE;
+
+        pub const NPC_Z_BACK: f32 = 3.;
+        pub const NPC_Z_FRONT: f32 = 8.;
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  Animation                                 */
+        /* -------------------------------------------------------------------------- */
+
+        pub const ADMIRAL_LINE: usize = 0;
+        pub const FABIEN_LOYAL_LINE: usize = 2;
+        pub const FABIEN_DISLOYAL_LINE: usize = 3;
+        pub const OLF_LINE: usize = 4;
+        pub const OLF_GHOST_LINE: usize = 5;
+        pub const FOOL_LINE: usize = 6;
+        pub const SUPREME_GOD_LINE: usize = 7;
+        pub const GENERAL_LINE: usize = 8;
+        pub const HEALER_V1_LINE: usize = 9;
+        pub const HEALER_V2_LINE: usize = 10;
+        pub const FABICURION_LINE: usize = 11;
+        pub const VAMPIRE_LINE: usize = 12;
+        pub const AGENT_LINE: usize = 13;
+        pub const BLACK_CAT_LINE: usize = 14;
+        pub const BLUE_CAT_LINE: usize = 15;
+
+        pub const CAT_SWITCH_Y_OFFSET: f32 = 0.;
+        pub const OLF_CAT_Z: f32 = SECRET_ROOM_Z + PROPS_Z_BACK;
+        pub const OLF_CAT_SCALE: f32 = 0.5;
+        pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
+        pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., OLF_CAT_Z);
+        pub const OLF_CAT_HITBOX_OFFSET: (f32, f32, f32) = (0., -5., 0.);
     }
 }
 
@@ -151,16 +218,13 @@ pub mod locations {
 
         use super::PROPS_Z_BACK;
 
-        // REFACTOR: Change this threshold by a sensorin the Temple Door
-        pub const MAIN_ROOM_ENTER_Y: f32 = -91.;
-
         pub const MAIN_ROOM_Z: f32 = 2.;
         pub const MAIN_ROOM_Z_WHEN_IN_SECRET_ROOM: f32 = 7.;
 
         pub const TEMPLE_HALL_LOCATION_SENSOR_POSITION: (f32, f32, f32) = (-24., -94., 0.);
         pub const TEMPLE_SECRET_LOCATION_SENSOR_POSITION: (f32, f32, f32) = (-44.5, 80., 0.);
 
-        pub const PILLAR_SWITCH_Z_OFFSET: f32 = 5.;
+        pub const PILLAR_SWITCH_Y_OFFSET: f32 = 5.;
         pub const PILLAR_HITBOX_Y_OFFSET: f32 = -12.5;
         pub const PILLAR_POSITIONS: [(f32, f32, f32); 6] = [
             // 1    4
@@ -177,7 +241,7 @@ pub mod locations {
         pub const BANNERS_POSITION: (f32, f32, f32) =
             (-20. * TILE_SIZE, 80. * TILE_SIZE, PROPS_Z_BACK);
 
-        pub const THRONE_SWITCH_Z_OFFSET: f32 = -3.5;
+        pub const THRONE_SWITCH_Y_OFFSET: f32 = -3.5;
         pub const THRONE_POSITION: (f32, f32, f32) =
             (-24. * TILE_SIZE, 71.5 * TILE_SIZE, PROPS_Z_BACK);
 
@@ -189,7 +253,7 @@ pub mod locations {
             (29.5 * TILE_SIZE, -40. * TILE_SIZE, CHANDELIER_Z), // right bottom
         ];
 
-        pub const PLANTS_SWITCH_Z_OFFSET: f32 = 29.;
+        pub const PLANTS_SWITCH_Y_OFFSET: f32 = 29.;
         pub const PLANTS_POSITIONS: [(f32, f32, f32); 4] = [
             (-125.5 * TILE_SIZE, 44. * TILE_SIZE, PROPS_Z_BACK), // TopLeft
             (-125.5 * TILE_SIZE, -27. * TILE_SIZE, PROPS_Z_BACK), // BottomLeft
@@ -205,7 +269,7 @@ pub mod locations {
             (68.5 * TILE_SIZE, 63.5 * TILE_SIZE, PROPS_Z_BACK),   // RightRight
         ];
 
-        pub const STATUE_SWITCH_Z_OFFSET: f32 = 3.;
+        pub const STATUE_SWITCH_Y_OFFSET: f32 = 3.;
         pub const CAT_STATUE_POSITION: (f32, f32, f32) = (-100., 75., PROPS_Z_BACK);
         pub const FABIEN_STATUE_POSITION: (f32, f32, f32) = (52., 77., PROPS_Z_BACK);
 
@@ -239,9 +303,9 @@ pub mod locations {
         pub const SECRET_ROOM_COVER_SIZE: (f32, f32) = (250., 100.);
 
         pub const FAKE_STONE_POSITION: (f32, f32, f32) = (0., 0., PROPS_Z_BACK);
-        pub const FAKE_STONE_SWITCH_Z_OFFSET: f32 = -80.;
+        pub const FAKE_STONE_SWITCH_Y_OFFSET: f32 = -80.;
 
-        pub const FLOWER_PANEL_SWITCH_Z_OFFSET: f32 = 13.;
+        pub const FLOWER_PANEL_SWITCH_Y_OFFSET: f32 = 13.;
         pub const FLOWER_PANEL_POSITIONS: [(f32, f32, f32); 5] = [
             (-116. * TILE_SIZE, 100.5 * TILE_SIZE, PROPS_Z_BACK), // 1
             (-83. * TILE_SIZE, 100.5 * TILE_SIZE, PROPS_Z_BACK),  // 2
@@ -253,12 +317,5 @@ pub mod locations {
         // TODO: when outside change the wall_pot Z to `SECRET_ROOM_Z_WHEN_OUTSIDE`
         pub const WALL_POT_POSITION: (f32, f32, f32) =
             (-59.5 * TILE_SIZE, 171.5 * TILE_SIZE, SECRET_ROOM_Z);
-
-        pub const CAT_SWITCH_Z_OFFSET: f32 = 0.;
-        pub const OLF_CAT_Z: f32 = PROPS_Z_BACK;
-        pub const OLF_CAT_SCALE: f32 = 0.5;
-        pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
-        pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., OLF_CAT_Z);
-        pub const OLF_CAT_HITBOX_OFFSET: (f32, f32, f32) = (0., -1.75, 0.);
     }
 }

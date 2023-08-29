@@ -38,10 +38,10 @@ fn main() {
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(BACKGROUND_COLOR)) // BACKGROUND_COLOR
         .insert_resource(controls::KeyBindings {
-            up: [Key(KeyCode::Z), Key(KeyCode::Up)],
+            up: [Key(KeyCode::W), Key(KeyCode::Z), Key(KeyCode::Up)],
             down: [Key(KeyCode::S), Key(KeyCode::Down)],
             right: [Key(KeyCode::D), Key(KeyCode::Right)],
-            left: [Key(KeyCode::Q), Key(KeyCode::Left)],
+            left: [Key(KeyCode::A), Key(KeyCode::Q), Key(KeyCode::Left)],
             interact: [Key(KeyCode::E), Key(KeyCode::R)],
         })
         .add_plugins((
@@ -77,9 +77,6 @@ fn main() {
         .add_state::<GameState>()
         // NOTE: should be on startup
         .add_systems(OnEnter(GameState::Playing), game_setup);
-
-    #[cfg(target_arch = "wasm32")]
-    app.add_plugins(bevy_web_resizer::Plugin);
 
     app.edit_schedule(Main, |schedule| {
         schedule.set_build_settings(ScheduleBuildSettings {

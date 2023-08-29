@@ -25,9 +25,6 @@ pub struct SecretRoom;
 #[derive(Component)]
 pub struct SecretRoomCover;
 
-#[derive(Component, Deref, DerefMut)]
-pub struct OlfCatTimer(Timer);
-
 #[derive(Component)]
 pub struct FlowerPanel;
 
@@ -90,28 +87,6 @@ pub fn add_secret_room_cover(
                     ease_out_sine,
                 ));
             }
-        }
-    }
-}
-
-/// Animation of smol black cat
-///
-/// TODO: Polish #visual - Cat like movement
-pub fn olf_cat_animation(
-    time: Res<Time>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    mut query: Query<(
-        &mut OlfCatTimer,
-        &mut TextureAtlasSprite,
-        &Handle<TextureAtlas>,
-    )>,
-) {
-    for (mut timer, mut sprite, texture_atlas_handle) in query.iter_mut() {
-        timer.tick(time.delta());
-
-        if timer.finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
-            sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
         }
     }
 }
@@ -200,12 +175,6 @@ pub fn setup_secret_room(
     let wall_pot_texture_atlas =
         TextureAtlas::from_grid(wall_pot_spritesheet, Vec2::new(21., 11.), 16, 1, None, None);
 
-    // REFACTOR: use the big_spritesheet instead
-    let olf_cat_spritesheet =
-        asset_server.load("textures/v4.0.0/Secret_Room/olf_cat_spritesheet.png");
-    let olf_cat_texture_atlas =
-        TextureAtlas::from_grid(olf_cat_spritesheet, Vec2::new(14., 11.), 2, 1, None, None);
-
     /* -------------------------------------------------------------------------- */
     /*                               Wall Colliders                               */
     /* -------------------------------------------------------------------------- */
@@ -292,36 +261,6 @@ pub fn setup_secret_room(
                 Name::new("Indicators"),
             ));
 
-            // TEMP: Static Olf cat
-            parent
-                .spawn((
-                    SpriteSheetBundle {
-                        texture_atlas: texture_atlases.add(olf_cat_texture_atlas),
-                        transform: Transform {
-                            translation: OLF_CAT_POSITION.into(),
-                            scale: Vec3::splat(OLF_CAT_SCALE),
-                            ..Transform::default()
-                        },
-                        ..default()
-                    },
-                    OverlappingProps {
-                        layer: super::Layer::Fourth,
-                        switch_offset_y: CAT_SWITCH_Z_OFFSET,
-                    },
-                    OlfCatTimer(Timer::from_seconds(
-                        OLF_CAT_ANIMATION_DELTA,
-                        TimerMode::Repeating,
-                    )),
-                    RigidBody::Fixed,
-                    Name::new("Olf Cat"),
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Collider::cuboid(2.5, 1.),
-                        Transform::from_translation(OLF_CAT_HITBOX_OFFSET.into()),
-                    ));
-                });
-
             // --- Secret Room Sensor ---
             parent.spawn((
                 Collider::cuboid(6., 3.),
@@ -386,7 +325,7 @@ pub fn setup_secret_room(
                         },
                         OverlappingProps {
                             layer: super::Layer::Second,
-                            switch_offset_y: FLOWER_PANEL_SWITCH_Z_OFFSET,
+                            switch_offset_y: FLOWER_PANEL_SWITCH_Y_OFFSET,
                         },
                         FlowerPanel,
                         Name::new(format!("Flower Panel°{}", count + 1)),
@@ -418,7 +357,7 @@ pub fn setup_secret_room(
                 },
                 OverlappingProps {
                     layer: super::Layer::First,
-                    switch_offset_y: FAKE_STONE_SWITCH_Z_OFFSET,
+                    switch_offset_y: FAKE_STONE_SWITCH_Y_OFFSET,
                 },
                 Name::new("Fake Stone"),
             ));
