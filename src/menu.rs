@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
-    constants::title_screen::FULL_LIGHTS_INDEX,
     in_menu, DialogId, Dialogs, GameState, Language,
 };
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
@@ -178,16 +177,28 @@ fn language_changed(
     mut language_event: EventReader<LanguageChangedEvent>,
     language: Res<Language>,
     dialogs: Res<Dialogs>,
+    asset_server: Res<AssetServer>,
+
     mut text_query: Query<(&mut Text, &DialogId)>,
+    mut ui_image_query: Query<(&mut UiImage, &DialogId), With<Title>>,
 ) {
-    for _ in language_event.iter() {
-        for (mut text, dialog_id) in text_query.iter_mut() {
+    for LanguageChangedEvent in language_event.iter() {
+        for (mut text, dialog_id) in &mut text_query {
+            text.sections[0].value = dialogs.get(*dialog_id, *language);
+        }
+        for (mut image, dialog_id) in &mut ui_image_query {
             if *dialog_id == DialogId::MenuTitle {
-                text.sections[0].value =
-                    format!("{}\n", dialogs.get(DialogId::MenuTitle01, *language));
-                text.sections[1].value = dialogs.get(DialogId::MenuTitle02, *language);
-            } else {
-                text.sections[0].value = dialogs.get(*dialog_id, *language);
+                *image = match *language {
+                    Language::Francais => asset_server
+                        .load("textures/title_screen/Francais.png")
+                        .into(),
+                    Language::English => asset_server
+                        .load("textures/title_screen/English.png")
+                        .into(),
+                    Language::FabienAncien => asset_server
+                        .load("textures/title_screen/Fabien Ancien.png")
+                        .into(),
+                }
             }
         }
     }
@@ -211,8 +222,7 @@ fn setup_menu(
         TextureAtlas::from_grid(clouds_spritesheet, Vec2::new(426., 280.), 10, 1, None, None);
     let clouds_texture_atlas_handle = texture_atlases.add(clouds_texture_atlas.clone());
 
-    // get this texture from the title resource and the default language
-    let french_title = asset_server.load("textures/title_screen/title_fr_white.png");
+    let french_title = asset_server.load("textures/title_screen/Francais.png");
     let moon = asset_server.load("textures/title_screen/moon.png");
 
     let foreground = asset_server.load("textures/title_screen/static_landscape_big_picture.png");
@@ -227,92 +237,6 @@ fn setup_menu(
         None,
     );
     let manor_lights_texture_atlas_handle = texture_atlases.add(manor_lights_texture_atlas.clone());
-
-    let title = TextBundle {
-        text: Text {
-            sections: vec![
-                TextSection {
-                    value: format!(
-                        "{}\n",
-                        dialogs.get(DialogId::MenuTitle01, *current_language)
-                    ),
-                    style: TextStyle {
-                        font: font.clone(),
-                        font_size: 100.,
-                        color: Color::WHITE,
-                    },
-                },
-                TextSection {
-                    value: dialogs.get(DialogId::MenuTitle02, *current_language),
-                    style: TextStyle {
-                        font: font.clone(),
-                        font_size: 60.,
-                        color: Color::RED,
-                    },
-                },
-            ],
-            alignment: TextAlignment::Center,
-            ..default()
-        },
-        ..default()
-    };
-
-    let play_text = TextBundle {
-        style: Style {
-            margin: UiRect {
-                top: Val::Auto,
-                bottom: Val::Percent(5.),
-                ..default()
-            },
-            ..default()
-        },
-        text: Text::from_section(
-            dialogs.get(DialogId::MenuPlay, *current_language),
-            TextStyle {
-                font: font.clone(),
-                font_size: 30.,
-                color: Color::YELLOW,
-            },
-        ),
-        ..default()
-    };
-
-    let mut languages_buttons: Vec<(ButtonBundle, TextBundle, bool, Language)> = Vec::new();
-    for (i, language) in Language::iter().enumerate() {
-        languages_buttons.push((
-            ButtonBundle {
-                style: Style {
-                    width: Val::Px(100.),
-                    height: Val::Px(20.),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    position_type: PositionType::Absolute,
-                    right: Val::Px(15.),
-                    bottom: Val::Px(i as f32 * 20. + 5.),
-                    ..default()
-                },
-                background_color: Color::NONE.into(),
-                ..default()
-            },
-            TextBundle {
-                text: Text::from_section(
-                    language.to_string(),
-                    TextStyle {
-                        font: font.clone(),
-                        font_size: 20.,
-                        color: if *current_language == language {
-                            languages_button_colors.selected
-                        } else {
-                            languages_button_colors.normal
-                        },
-                    },
-                ),
-                ..default()
-            },
-            Language::default() == language,
-            language,
-        ));
-    }
 
     commands
         .spawn((
@@ -382,6 +306,7 @@ fn setup_menu(
                                 },
                                 Name::new("French Title"),
                                 Title,
+                                DialogId::MenuTitle,
                             ));
                         });
 
@@ -434,6 +359,7 @@ fn setup_menu(
                                 ..default()
                             },
                             transform: Transform::from_scale((0.4, 0.4, 0.4).into()),
+                            visibility: Visibility::Hidden,
                             ..default()
                         },
                         Name::new("Moon"),
@@ -457,17 +383,103 @@ fn setup_menu(
                     Name::new("UI - TitleScreen"),
                 ))
                 .with_children(|parent| {
-                    parent.spawn((title, DialogId::MenuTitle));
+                    // parent.spawn((
+                    //     TextBundle {
+                    //         text: Text {
+                    //             sections: vec![
+                    //                 TextSection {
+                    //                     value: format!(
+                    //                         "{}\n",
+                    //                         dialogs.get(DialogId::MenuTitle01, *current_language)
+                    //                     ),
+                    //                     style: TextStyle {
+                    //                         font: font.clone(),
+                    //                         font_size: 100.,
+                    //                         color: Color::WHITE,
+                    //                     },
+                    //                 },
+                    //                 TextSection {
+                    //                     value: dialogs
+                    //                         .get(DialogId::MenuTitle02, *current_language),
+                    //                     style: TextStyle {
+                    //                         font: font.clone(),
+                    //                         font_size: 60.,
+                    //                         color: Color::RED,
+                    //                     },
+                    //                 },
+                    //             ],
+                    //             alignment: TextAlignment::Center,
+                    //             ..default()
+                    //         },
+                    //         ..default()
+                    //     },
+                    //     DialogId::MenuTitle,
+                    //     Name::new("Old Title"),
+                    // ));
 
-                    for (button, text, selected, language) in languages_buttons.into_iter() {
+                    for (i, language) in Language::iter().enumerate() {
                         parent
-                            .spawn((button, Selected(selected), language))
+                            .spawn((
+                                ButtonBundle {
+                                    style: Style {
+                                        width: Val::Px(100.),
+                                        height: Val::Px(20.),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        position_type: PositionType::Absolute,
+                                        right: Val::Px(15.),
+                                        bottom: Val::Px(i as f32 * 40. + 5.),
+                                        ..default()
+                                    },
+                                    background_color: Color::NONE.into(),
+                                    ..default()
+                                },
+                                Selected(Language::default() == language),
+                                language,
+                                Name::new(format!("{}", language)),
+                            ))
                             .with_children(|parent| {
-                                parent.spawn(text);
+                                parent.spawn(TextBundle {
+                                    text: Text::from_section(
+                                        language.to_string(),
+                                        TextStyle {
+                                            font: font.clone(),
+                                            font_size: 20.,
+                                            color: if *current_language == language {
+                                                languages_button_colors.selected
+                                            } else {
+                                                languages_button_colors.normal
+                                            },
+                                        },
+                                    ),
+                                    ..default()
+                                });
                             });
                     }
 
-                    parent.spawn((play_text, DialogId::MenuPlay));
+                    parent.spawn((
+                        TextBundle {
+                            style: Style {
+                                margin: UiRect {
+                                    top: Val::Auto,
+                                    bottom: Val::Percent(5.),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            text: Text::from_section(
+                                dialogs.get(DialogId::MenuPlay, *current_language),
+                                TextStyle {
+                                    font: font.clone(),
+                                    font_size: 30.,
+                                    color: Color::YELLOW,
+                                },
+                            ),
+                            ..default()
+                        },
+                        DialogId::MenuPlay,
+                        Name::new("Play Text"),
+                    ));
                 });
         });
 }
