@@ -5,7 +5,7 @@ use rand::Rng;
 
 use crate::{
     constants::title_screen::MANOR_LIGHTS_PATTERN_INDEXES,
-    menu::{ManorLightsPattern, ManorLightsTimer},
+    menu::{ManorLightsPattern, ManorLightsTimer, Smoke},
 };
 
 #[derive(Reflect, Component)]
@@ -66,11 +66,10 @@ pub fn jump_frame_manor_lights_state(
         match manor_lights_state {
             // when running each time the anim loops it triggers this match arm
             ManorLightsPattern::FullLights => {
-                let tempo_secs = rand::thread_rng().gen_range(2..=10);
                 commands
                     .entity(manor_lights)
                     .insert(TempoAnimation(Timer::new(
-                        Duration::from_secs(tempo_secs),
+                        Duration::from_secs(rand::thread_rng().gen_range(2..=10)),
                         TimerMode::Once,
                     )));
             }
@@ -112,6 +111,7 @@ pub fn animate_ui_atlas(
         (Entity, &mut SpriteSheetAnimation, &mut UiTextureAtlasImage),
         (Without<TempoAnimation>, Without<ManorLightsPattern>),
     >,
+    smoke_query: Query<Entity, With<Smoke>>,
 ) {
     for (entity, mut animation, mut atlas_image) in atlas_images.iter_mut() {
         animation.timer.tick(time.delta());
@@ -122,6 +122,12 @@ pub fn animate_ui_atlas(
                     commands.entity(entity).remove::<SpriteSheetAnimation>();
                 } else {
                     atlas_image.index = animation.start_index;
+                    if smoke_query.get(entity).is_ok() {
+                        commands.entity(entity).insert(TempoAnimation(Timer::new(
+                            Duration::from_secs(rand::thread_rng().gen_range(6..=15)),
+                            TimerMode::Once,
+                        )));
+                    }
                 }
             } else {
                 atlas_image.index += 1;

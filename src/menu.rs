@@ -38,10 +38,7 @@ struct Menu;
 struct Title;
 
 #[derive(Component)]
-pub struct UISpriteSheetAnimation {
-    pub timer: Timer,
-    pub duration: AnimationDuration,
-}
+pub struct Smoke;
 
 #[derive(Event)]
 struct LanguageChangedEvent;
@@ -222,6 +219,11 @@ fn setup_menu(
         TextureAtlas::from_grid(clouds_spritesheet, Vec2::new(426., 280.), 10, 1, None, None);
     let clouds_texture_atlas_handle = texture_atlases.add(clouds_texture_atlas.clone());
 
+    let smoke_spritesheet = asset_server.load("textures/title_screen/smoke_sheet.png");
+    let smoke_texture_atlas =
+        TextureAtlas::from_grid(smoke_spritesheet, Vec2::new(426., 280.), 17, 1, None, None);
+    let smoke_texture_atlas_handle = texture_atlases.add(smoke_texture_atlas.clone());
+
     let french_title = asset_server.load("textures/title_screen/Francais.png");
     let moon = asset_server.load("textures/title_screen/moon.png");
 
@@ -275,6 +277,28 @@ fn setup_menu(
                     Name::new("Art - Title Screen"),
                 ))
                 .with_children(|parent| {
+                    parent.spawn((
+                        AtlasImageBundle {
+                            style: Style {
+                                width: Val::Percent(100.),
+                                top: Val::Percent(5.5),
+                                flex_shrink: 0.,
+                                ..default()
+                            },
+                            texture_atlas: smoke_texture_atlas_handle,
+                            texture_atlas_image: UiTextureAtlasImage::default(),
+                            ..default()
+                        },
+                        SpriteSheetAnimation {
+                            start_index: 0,
+                            end_index: smoke_texture_atlas.len() - 1,
+                            duration: AnimationDuration::Infinite,
+                            timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
+                        },
+                        Name::new("Smoke"),
+                        Smoke,
+                    ));
+
                     parent
                         .spawn((
                             NodeBundle {
@@ -284,6 +308,7 @@ fn setup_menu(
                                     justify_content: JustifyContent::Center,
                                     flex_shrink: 0.,
                                     width: Val::Percent(100.),
+                                    right: Val::Percent(100.),
                                     // TODO: Animate Title
                                     bottom: Val::Percent(35.5),
                                     // bottom: Val::Percent(-25.5),
@@ -306,18 +331,21 @@ fn setup_menu(
                                 },
                                 Name::new("French Title"),
                                 Title,
+                                TitleState::Hidden,
                                 DialogId::MenuTitle,
                             ));
                         });
-
+                    // REFACTOR: foreground mounts and background (title in between fade in + bottom raising at start)
                     parent
                         .spawn((
                             ImageBundle {
                                 image: foreground.into(),
                                 style: Style {
-                                    width: Val::Percent(100.),
                                     flex_shrink: 0.,
-                                    right: Val::Percent(100.),
+                                    width: Val::Percent(100.),
+                                    // min_height: Val::Px(1200.),
+                                    // max_height: Val::Px(1200.),
+                                    right: Val::Percent(200.),
                                     top: Val::Percent(5.5),
                                     ..default()
                                 },
@@ -354,7 +382,7 @@ fn setup_menu(
                             image: moon.into(),
                             style: Style {
                                 flex_shrink: 0.,
-                                right: Val::Percent(129.),
+                                right: Val::Percent(229.),
                                 bottom: Val::Percent(54.),
                                 ..default()
                             },
@@ -383,40 +411,6 @@ fn setup_menu(
                     Name::new("UI - TitleScreen"),
                 ))
                 .with_children(|parent| {
-                    // parent.spawn((
-                    //     TextBundle {
-                    //         text: Text {
-                    //             sections: vec![
-                    //                 TextSection {
-                    //                     value: format!(
-                    //                         "{}\n",
-                    //                         dialogs.get(DialogId::MenuTitle01, *current_language)
-                    //                     ),
-                    //                     style: TextStyle {
-                    //                         font: font.clone(),
-                    //                         font_size: 100.,
-                    //                         color: Color::WHITE,
-                    //                     },
-                    //                 },
-                    //                 TextSection {
-                    //                     value: dialogs
-                    //                         .get(DialogId::MenuTitle02, *current_language),
-                    //                     style: TextStyle {
-                    //                         font: font.clone(),
-                    //                         font_size: 60.,
-                    //                         color: Color::RED,
-                    //                     },
-                    //                 },
-                    //             ],
-                    //             alignment: TextAlignment::Center,
-                    //             ..default()
-                    //         },
-                    //         ..default()
-                    //     },
-                    //     DialogId::MenuTitle,
-                    //     Name::new("Old Title"),
-                    // ));
-
                     for (i, language) in Language::iter().enumerate() {
                         parent
                             .spawn((
