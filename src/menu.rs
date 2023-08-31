@@ -4,11 +4,7 @@ use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     in_menu, DialogId, Dialogs, GameState, Language,
 };
-use bevy::{
-    input::keyboard::KeyboardInput,
-    prelude::*,
-    window::{PrimaryWindow, WindowResized},
-};
+use bevy::{input::keyboard::KeyboardInput, prelude::*, window::WindowResized};
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
@@ -25,12 +21,7 @@ impl Plugin for MenuPlugin {
             .add_systems(OnExit(GameState::Menu), destroy_menu)
             .add_systems(
                 Update,
-                (
-                    // game_start,
-                    language_button_interactions,
-                    language_changed,
-                )
-                    .run_if(in_menu),
+                (game_start, language_button_interactions, language_changed).run_if(in_menu),
             )
             .add_systems(PostUpdate, adjust_art_height.run_if(in_menu));
     }
@@ -42,11 +33,16 @@ struct Menu;
 struct ArtMenu;
 
 #[derive(Component)]
-struct Title;
+pub struct Title;
 
 #[derive(Component)]
-enum TitleState {
+pub enum TitleState {
+    /// Behind the moutains
     Hidden,
+    /// At top position
+    FlexTop,
+    /// At bot position
+    FlexBot,
 }
 
 #[derive(Component)]
@@ -342,7 +338,7 @@ fn setup_menu(
                         Smoke,
                     ));
 
-                    // TODO: Polish #visual - Moon
+                    // TODO: Test Anim Moon
                     parent.spawn((
                         ImageBundle {
                             image: moon.into(),
@@ -369,10 +365,7 @@ fn setup_menu(
                                     flex_shrink: 0.,
                                     width: Val::Percent(100.),
                                     right: Val::Percent(200.),
-                                    // TODO: Animate Title
                                     bottom: Val::Px(750.),
-                                    // bottom: Val::Percent(35.5),
-                                    // bottom: Val::Percent(-25.5),
                                     align_self: AlignSelf::FlexEnd,
                                     ..default()
                                 },
@@ -393,7 +386,7 @@ fn setup_menu(
                                 },
                                 Name::new("French Title"),
                                 Title,
-                                TitleState::Hidden,
+                                TitleState::FlexTop,
                                 DialogId::MenuTitle,
                             ));
                         });

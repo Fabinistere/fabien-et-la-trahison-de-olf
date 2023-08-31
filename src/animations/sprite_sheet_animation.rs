@@ -4,8 +4,10 @@ use bevy::prelude::*;
 use rand::Rng;
 
 use crate::{
-    constants::title_screen::MANOR_LIGHTS_PATTERN_INDEXES,
-    menu::{ManorLightsPattern, ManorLightsTimer, Smoke},
+    constants::title_screen::{
+        MANOR_LIGHTS_PATTERN_INDEXES, TITLE_FLEX_BOT, TITLE_FLEX_BOT_DELTA_S, TITLE_FLEX_TOP_DELTA_S, TITLE_FLEX_TOP,
+    },
+    menu::{ManorLightsPattern, ManorLightsTimer, Smoke, Title, TitleState},
 };
 
 #[derive(Reflect, Component)]
@@ -179,6 +181,36 @@ pub fn animate_manor_lights(
                     }
                 }
             };
+        }
+    }
+}
+
+pub fn flexing_title(
+    mut commands: Commands,
+    mut title_query: Query<
+        (Entity, &mut Style, &mut TitleState),
+        (With<Title>, Without<TempoAnimation>),
+    >,
+) {
+    if let Ok((entity, mut style, mut state)) = title_query.get_single_mut() {
+        match *state {
+            TitleState::FlexTop => {
+                *state = TitleState::FlexBot;
+                style.bottom = Val::Px(TITLE_FLEX_BOT);
+                commands.entity(entity).insert(TempoAnimation(Timer::new(
+                    Duration::from_secs(TITLE_FLEX_BOT_DELTA_S),
+                    TimerMode::Once,
+                )));
+            }
+            TitleState::FlexBot => {
+                *state = TitleState::FlexTop;
+                style.bottom = Val::Px(TITLE_FLEX_TOP);
+                commands.entity(entity).insert(TempoAnimation(Timer::new(
+                    Duration::from_secs(TITLE_FLEX_TOP_DELTA_S),
+                    TimerMode::Once,
+                )));
+            }
+            _ => {}
         }
     }
 }

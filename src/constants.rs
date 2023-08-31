@@ -16,6 +16,10 @@ pub const RESOLUTION: f32 = 9. / 16.;
 pub const TILE_SIZE: f32 = 1.;
 
 pub mod title_screen {
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   Lights                                   */
+    /* -------------------------------------------------------------------------- */
     pub const FULL_LIGHTS_INDEX: (usize, usize) = (0, 0);
     pub const BOT_SHUTDOWN_INDEX: (usize, usize) = (1, 1);
     pub const TOP_SHUTDOWN_INDEX: (usize, usize) = (2, 2);
@@ -31,6 +35,16 @@ pub mod title_screen {
         BOT_SHUTDOWN_INDEX,
         LEFT_SHUTDOWN_INDEX,
     ];
+
+    /* -------------------------------------------------------------------------- */
+    /*                                    Title                                   */
+    /* -------------------------------------------------------------------------- */
+
+    pub const TITLE_FLEX_BOT_DELTA_S: u64 = 2;
+    // stay twice more time in the top position
+    pub const TITLE_FLEX_TOP_DELTA_S: u64 = TITLE_FLEX_BOT_DELTA_S * 2;
+    pub const TITLE_FLEX_TOP: f32 = 0.;
+    pub const TITLE_FLEX_BOT: f32 = -5.;
 }
 
 pub mod interactions {
