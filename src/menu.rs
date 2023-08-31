@@ -4,7 +4,11 @@ use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     in_menu, DialogId, Dialogs, GameState, Language,
 };
-use bevy::{input::keyboard::KeyboardInput, prelude::*};
+use bevy::{
+    input::keyboard::KeyboardInput,
+    prelude::*,
+    window::{PrimaryWindow, WindowResized},
+};
 use rand::{
     distributions::{Distribution, Standard},
     Rng,
@@ -27,15 +31,23 @@ impl Plugin for MenuPlugin {
                     language_changed,
                 )
                     .run_if(in_menu),
-            );
+            )
+            .add_systems(PostUpdate, adjust_art_height.run_if(in_menu));
     }
 }
-
 #[derive(Component)]
 struct Menu;
 
 #[derive(Component)]
+struct ArtMenu;
+
+#[derive(Component)]
 struct Title;
+
+#[derive(Component)]
+enum TitleState {
+    Hidden,
+}
 
 #[derive(Component)]
 pub struct Smoke;
@@ -201,6 +213,34 @@ fn language_changed(
     }
 }
 
+/// Keeps the art in a 16/9 resolution.
+///
+/// TODO: Move the art to always be at the bottom of the screen.
+/// Note that you can let the position still to let the player reveal a bit of the bottom of the mountains (about 5.5%)
+/// So, `bottom` never above 5.5 (or 0 if we keep the `top` in the setup style).
+fn adjust_art_height(
+    mut resize_reader: EventReader<WindowResized>,
+    mut query: Query<&mut Style, With<ArtMenu>>,
+) {
+    for WindowResized {
+        window: _,
+        width,
+        height,
+    } in resize_reader.iter()
+    {
+        let mut style = query.single_mut();
+        info!(
+            "window's width: {} * {} / window's height {} = {}",
+            width,
+            (9. / 16.),
+            height,
+            (*width as f32 * (9. / 16.)) / (*height as f32)
+        );
+
+        style.height = Val::Percent(100. * (*width as f32 * (9. / 16.)) / (*height as f32));
+    }
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                    Setup                                   */
 /* -------------------------------------------------------------------------- */
@@ -275,6 +315,7 @@ fn setup_menu(
                         timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
                     },
                     Name::new("Art - Title Screen"),
+                    ArtMenu,
                 ))
                 .with_children(|parent| {
                     parent.spawn((
@@ -299,6 +340,22 @@ fn setup_menu(
                         Smoke,
                     ));
 
+                    // TODO: Polish #visual - Moon
+                    parent.spawn((
+                        ImageBundle {
+                            image: moon.into(),
+                            style: Style {
+                                flex_shrink: 0.,
+                                width: Val::Percent(100.),
+                                right: Val::Percent(53.55),
+                                bottom: Val::Percent(46.5),
+                                ..default()
+                            },
+                            ..default()
+                        },
+                        Name::new("Moon"),
+                    ));
+
                     parent
                         .spawn((
                             NodeBundle {
@@ -308,7 +365,7 @@ fn setup_menu(
                                     justify_content: JustifyContent::Center,
                                     flex_shrink: 0.,
                                     width: Val::Percent(100.),
-                                    right: Val::Percent(100.),
+                                    right: Val::Percent(200.),
                                     // TODO: Animate Title
                                     bottom: Val::Percent(35.5),
                                     // bottom: Val::Percent(-25.5),
@@ -345,7 +402,7 @@ fn setup_menu(
                                     width: Val::Percent(100.),
                                     // min_height: Val::Px(1200.),
                                     // max_height: Val::Px(1200.),
-                                    right: Val::Percent(200.),
+                                    right: Val::Percent(300.),
                                     top: Val::Percent(5.5),
                                     ..default()
                                 },
@@ -375,23 +432,6 @@ fn setup_menu(
                                 Name::new("Manor Lights"),
                             ));
                         });
-
-                    // TODO: Moon
-                    parent.spawn((
-                        ImageBundle {
-                            image: moon.into(),
-                            style: Style {
-                                flex_shrink: 0.,
-                                right: Val::Percent(229.),
-                                bottom: Val::Percent(54.),
-                                ..default()
-                            },
-                            transform: Transform::from_scale((0.4, 0.4, 0.4).into()),
-                            visibility: Visibility::Hidden,
-                            ..default()
-                        },
-                        Name::new("Moon"),
-                    ));
                 });
 
             parent

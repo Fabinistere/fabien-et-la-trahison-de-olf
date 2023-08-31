@@ -50,7 +50,7 @@ fn main() {
                     primary_window: Some(Window {
                         title: "Fabien et le trahison de Olf".to_string(),
                         // vsync: true,
-                        // mode: bevy::window::WindowMode::BorderlessFullscreen,
+                        mode: bevy::window::WindowMode::BorderlessFullscreen,
                         ..Window::default()
                     }),
                     ..default()
