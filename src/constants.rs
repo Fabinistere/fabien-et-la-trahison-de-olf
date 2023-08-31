@@ -1,5 +1,8 @@
+// dark blue #213757 = 33/255, 55/255, 87/255
+pub const BACKGROUND_COLOR_INMENU: bevy::render::color::Color =
+    bevy::render::color::Color::rgb(33. / 255., 55. / 255., 87. / 255.);
 // dark purple #25131a = 39/255, 19/255, 26/255
-pub const BACKGROUND_COLOR: bevy::render::color::Color =
+pub const BACKGROUND_COLOR_INGAME: bevy::render::color::Color =
     bevy::render::color::Color::rgb(0.153, 0.07, 0.102);
 // pub const BACKGROUND_COLOR: bevy::render::color::Color = bevy::render::color::Color::Rgba {
 //     red: 58. / 256.,
@@ -8,10 +11,43 @@ pub const BACKGROUND_COLOR: bevy::render::color::Color =
 //     alpha: 1.,
 // };
 
-pub const RESOLUTION: f32 = 16. / 9.;
+// pub const RESOLUTION: f32 = 16. / 9.;
+pub const RESOLUTION: f32 = 9. / 16.;
 pub const TILE_SIZE: f32 = 1.;
 
 pub const FRAME_TIME: f32 = 0.1;
+
+pub mod title_screen {
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   Lights                                   */
+    /* -------------------------------------------------------------------------- */
+    pub const FULL_LIGHTS_INDEX: (usize, usize) = (0, 0);
+    pub const BOT_SHUTDOWN_INDEX: (usize, usize) = (1, 1);
+    pub const TOP_SHUTDOWN_INDEX: (usize, usize) = (2, 2);
+    pub const TOWER_RESET_INDEX: (usize, usize) = (3, 3);
+    pub const SMALL_SHUTDOWN_INDEX: (usize, usize) = (4, 12);
+    pub const LEFT_SHUTDOWN_INDEX: (usize, usize) = (13, 20);
+
+    pub const MANOR_LIGHTS_PATTERN_INDEXES: &[(usize, usize); 6] = &[
+        FULL_LIGHTS_INDEX,
+        TOWER_RESET_INDEX,
+        SMALL_SHUTDOWN_INDEX,
+        TOP_SHUTDOWN_INDEX,
+        BOT_SHUTDOWN_INDEX,
+        LEFT_SHUTDOWN_INDEX,
+    ];
+
+    /* -------------------------------------------------------------------------- */
+    /*                                    Title                                   */
+    /* -------------------------------------------------------------------------- */
+
+    pub const TITLE_FLEX_BOT_DELTA_S: u64 = 2;
+    // stay twice more time in the top position
+    pub const TITLE_FLEX_TOP_DELTA_S: u64 = TITLE_FLEX_BOT_DELTA_S * 2;
+    pub const TITLE_FLEX_TOP: f32 = 0.;
+    pub const TITLE_FLEX_BOT: f32 = -5.;
+}
 
 pub mod interactions {
     pub const INTERACT_BUTTON_Z: f32 = 20.;
@@ -30,9 +66,7 @@ pub mod ui {
 }
 
 pub mod character {
-    use super::TILE_SIZE;
-
-    pub const CHAR_SCALE: f32 = 0.6 * TILE_SIZE;
+    pub const CHAR_SCALE: f32 = 0.6 * super::TILE_SIZE;
 
     pub const CHAR_HITBOX_HEIGHT: f32 = 1.5 * CHAR_SCALE;
     pub const CHAR_HITBOX_WIDTH: f32 = 5. * CHAR_SCALE;

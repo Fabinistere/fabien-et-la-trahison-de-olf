@@ -7,9 +7,21 @@ edition = "2021"
 [workspace]
 resolver = "2"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+bevy = { version = "0.11",  features = ["dynamic_linking"] }
+bevy_ecs = "0.11"
+bevy_reflect = "0.11"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+bevy = "0.11"
+bevy_ecs = "0.11"
+bevy_reflect = "0.11"
+# wasm-bindgen = "0.2"
+
+
 [dependencies]
 # ----------- Common ----------
-bevy = "0.11"
+# bevy = "0.11"
 bevy_tweening = "0.8"
 
 # ----- Hitbox - Velocity -----
