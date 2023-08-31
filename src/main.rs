@@ -14,7 +14,9 @@ mod ui;
 
 use std::time::Duration;
 
-use bevy::{asset::ChangeWatcher, ecs::schedule::ScheduleBuildSettings, prelude::*};
+use bevy::{
+    asset::ChangeWatcher, audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*,
+};
 use bevy_rapier2d::prelude::*;
 
 use crate::{
@@ -75,7 +77,7 @@ fn main() {
             ui::UiPlugin,
         ))
         .add_state::<GameState>()
-        .add_systems(Startup, game_setup)
+        .add_systems(Startup, (game_setup, music))
         .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 
     app.edit_schedule(Main, |schedule| {
@@ -99,6 +101,27 @@ fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfigurat
 fn setup_background_playing(mut clear_color: ResMut<ClearColor>) {
     clear_color.0 = BACKGROUND_COLOR_INGAME;
 }
+
+/// Marker component for our music entity
+#[derive(Component)]
+struct CastleTheme;
+
+fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn((
+        AudioBundle {
+            source: asset_server.load("sounds/FTO_Dracula_theme.ogg"),
+            settings: PlaybackSettings::LOOP
+                .with_volume(bevy::audio::Volume::Relative(VolumeLevel::new(0.10))),
+        },
+        CastleTheme,
+    ));
+
+    info!("audio playing...");
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   Run If                                   */
+/* -------------------------------------------------------------------------- */
 
 pub fn playing(game_state: Res<State<GameState>>) -> bool {
     game_state.get() == &GameState::Playing
