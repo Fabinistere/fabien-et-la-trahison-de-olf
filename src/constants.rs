@@ -1,5 +1,8 @@
+// dark purple #213757 = 33/255, 55/255, 87/255
+pub const BACKGROUND_COLOR_INMENU: bevy::render::color::Color =
+    bevy::render::color::Color::rgb(33. / 255., 55. / 255., 87. / 255.);
 // dark purple #25131a = 39/255, 19/255, 26/255
-pub const BACKGROUND_COLOR: bevy::render::color::Color =
+pub const BACKGROUND_COLOR_INGAME: bevy::render::color::Color =
     bevy::render::color::Color::rgb(0.153, 0.07, 0.102);
 // pub const BACKGROUND_COLOR: bevy::render::color::Color = bevy::render::color::Color::Rgba {
 //     red: 58. / 256.,
@@ -47,9 +50,7 @@ pub mod ui {
 }
 
 pub mod character {
-    use super::TILE_SIZE;
-
-    pub const CHAR_SCALE: f32 = 0.6 * TILE_SIZE;
+    pub const CHAR_SCALE: f32 = 0.6 * super::TILE_SIZE;
 
     pub const CHAR_HITBOX_HEIGHT: f32 = 1.5 * CHAR_SCALE;
     pub const CHAR_HITBOX_WIDTH: f32 = 5. * CHAR_SCALE;

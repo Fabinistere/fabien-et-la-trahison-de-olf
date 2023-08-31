@@ -5,7 +5,7 @@ use crate::{
         Fade, FadeType,
     },
     collisions::{TesselatedCollider, TesselatedColliderConfig},
-    constants::{locations::secret_room::*, BACKGROUND_COLOR},
+    constants::{locations::secret_room::*, BACKGROUND_COLOR_INGAME},
     locations::temple::{LocationSensor, OverlappingProps, PlayerLocation, WallCollider},
 };
 use bevy::{prelude::*, utils::Duration};
@@ -445,7 +445,7 @@ pub fn setup_secret_room(
             transform: Transform::from_translation(SECRET_ROOM_COVER_POSITION.into()),
             sprite: Sprite {
                 custom_size: Some(SECRET_ROOM_COVER_SIZE.into()),
-                color: BACKGROUND_COLOR, // Color::WHITE,
+                color: BACKGROUND_COLOR_INGAME, // Color::WHITE,
                 ..default()
             },
             ..default()

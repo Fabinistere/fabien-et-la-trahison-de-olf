@@ -302,6 +302,7 @@ fn setup_menu(
                             width: Val::Percent(100.),
                             // height: Val::Percent(100.),
                             flex_shrink: 0.,
+                            align_self: AlignSelf::FlexEnd,
                             ..default()
                         },
                         texture_atlas: clouds_texture_atlas_handle,
@@ -312,7 +313,7 @@ fn setup_menu(
                         start_index: 0,
                         end_index: clouds_texture_atlas.len() - 1,
                         duration: AnimationDuration::Infinite,
-                        timer: Timer::new(Duration::from_millis(200), TimerMode::Repeating),
+                        timer: Timer::new(Duration::from_millis(150), TimerMode::Repeating),
                     },
                     Name::new("Art - Title Screen"),
                     ArtMenu,
@@ -322,8 +323,9 @@ fn setup_menu(
                         AtlasImageBundle {
                             style: Style {
                                 width: Val::Percent(100.),
-                                top: Val::Percent(5.5),
+                                top: Val::Percent(16.5),
                                 flex_shrink: 0.,
+                                align_self: AlignSelf::FlexEnd,
                                 ..default()
                             },
                             texture_atlas: smoke_texture_atlas_handle,
@@ -348,7 +350,8 @@ fn setup_menu(
                                 flex_shrink: 0.,
                                 width: Val::Percent(100.),
                                 right: Val::Percent(53.55),
-                                bottom: Val::Percent(46.5),
+                                bottom: Val::Percent(50.5),
+                                align_self: AlignSelf::FlexEnd,
                                 ..default()
                             },
                             ..default()
@@ -367,8 +370,10 @@ fn setup_menu(
                                     width: Val::Percent(100.),
                                     right: Val::Percent(200.),
                                     // TODO: Animate Title
-                                    bottom: Val::Percent(35.5),
+                                    bottom: Val::Px(750.),
+                                    // bottom: Val::Percent(35.5),
                                     // bottom: Val::Percent(-25.5),
+                                    align_self: AlignSelf::FlexEnd,
                                     ..default()
                                 },
                                 transform: Transform::from_scale((4., 4., 4.).into()),
@@ -403,7 +408,8 @@ fn setup_menu(
                                     // min_height: Val::Px(1200.),
                                     // max_height: Val::Px(1200.),
                                     right: Val::Percent(300.),
-                                    top: Val::Percent(5.5),
+                                    top: Val::Percent(16.5),
+                                    align_self: AlignSelf::FlexEnd,
                                     ..default()
                                 },
                                 ..default()
@@ -416,6 +422,7 @@ fn setup_menu(
                                     style: Style {
                                         width: Val::Percent(100.),
                                         flex_shrink: 0.,
+                                        align_self: AlignSelf::FlexEnd,
                                         ..default()
                                     },
                                     texture_atlas: manor_lights_texture_atlas_handle,

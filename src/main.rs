@@ -18,7 +18,7 @@ use bevy::{asset::ChangeWatcher, ecs::schedule::ScheduleBuildSettings, prelude::
 use bevy_rapier2d::prelude::*;
 
 use crate::{
-    constants::BACKGROUND_COLOR,
+    constants::{BACKGROUND_COLOR_INGAME, BACKGROUND_COLOR_INMENU},
     controls::Key,
     dialogs::{DialogId, Dialogs, Language},
 };
@@ -36,7 +36,7 @@ struct PlayerCamera;
 fn main() {
     let mut app = App::new();
     app.insert_resource(Msaa::Off)
-        .insert_resource(ClearColor(BACKGROUND_COLOR)) // BACKGROUND_COLOR
+        .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
         .insert_resource(controls::KeyBindings {
             up: [Key(KeyCode::Z), Key(KeyCode::Up)],
             down: [Key(KeyCode::S), Key(KeyCode::Down)],
@@ -75,7 +75,8 @@ fn main() {
             ui::UiPlugin,
         ))
         .add_state::<GameState>()
-        .add_systems(Startup, game_setup);
+        .add_systems(Startup, game_setup)
+        .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 
     app.edit_schedule(Main, |schedule| {
         schedule.set_build_settings(ScheduleBuildSettings {
@@ -93,6 +94,10 @@ fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfigurat
     let mut camera = Camera2dBundle::default();
     camera.projection.scale = 0.1;
     commands.spawn((camera, PlayerCamera));
+}
+
+fn setup_background_playing(mut clear_color: ResMut<ClearColor>) {
+    clear_color.0 = BACKGROUND_COLOR_INGAME;
 }
 
 pub fn playing(game_state: Res<State<GameState>>) -> bool {
