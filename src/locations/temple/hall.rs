@@ -1,3 +1,5 @@
+use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 use std::time::Duration;
 
 use crate::{
@@ -10,27 +12,28 @@ use crate::{
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
         locations::{hall::*, CHANDELIER_FLAME_POSITIONS},
-        BACKGROUND_COLOR,
+        BACKGROUND_COLOR_INGAME,
     },
     interactions::{Interactible, InteractionSensor},
     locations::temple::{
-        Chandelier, DoorState, Flame, Layer, LocationSensor, OverlappingProps, PlayerLocation,
-        WallCollider,
+        Chandelier, DoorColliderClosed, DoorState, Flame, LocationSensor, OverlappingEntity,
+        PlayerLocation, WallCollider,
     },
 };
-use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
+
+use super::DoorColliderOpened;
+
+/* -------------------------------------------------------------------------- */
+/*                                 Components                                 */
+/* -------------------------------------------------------------------------- */
 
 #[derive(Component)]
 pub struct TempleDoor;
 
 #[derive(Component)]
-pub struct DoorCollider;
-
-#[derive(Component)]
 pub struct Hall;
 
-#[derive(Component)]
+#[derive(Deref, DerefMut, Component)]
 pub struct BalconyCover {
     on: bool,
 }
@@ -41,9 +44,18 @@ pub struct BalconyUpDoor;
 #[derive(Component)]
 pub struct BalconySensor;
 
+/* -------------------------------------------------------------------------- */
+/*                                   Events                                   */
+/* -------------------------------------------------------------------------- */
+
 #[derive(Event)]
 pub struct PropsInteractionEvent;
 
+/* -------------------------------------------------------------------------- */
+/*                                   Systems                                  */
+/* -------------------------------------------------------------------------- */
+
+/// TODO: Lunch a dialog or smth
 pub fn props_interaction_event(mut props_interaction_events: EventReader<PropsInteractionEvent>) {
     for PropsInteractionEvent in props_interaction_events.iter() {
         info!("interact with props");
@@ -101,6 +113,10 @@ pub fn remove_balcony_cover(
     }
 }
 
+/* -------------------------------------------------------------------------- */
+/*                                    Setup                                   */
+/* -------------------------------------------------------------------------- */
+
 /// FIXME: When in Temple you could slip a lttle bit under the hall asset
 /// 2 solutions:
 /// - Move sensors (carefull with interaction)
@@ -135,6 +151,10 @@ pub fn setup_hall(
     let door_texture_atlas =
         TextureAtlas::from_grid(door_spritesheet, Vec2::new(20., 38.), 1, 8, None, None);
     let door_collider = asset_server.load("textures/v4.0.0/Hall/door_collider.png");
+    let door_collider_opened_left =
+        asset_server.load("textures/v4.0.0/Hall/door_collider_opened_left.png");
+    let door_collider_opened_right =
+        asset_server.load("textures/v4.0.0/Hall/door_collider_opened_right.png");
 
     /* -------------------------------------------------------------------------- */
     /*                               Wall Colliders                               */
@@ -188,18 +208,6 @@ pub fn setup_hall(
             Name::new("Hall"),
         ))
         .with_children(|parent| {
-            // TEMP: Indicators
-            let indicators = asset_server.load("textures/v4.0.0/Hall/deco_indicators.png");
-            parent.spawn((
-                SpriteBundle {
-                    texture: indicators,
-                    transform: Transform::from_xyz(0., 0., 0.1),
-                    visibility: Visibility::Hidden,
-                    ..default()
-                },
-                Name::new("Indicators"),
-            ));
-
             parent.spawn((
                 SpriteBundle {
                     texture: hall_up_door,
@@ -224,7 +232,7 @@ pub fn setup_hall(
                             transform: Transform::from_translation(BALCONY_COVER_POSITION.into()),
                             sprite: Sprite {
                                 custom_size: Some(BALCONY_COVER_SIZE.into()),
-                                color: BACKGROUND_COLOR, // Color::WHITE, //
+                                color: BACKGROUND_COLOR_INGAME, // Color::WHITE, //
                                 ..default()
                             },
                             ..default()
@@ -297,14 +305,11 @@ pub fn setup_hall(
                 .spawn((
                     SpriteBundle {
                         texture: props,
-                        transform: Transform::from_translation(PROPS_POSITION.into()),
+                        transform: Transform::from_translation(BOX_POSITION.into()),
                         ..default()
                     },
-                    OverlappingProps {
-                        layer: Layer::First,
-                        switch_offset_y: 0.,
-                    },
-                    Interactible::new(BOX_INTERACT_BUTTON_POSITION.into(), PROPS_INTERACTION_ID),
+                    OverlappingEntity::default(),
+                    Interactible::new(BOX_INTERACT_BUTTON_POSITION.into(), BOX_INTERACTION_ID),
                     RigidBody::Fixed,
                     Name::new("Box"),
                 ))
@@ -337,6 +342,7 @@ pub fn setup_hall(
                     },
                     TempleDoor,
                     DoorState::Closed,
+                    OverlappingEntity::new(TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED),
                     Interactible::new(DOOR_INTERACT_BUTTON_POSITION.into(), DOOR_INTERACTION_ID),
                     RigidBody::Fixed,
                     Name::new("Temple Door"),
@@ -358,7 +364,31 @@ pub fn setup_hall(
                             },
                         },
                         Transform::IDENTITY,
-                        DoorCollider,
+                        DoorColliderClosed,
+                    ));
+                    parent.spawn((
+                        TesselatedCollider {
+                            texture: door_collider_opened_left,
+                            tesselator_config: TesselatedColliderConfig {
+                                vertice_separation: 0.,
+                                ..default()
+                            },
+                        },
+                        Transform::IDENTITY,
+                        DoorColliderOpened,
+                        Sensor,
+                    ));
+                    parent.spawn((
+                        TesselatedCollider {
+                            texture: door_collider_opened_right,
+                            tesselator_config: TesselatedColliderConfig {
+                                vertice_separation: 0.,
+                                ..default()
+                            },
+                        },
+                        Transform::IDENTITY,
+                        DoorColliderOpened,
+                        Sensor,
                     ));
                 });
 
@@ -369,10 +399,7 @@ pub fn setup_hall(
                         transform: Transform::from_translation(STATUE_POSITION.into()),
                         ..default()
                     },
-                    OverlappingProps {
-                        layer: Layer::First,
-                        switch_offset_y: 0.,
-                    },
+                    OverlappingEntity::default(),
                     Interactible::new(
                         STATUE_INTERACT_BUTTON_POSITION.into(),
                         STATUE_INTERACTION_ID,
