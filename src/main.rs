@@ -14,19 +14,21 @@ mod ui;
 
 use std::time::Duration;
 
-use bevy::{asset::ChangeWatcher, ecs::schedule::ScheduleBuildSettings, prelude::*};
+use bevy::{
+    asset::ChangeWatcher, audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*,
+};
 use bevy_rapier2d::prelude::*;
 
 use crate::{
-    constants::BACKGROUND_COLOR,
+    constants::{BACKGROUND_COLOR_INGAME, BACKGROUND_COLOR_INMENU},
     controls::Key,
     dialogs::{DialogId, Dialogs, Language},
 };
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
 pub enum GameState {
-    Menu,
     #[default]
+    Menu,
     Playing,
 }
 
@@ -35,8 +37,12 @@ struct PlayerCamera;
 
 fn main() {
     let mut app = App::new();
+    
+    #[cfg(debug_assertions)]
+    app.add_plugins(RapierDebugRenderPlugin::default());
+
     app.insert_resource(Msaa::Off)
-        .insert_resource(ClearColor(BACKGROUND_COLOR)) // BACKGROUND_COLOR
+        .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
         .insert_resource(controls::KeyBindings {
             up: [Key(KeyCode::W), Key(KeyCode::Z), Key(KeyCode::Up)],
             down: [Key(KeyCode::S), Key(KeyCode::Down)],
@@ -50,7 +56,7 @@ fn main() {
                     primary_window: Some(Window {
                         title: "Fabien et le trahison de Olf".to_string(),
                         // vsync: true,
-                        // mode: bevy::window::WindowMode::BorderlessFullscreen,
+                        mode: bevy::window::WindowMode::BorderlessFullscreen,
                         ..Window::default()
                     }),
                     ..default()
@@ -61,7 +67,6 @@ fn main() {
                     ..default()
                 }),
             bevy_tweening::TweeningPlugin,
-            RapierDebugRenderPlugin::default(),
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.),
             // ----- Our plugins -----
             animations::AnimationPlugin,
@@ -75,8 +80,8 @@ fn main() {
             ui::UiPlugin,
         ))
         .add_state::<GameState>()
-        // NOTE: should be on startup
-        .add_systems(OnEnter(GameState::Playing), game_setup);
+        .add_systems(Startup, (game_setup, music))
+        .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 
     app.edit_schedule(Main, |schedule| {
         schedule.set_build_settings(ScheduleBuildSettings {
@@ -94,4 +99,37 @@ fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfigurat
     let mut camera = Camera2dBundle::default();
     camera.projection.scale = 0.1;
     commands.spawn((camera, PlayerCamera));
+}
+
+fn setup_background_playing(mut clear_color: ResMut<ClearColor>) {
+    clear_color.0 = BACKGROUND_COLOR_INGAME;
+}
+
+/// Marker component for our music entity
+#[derive(Component)]
+struct CastleTheme;
+
+fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn((
+        AudioBundle {
+            source: asset_server.load("sounds/FTO_Dracula_theme.ogg"),
+            settings: PlaybackSettings::LOOP
+                .with_volume(bevy::audio::Volume::Relative(VolumeLevel::new(0.10))),
+        },
+        CastleTheme,
+    ));
+
+    info!("audio playing...");
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   Run If                                   */
+/* -------------------------------------------------------------------------- */
+
+pub fn playing(game_state: Res<State<GameState>>) -> bool {
+    game_state.get() == &GameState::Playing
+}
+
+pub fn in_menu(game_state: Res<State<GameState>>) -> bool {
+    game_state.get() == &GameState::Menu
 }

@@ -1,26 +1,23 @@
 //! NPCs lockup
 
-use std::collections::HashMap;
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+
+use std::collections::HashMap;
 
 use crate::{
     animations::{
         sprite_sheet_animation::{AnimationIndices, CharacterState},
         CharacterSpriteSheet,
     },
-    constants::{
-        character::{
-            npc::{
-                BLACK_CAT_LINE, NPC_SCALE, OLF_CAT_HITBOX_OFFSET, OLF_CAT_POSITION, OLF_CAT_SCALE,
-                SUPREME_GOD_LINE,
-            },
-            player::PLAYER_Z,
-            *,
+    constants::character::{
+        npc::{
+            BLACK_CAT_LINE, CAT_SWITCH_Z_OFFSET, NPC_SCALE, OLF_CAT_HITBOX_OFFSET,
+            OLF_CAT_POSITION, OLF_CAT_SCALE, SUPREME_GOD_LINE, SUPREME_GOD_SPAWN_POSITION,
         },
-        locations::main_room::THRONE_POSITION,
+        *,
     },
+    locations::temple::OverlappingEntity,
 };
 
 use super::{movement::MovementBundle, CharacterHitbox};
@@ -162,12 +159,9 @@ fn spawn_characters(mut commands: Commands, characters_spritesheet: Res<Characte
             },
             Name::new("Olf Cat"),
             OlfCat,
-            // OverlappingProps {
-            //     layer: Layer::Fourth,
-            //     switch_offset_y: CAT_SWITCH_Y_OFFSET,
-            // },
             MovementBundle {
                 animation_indices: cat_animation_indices,
+                overlapping_entity: OverlappingEntity::new(CAT_SWITCH_Z_OFFSET),
                 ..default()
             },
             // -- Hitbox --
@@ -199,7 +193,7 @@ fn spawn_characters(mut commands: Commands, characters_spritesheet: Res<Characte
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
                 transform: Transform {
-                    translation: Vec3::new(THRONE_POSITION.0, THRONE_POSITION.1, PLAYER_Z),
+                    translation: SUPREME_GOD_SPAWN_POSITION.into(),
                     scale: Vec3::splat(NPC_SCALE),
                     ..default()
                 },
