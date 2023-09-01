@@ -196,6 +196,8 @@ pub fn setup_secret_room(
     let second_layer_fake_wall =
         asset_server.load("textures/v4.0.0/Secret_Room/2nd_layer_fake_wall.png");
 
+    let stairs_down_ramp = asset_server.load("textures/v4.0.0/Secret_Room/stairs_down_ramp.png");
+
     /* -------------------------------------------------------------------------- */
     /*                               Wall Colliders                               */
     /* -------------------------------------------------------------------------- */
@@ -393,6 +395,16 @@ pub fn setup_secret_room(
                 Name::new("Flower Wall Pot"),
             ));
 
+            parent.spawn((
+                SpriteBundle {
+                    texture: stairs_down_ramp,
+                    transform: Transform::from_translation(STAIRS_RAMP_POSITION.into()),
+                    ..default()
+                },
+                OverlappingEntity::new(STAIRS_RAMP_SWITCH_Z_OFFSET),
+                Name::new("Stairs Down Ramp"),
+            ));
+
             // Cause the y switch of the temple is too high
             // (up to the stairs)
             // Being in the secret Room behind the Temple Wall
@@ -402,7 +414,6 @@ pub fn setup_secret_room(
             parent.spawn((
                 SpriteBundle {
                     texture: second_layer_fake_wall,
-                    transform: Transform::default(),
                     ..default()
                 },
                 OverlappingEntity::new(SECOND_FAKE_WALL_SWITCH_Z_OFFSET),
