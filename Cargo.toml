@@ -1,6 +1,6 @@
 [package]
 name = "fabien-et-la-trahison-de-olf"
-version = "0.3.8"
+version = "0.3.9"
 authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "Olf EPAIN <wabtey@disroot.org>", "Grassouille la Fripouille", "Sombre Roi René"]
 edition = "2021"
 
