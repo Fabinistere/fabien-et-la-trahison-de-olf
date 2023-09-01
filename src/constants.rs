@@ -11,8 +11,7 @@ pub const BACKGROUND_COLOR_INGAME: bevy::render::color::Color =
 //     alpha: 1.,
 // };
 
-// pub const RESOLUTION: f32 = 16. / 9.;
-pub const RESOLUTION: f32 = 9. / 16.;
+pub const RESOLUTION: f32 = 9. / 16.; // 16. / 9.;
 pub const TILE_SIZE: f32 = 1.;
 
 pub const FRAME_TIME: f32 = 0.1;

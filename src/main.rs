@@ -37,6 +37,10 @@ struct PlayerCamera;
 
 fn main() {
     let mut app = App::new();
+    
+    #[cfg(debug_assertions)]
+    app.add_plugins(RapierDebugRenderPlugin::default());
+
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
         .insert_resource(controls::KeyBindings {
@@ -63,7 +67,6 @@ fn main() {
                     ..default()
                 }),
             bevy_tweening::TweeningPlugin,
-            RapierDebugRenderPlugin::default(),
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.),
             // ----- Our plugins -----
             animations::AnimationPlugin,

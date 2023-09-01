@@ -124,7 +124,7 @@ pub fn setup_secret_room(
 
     let secret_room = asset_server.load("textures/v4.0.0/Secret_Room/Secret_Room.png");
 
-    let fake_stone = asset_server.load("textures/v4.0.0/Secret_Room/fake_stones.png");
+    let fake_stone = asset_server.load("textures/v4.0.0/Secret_Room/fake_stones_cuted.png");
 
     let first_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/1e_frame.png");
