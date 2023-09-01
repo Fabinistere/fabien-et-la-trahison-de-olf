@@ -56,7 +56,7 @@ pub fn fade_animations(
         let mut t = fade_data.elapsed.as_secs_f32() / fade_data.duration.as_secs_f32();
 
         if let FadeType::FadeIn = fade_data.fade_type {
-            t = 1.0 - t;
+            t = 1. - t;
         }
 
         sprite.color.set_a((fade_data.animation_fn)(t));
