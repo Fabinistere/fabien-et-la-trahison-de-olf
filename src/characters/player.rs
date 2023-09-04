@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use yml_dialog::DialogNode;
 
 use crate::{
     animations::{
@@ -11,8 +12,9 @@ use crate::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
     },
-    constants::character::{player::*, *},
+    constants::character::{dialog::MORGAN_DIALOG, player::*, *},
     controls::KeyBindings,
+    ui::dialog_systems::DialogMap,
     GameState, PlayerCamera,
 };
 
@@ -122,7 +124,11 @@ fn camera_follow(
     }
 }
 
-fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpriteSheet>) {
+fn spawn_player(
+    mut commands: Commands,
+    characters_spritesheet: Res<CharacterSpriteSheet>,
+    mut dialogs: ResMut<DialogMap>,
+) {
     /* -------------------------------------------------------------------------- */
     /*                              Animation Indices                             */
     /* -------------------------------------------------------------------------- */
@@ -135,7 +141,7 @@ fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpr
     /*                                  Textures                                  */
     /* -------------------------------------------------------------------------- */
 
-    commands
+    let player = commands
         .spawn((
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
@@ -176,5 +182,20 @@ fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpr
                 PlayerSensor,
                 Name::new("Player Sensor"),
             ));
-        });
+        })
+        .id();
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   Dialog                                   */
+    /* -------------------------------------------------------------------------- */
+
+    let player_deserialized_map: BTreeMap<usize, DialogNode> =
+        serde_yaml::from_str(MORGAN_DIALOG).unwrap();
+    dialogs.insert(
+        player,
+        (
+            *player_deserialized_map.first_key_value().unwrap().0,
+            player_deserialized_map,
+        ),
+    );
 }

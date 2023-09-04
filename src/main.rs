@@ -29,7 +29,20 @@ use crate::{
 pub enum GameState {
     #[default]
     Menu,
+    /// Game without any HUD.
+    /// Exploration.
     Playing,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
+pub enum HUDState {
+    #[default]
+    Closed,
+    // /// is also the Team's Inventory
+    // CombatWall,
+    // LogCave,
+    DialogWall,
+    OptionsWall,
 }
 
 #[derive(Component)]
@@ -37,7 +50,7 @@ struct PlayerCamera;
 
 fn main() {
     let mut app = App::new();
-    
+
     #[cfg(debug_assertions)]
     app.add_plugins(RapierDebugRenderPlugin::default());
 
@@ -80,6 +93,7 @@ fn main() {
             ui::UiPlugin,
         ))
         .add_state::<GameState>()
+        .add_state::<HUDState>()
         .add_systems(Startup, (game_setup, music))
         .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 

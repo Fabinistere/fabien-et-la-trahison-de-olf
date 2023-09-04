@@ -51,16 +51,26 @@ pub mod title_screen {
 pub mod interactions {
     pub const INTERACT_BUTTON_Z: f32 = 20.;
     pub const INTERACT_BUTTON_SCALE: f32 = 0.25;
+
+    // REFACTOR: INTERACTION_ID
 }
 
 pub mod ui {
     pub mod dialogs {
-        pub const DIALOG_BOX_ANIMATION_OFFSET: f32 = -1000.;
+        use bevy::prelude::Color;
+
+        pub const DIALOG_PANEL_ANIMATION_OFFSET: f32 = -1000.;
         pub const DIALOG_BOX_UPDATE_DELTA_S: f32 = 0.05;
-        pub const DIALOG_BOX_ANIMATION_TIME_MS: u64 = 500;
+        pub const DIALOG_PANEL_ANIMATION_TIME_MS: u64 = 500;
         pub const SCROLL_SIZE: (f32, f32) = (490., 11700. / 45.);
         pub const SCROLL_ANIMATION_DELTA_S: f32 = 0.1;
         pub const SCROLL_ANIMATION_FRAMES_NUMBER: usize = 45;
+
+        pub const TRANSPARENT_BUTTON: Color = Color::rgba(0., 0., 0., 0.);
+        // pub const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
+        pub const NORMAL_BUTTON: Color = Color::rgba(0.1, 0.1, 0.1, 0.1);
+        pub const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+        pub const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
     }
 }
 
@@ -112,11 +122,16 @@ pub mod character {
     }
 
     pub mod npc {
-        use crate::constants::locations::main_room::THRONE_POSITION;
+        use crate::constants::{
+            interactions::INTERACT_BUTTON_Z, locations::main_room::THRONE_POSITION, TILE_SIZE,
+        };
 
         pub const NPC_SCALE: f32 = super::CHAR_SCALE;
 
         pub const SUPREME_GOD_SPAWN_POSITION: (f32, f32, f32) = THRONE_POSITION;
+        pub const SUPREME_GOD_INTERACTION_ID: u32 = 10;
+        pub const SUPREME_GOD_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
+            (15. * TILE_SIZE, 10. * TILE_SIZE, INTERACT_BUTTON_Z);
 
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */
@@ -143,6 +158,108 @@ pub mod character {
         pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
         pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., 0.);
         pub const OLF_CAT_HITBOX_OFFSET: (f32, f32, f32) = (0., -5., 0.);
+    }
+
+    pub mod dialog {
+        // Flibittygibbit
+
+        // TODO: feature - Read at dialog_file instead of CST
+        // CST = path to the file
+
+        pub const RANDOM_DIALOG: &str = "1:
+  source: Fabien
+  content:
+    text:
+      - Enfant, j'ai eu un poney
+      - Mais j'ai toujours voulu un agneau
+    exit_state: 2\n";
+
+        pub const OLF_DIALOG: &str = "1:
+  source: Olf
+  content:
+    text:
+      - Il faut absolument sauver les Fabien du Chien Geant
+    exit_state: 2
+2:
+  source: Player
+  content:
+    - text: ...
+      condition: null
+      exit_state: 3
+3:
+  source: Olf
+  content:
+    text:
+      - Il me faut donc obtenir le trone
+    exit_state: 4
+4:
+  source: Player
+  content:
+    - text: ...
+      condition: null
+      exit_state: 5
+    - text: et de l'$
+      condition: null
+      exit_state: 6
+5:
+  source: Olf
+  content:
+    text:
+      - Et de l'$
+    exit_state: 6
+6:
+  source: Olf
+  content:
+    text:
+      - C'est essentiel
+    exit_state: 7\n";
+
+        pub const FABIEN_DIALOG: &str = "1:
+  source: Fabien
+  content:
+    text:
+      - Hello
+      - <3
+    exit_state: 2
+2:
+  source: Player
+  content:
+    - text: Hey
+      condition: null
+      exit_state: 3
+    - text: No Hello
+      condition: null
+      exit_state: 4
+    - text: Want to share a flat ?
+      condition: null
+      exit_state: 5
+3:
+  source: Fabien
+  content:
+    text:
+      - :)
+    exit_state: 6
+4:
+  source: Fabien
+  content:
+    text:
+      - :O
+    exit_state: 6
+5:
+  source: Fabien
+  content:
+    text:
+      - Sure
+    exit_state: 6\n";
+
+        pub const MORGAN_DIALOG: &str = "1:
+  source: Player
+  content:
+    text:
+      - Bonjour Flo.
+      - Comment vas-tu ?
+      - J'ai faim.
+    exit_state: 2\n";
     }
 }
 

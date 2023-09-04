@@ -2,8 +2,9 @@
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
+use yml_dialog::DialogNode;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::{
     animations::{
@@ -11,13 +12,18 @@ use crate::{
         CharacterSpriteSheet,
     },
     constants::character::{
+        dialog::FABIEN_DIALOG,
         npc::{
             BLACK_CAT_LINE, CAT_SWITCH_Z_OFFSET, NPC_SCALE, OLF_CAT_HITBOX_OFFSET,
-            OLF_CAT_POSITION, OLF_CAT_SCALE, SUPREME_GOD_LINE, SUPREME_GOD_SPAWN_POSITION,
+            OLF_CAT_POSITION, OLF_CAT_SCALE, SUPREME_GOD_INTERACTION_ID,
+            SUPREME_GOD_INTERACT_BUTTON_POSITION, SUPREME_GOD_LINE, SUPREME_GOD_SPAWN_POSITION,
         },
         *,
     },
+    interactions::{Interactible, InteractionSensor},
     locations::temple::OverlappingEntity,
+    ui::dialog_systems::{CurrentInterlocutor, DialogMap},
+    HUDState,
 };
 
 use super::{movement::MovementBundle, CharacterHitbox};
@@ -55,9 +61,11 @@ impl Plugin for NPCPlugin {
             // when an enemy npc catch the player or an ally attached to the group
             // initialize a Combat
             // Combat mean A lock dialogue : Talk or Fight
+            .add_event::<CharacterInteractionEvent>()
             .add_systems(Startup, (
                 spawn_characters,
             ))
+            .add_systems(Update, supreme_god_interaction_event)
             // .add_systems(
             //     FixedUpdate,
             //     (
@@ -91,6 +99,9 @@ pub struct NPC;
 #[derive(Component)]
 pub struct OlfCat;
 
+#[derive(Event)]
+pub struct CharacterInteractionEvent(pub Entity);
+
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum NPCSystems {
     Stroll,
@@ -104,7 +115,24 @@ pub enum NPCSystems {
     // Combat,
 }
 
-fn spawn_characters(mut commands: Commands, characters_spritesheet: Res<CharacterSpriteSheet>) {
+pub fn supreme_god_interaction_event(
+    mut supreme_god_interaction_events: EventReader<CharacterInteractionEvent>,
+
+    mut current_interlocutor: ResMut<CurrentInterlocutor>,
+    mut next_game_state: ResMut<NextState<HUDState>>,
+) {
+    for CharacterInteractionEvent(character) in supreme_god_interaction_events.iter() {
+        // info!("CharacterInteractionEvent({:#?})", character);
+        current_interlocutor.interlocutor = Some(*character);
+        next_game_state.set(HUDState::DialogWall);
+    }
+}
+
+fn spawn_characters(
+    mut commands: Commands,
+    characters_spritesheet: Res<CharacterSpriteSheet>,
+    mut dialogs: ResMut<DialogMap>,
+) {
     let mut global_animations_indices: Vec<Vec<(usize, usize, CharacterState)>> = Vec::new();
     for line in 0..16 {
         global_animations_indices.push(vec![
@@ -188,7 +216,7 @@ fn spawn_characters(mut commands: Commands, characters_spritesheet: Res<Characte
         global_animations_indices[SUPREME_GOD_LINE][1],
     );
 
-    commands
+    let supreme_god = commands
         .spawn((
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
@@ -199,22 +227,45 @@ fn spawn_characters(mut commands: Commands, characters_spritesheet: Res<Characte
                 },
                 ..default()
             },
-            Name::new("NPC Admiral"),
+            Name::new("NPC Supreme God"),
             NPC,
             MovementBundle {
                 animation_indices: supreme_god_animation_indices,
                 ..default()
             },
+            Interactible::new(
+                SUPREME_GOD_INTERACT_BUTTON_POSITION.into(),
+                SUPREME_GOD_INTERACTION_ID,
+            ),
             // -- Hitbox --
             RigidBody::Dynamic,
             LockedAxes::ROTATION_LOCKED,
         ))
         .with_children(|parent| {
             parent.spawn((
+                Collider::ball(15.),
+                Transform::IDENTITY,
+                Sensor,
+                InteractionSensor,
+                Name::new("Supreme God InteractionSensor"),
+            ));
+
+            parent.spawn((
                 Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
                 Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
                 CharacterHitbox,
-                Name::new("Admiral Hitbox"),
+                Name::new("Supreme God Hitbox"),
             ));
-        });
+        })
+        .id();
+
+    let supreme_god_deserialized_map: BTreeMap<usize, DialogNode> =
+        serde_yaml::from_str(FABIEN_DIALOG).unwrap();
+    dialogs.insert(
+        supreme_god,
+        (
+            *supreme_god_deserialized_map.first_key_value().unwrap().0,
+            supreme_god_deserialized_map,
+        ),
+    );
 }
