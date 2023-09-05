@@ -66,6 +66,10 @@ pub mod ui {
         pub const SCROLL_ANIMATION_DELTA_S: f32 = 0.1;
         pub const SCROLL_ANIMATION_FRAMES_NUMBER: usize = 45;
 
+        pub const FIRST_BUTTON_TOP_VAL: f32 = 690.;
+        pub const BUTTON_SPACING: f32 = 320.;
+        pub const BUTTON_LEFT_VAL: f32 = -52.;
+
         pub const TRANSPARENT_BUTTON: Color = Color::rgba(0., 0., 0., 0.);
         // pub const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
         pub const NORMAL_BUTTON: Color = Color::rgba(0.1, 0.1, 0.1, 0.1);

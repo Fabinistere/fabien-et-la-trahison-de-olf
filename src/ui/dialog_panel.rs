@@ -370,193 +370,50 @@ pub fn create_dialog_panel(
                 .with_children(|parent| {
                     // TODO: feature - 3 ButtonChoice is enough, to have much reuse theses three in another page
 
-                    // First potential choice
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: Style {
-                                    // TODO: custom size ? (text dependent)
-                                    // Percent ?
-                                    width: Val::Px(300.),
-                                    height: Val::Px(30.),
-                                    margin: UiRect::all(Val::Auto),
-                                    // margin: UiRect {
-                                    //     top: Val::Percent(105.),
-                                    //     left: Val::Percent(24.),
-                                    //     ..UiRect::default()
-                                    // },
-                                    // justify_content: JustifyContent::SpaceAround,
-                                    top: Val::Px(690.),
-                                    left: Val::Px(-52.),
+                    for i in 0..3 {
+                        parent
+                            .spawn((
+                                ButtonBundle {
+                                    style: Style {
+                                        // TODO: custom size ? (text dependent)
+                                        width: Val::Px(300.),
+                                        height: Val::Px(30.),
+                                        margin: UiRect::all(Val::Auto),
+                                        top: Val::Px(
+                                            FIRST_BUTTON_TOP_VAL - BUTTON_SPACING * i as f32,
+                                        ),
+                                        left: Val::Px(BUTTON_LEFT_VAL),
+                                        ..default()
+                                    },
+                                    background_color: NORMAL_BUTTON.into(),
+                                    visibility: Visibility::Hidden,
                                     ..default()
                                 },
-                                background_color: NORMAL_BUTTON.into(),
-                                ..default()
-                            },
-                            ButtonChoice::new(0),
-                            Name::new("First Choice"),
-                        ))
-                        // .insert(DialogBox::new("".to_owned(), DIALOG_BOX_UPDATE_DELTA_S))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle {
-                                text: Text::from_section(
-                                    "",
-                                    TextStyle {
-                                        font: dialog_panel_resources.text_font.clone(),
-                                        // TODO: Find the correct value for the choice font size
-                                        font_size: 20.,
-                                        color: Color::BLACK,
+                                Name::new(format!("Choice n°{i}")),
+                                ButtonChoice::new(i),
+                            ))
+                            .with_children(|parent| {
+                                parent.spawn(TextBundle {
+                                    text: Text::from_section(
+                                        "",
+                                        TextStyle {
+                                            font: dialog_panel_resources.text_font.clone(),
+                                            // TODO: Find the correct value for the choice font size
+                                            font_size: 20.,
+                                            color: Color::BLACK,
+                                        },
+                                    )
+                                    .with_alignment(TextAlignment::Left),
+                                    style: Style {
+                                        flex_wrap: FlexWrap::Wrap,
+                                        max_width: Val::Px(300.),
+                                        max_height: Val::Percent(100.),
+                                        ..default()
                                     },
-                                )
-                                .with_alignment(TextAlignment::Left),
-                                style: Style {
-                                    flex_wrap: FlexWrap::Wrap,
-                                    max_width: Val::Px(300.),
-                                    max_height: Val::Percent(100.),
-                                    ..Style::default()
-                                },
-                                ..TextBundle::default()
-                            });
-                        });
-
-                    // Second potential choice
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: Style {
-                                    // TODO: custom size ? (text dependent)
-                                    width: Val::Px(300.),
-                                    height: Val::Px(30.),
-                                    top: Val::Px(370.),
-                                    left: Val::Px(-52.),
-                                    margin: UiRect::all(Val::Auto),
-                                    // margin: UiRect {
-                                    //     top: Val::Percent(125.),
-                                    //     left: Val::Percent(24.),
-                                    //     ..UiRect::default()
-                                    // },
-                                    // justify_content: JustifyContent::SpaceAround,
                                     ..default()
-                                },
-                                background_color: NORMAL_BUTTON.into(),
-                                ..default()
-                            },
-                            ButtonChoice::new(1),
-                            Name::new("Second Choice"),
-                        ))
-                        // .insert(DialogBox::new("".to_owned(), DIALOG_BOX_UPDATE_DELTA_S))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle {
-                                text: Text::from_section(
-                                    "",
-                                    TextStyle {
-                                        font: dialog_panel_resources.text_font.clone(),
-                                        // TODO: Find the correct value for the choice font size
-                                        font_size: 20.,
-                                        color: Color::BLACK,
-                                    },
-                                )
-                                .with_alignment(TextAlignment::Left),
-                                style: Style {
-                                    flex_wrap: FlexWrap::Wrap,
-                                    max_width: Val::Px(300.),
-                                    max_height: Val::Percent(100.),
-                                    ..Style::default()
-                                },
-                                ..TextBundle::default()
+                                });
                             });
-                        });
-
-                    // Third potential choice
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: Style {
-                                    // TODO: custom size ? (text dependent)
-                                    width: Val::Px(300.),
-                                    height: Val::Px(30.),
-                                    top: Val::Px(53.),
-                                    left: Val::Px(-52.),
-                                    margin: UiRect::all(Val::Auto),
-                                    // margin: UiRect {
-                                    //     top: Val::Percent(145.),
-                                    //     left: Val::Percent(24.),
-                                    //     ..UiRect::default()
-                                    // },
-                                    // justify_content: JustifyContent::SpaceAround,
-                                    ..default()
-                                },
-                                background_color: NORMAL_BUTTON.into(),
-                                ..default()
-                            },
-                            ButtonChoice::new(2),
-                            Name::new("Third Choice"),
-                        ))
-                        // .insert(DialogBox::new("".to_owned(), DIALOG_BOX_UPDATE_DELTA_S))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle {
-                                text: Text::from_section(
-                                    "",
-                                    TextStyle {
-                                        font: dialog_panel_resources.text_font.clone(),
-                                        // TODO: Find the correct value for the choice font size
-                                        font_size: 20.,
-                                        color: Color::BLACK,
-                                    },
-                                )
-                                .with_alignment(TextAlignment::Left),
-                                style: Style {
-                                    flex_wrap: FlexWrap::Wrap,
-                                    max_width: Val::Px(300.),
-                                    max_height: Val::Percent(100.),
-                                    ..Style::default()
-                                },
-                                ..TextBundle::default()
-                            });
-                        });
-
-                    // for i in 0..3 {
-                    //     parent
-                    //         .spawn((
-                    //             ButtonBundle {
-                    //                 style: Style {
-                    //                     width: Val::Px(150.),
-                    //                     height: Val::Px(65.),
-                    //                     // horizontally center child text
-                    //                     justify_content: JustifyContent::Center,
-                    //                     // vertically center child text
-                    //                     align_items: AlignItems::Center,
-                    //                     ..default()
-                    //                 },
-                    //                 background_color: NORMAL_BUTTON.into(),
-                    //                 visibility: Visibility::Hidden,
-                    //                 ..default()
-                    //             },
-                    //             Name::new(format!("Choice n°{i}")),
-                    //             ButtonChoice::new(i),
-                    //         ))
-                    //         .with_children(|parent| {
-                    //             parent.spawn(TextBundle {
-                    //                 text: Text::from_section(
-                    //                     "",
-                    //                     TextStyle {
-                    //                         font: dialog_panel_resources.text_font.clone(),
-                    //                         // TODO: Find the correct value for the choice font size
-                    //                         font_size: 20.,
-                    //                         color: Color::BLACK,
-                    //                     },
-                    //                 )
-                    //                 .with_alignment(TextAlignment::Left),
-                    //                 style: Style {
-                    //                     flex_wrap: FlexWrap::Wrap,
-                    //                     max_width: Val::Px(300.),
-                    //                     max_height: Val::Percent(100.),
-                    //                     ..Style::default()
-                    //                 },
-                    //                 ..TextBundle::default()
-                    //             });
-                    //         });
-                    // }
+                    }
                 });
         });
 }
