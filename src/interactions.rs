@@ -1,7 +1,7 @@
 use crate::{
     characters::npcs::CharacterInteractionEvent,
     constants::{
-        character::npc::SUPREME_GOD_INTERACTION_ID,
+        character::npc::{HUGO_INTERACTION_ID, SUPREME_GOD_INTERACTION_ID},
         interactions::INTERACT_BUTTON_SCALE,
         locations::{
             hall::{BOX_INTERACTION_ID, DOOR_INTERACTION_ID, DOOR_OPEN_DELTA_S},
@@ -150,14 +150,22 @@ pub fn interaction_icon(
                 ));
             });
         } else {
-            match interact_icon_query.get(children[children.len() - 1]) {
-                Err(_e) => warn!("There is no Interaction Icon in {:?}", *entity),
-                Ok(interact_icon) => commands.entity(interact_icon).despawn(),
+            let mut found = false;
+            for child in children {
+                if let Ok(interact_icon) = interact_icon_query.get(*child) {
+                    commands.entity(interact_icon).despawn();
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                warn!("There is no Interaction Icon in {:?}", *entity)
             }
         }
     }
 }
 
+/// TODO: Only interact with the closest interactible
 pub fn interaction(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -194,6 +202,9 @@ pub fn interaction(
                         secret_banner_event.send(SecretBannerEvent(*door_state));
                     }
                     SUPREME_GOD_INTERACTION_ID => {
+                        character_interact_event.send(CharacterInteractionEvent(entity));
+                    }
+                    HUGO_INTERACTION_ID => {
                         character_interact_event.send(CharacterInteractionEvent(entity));
                     }
                     id => error!("Unknown interaction id {id}"),

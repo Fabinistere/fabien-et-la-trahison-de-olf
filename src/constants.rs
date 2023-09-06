@@ -116,7 +116,8 @@ pub mod character {
         pub const PLAYER_RUN_FRAMES: (usize, usize, CharacterState) = (
             PLAYER_LINE_START,
             PLAYER_LINE_START + COLUMN_FRAME_RUN_END,
-            CharacterState::Idle,
+            // CharacterState::Idle,
+            CharacterState::Run,
         );
         pub const PLAYER_IDLE_FRAMES: (usize, usize, CharacterState) = (
             PLAYER_LINE_START + COLUMN_FRAME_IDLE_START,
@@ -132,10 +133,12 @@ pub mod character {
 
         pub const NPC_SCALE: f32 = super::CHAR_SCALE;
 
+        pub const CHARACTER_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
+            (15. * TILE_SIZE, 10. * TILE_SIZE, INTERACT_BUTTON_Z);
+
         pub const SUPREME_GOD_SPAWN_POSITION: (f32, f32, f32) = THRONE_POSITION;
         pub const SUPREME_GOD_INTERACTION_ID: u32 = 10;
-        pub const SUPREME_GOD_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
-            (15. * TILE_SIZE, 10. * TILE_SIZE, INTERACT_BUTTON_Z);
+        pub const HUGO_INTERACTION_ID: u32 = 11;
 
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */
@@ -162,6 +165,17 @@ pub mod character {
         pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
         pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., 0.);
         pub const OLF_CAT_HITBOX_OFFSET: (f32, f32, f32) = (0., -5., 0.);
+
+        pub mod movement {
+            use crate::constants::TILE_SIZE;
+
+            pub const REST_TIMER: u64 = 3;
+            // TODO: adjust EVASION_TIMER / FAIR_PLAY_TIMER
+            pub const EVASION_TIMER: u64 = 5;
+
+            pub const NPC_SPEED_LEADER: f32 = 70. * TILE_SIZE;
+            pub const NPC_SPEED: f32 = 50. * TILE_SIZE; // -> Speed::default()
+        }
     }
 
     pub mod dialog {

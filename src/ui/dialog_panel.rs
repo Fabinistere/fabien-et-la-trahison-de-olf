@@ -399,7 +399,7 @@ pub fn create_dialog_panel(
                                         TextStyle {
                                             font: dialog_panel_resources.text_font.clone(),
                                             // TODO: Find the correct value for the choice font size
-                                            font_size: 20.,
+                                            font_size: 25.,
                                             color: Color::BLACK,
                                         },
                                     )

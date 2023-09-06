@@ -12,6 +12,7 @@ use crate::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
     },
+    combat::{Leader, Reputation},
     constants::character::{dialog::MORGAN_DIALOG, player::*, *},
     controls::KeyBindings,
     ui::dialog_systems::DialogMap,
@@ -152,8 +153,11 @@ fn spawn_player(
                 },
                 ..default()
             },
-            Player,
             Name::new("Player"),
+            Player,
+            // -- Social --
+            Reputation::new(100, 0),
+            Leader,
             // -- Animation --
             MovementBundle {
                 animation_indices,

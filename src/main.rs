@@ -3,6 +3,7 @@
 pub mod animations;
 pub mod characters;
 mod collisions;
+pub mod combat;
 pub mod constants;
 pub mod controls;
 pub mod debug;
@@ -90,6 +91,7 @@ fn main() {
             locations::LocationsPlugin,
             menu::MenuPlugin,
             characters::CharactersPlugin,
+            combat::CombatPlugin,
             ui::UiPlugin,
         ))
         .add_state::<GameState>()
