@@ -239,10 +239,7 @@ fn spawn_characters(
                 ..default()
             },
             // -- Social --
-            Interactible::new(
-                CHARACTER_INTERACT_BUTTON_POSITION.into(),
-                SUPREME_GOD_INTERACTION_ID,
-            ),
+            Interactible::new_npc(),
             Reputation::new(100, 0),
             // -- Hitbox --
             RigidBody::Dynamic,
@@ -311,10 +308,7 @@ fn spawn_characters(
             Reputation::new(100, 0),
             Recruted,
             FollowupBehavior,
-            Interactible::new(
-                CHARACTER_INTERACT_BUTTON_POSITION.into(),
-                HUGO_INTERACTION_ID,
-            ),
+            Interactible::new_npc(),
             // -- Hitbox --
             RigidBody::Dynamic,
             LockedAxes::ROTATION_LOCKED,

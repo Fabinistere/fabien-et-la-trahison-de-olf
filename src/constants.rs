@@ -137,8 +137,7 @@ pub mod character {
             (15. * TILE_SIZE, 10. * TILE_SIZE, INTERACT_BUTTON_Z);
 
         pub const SUPREME_GOD_SPAWN_POSITION: (f32, f32, f32) = THRONE_POSITION;
-        pub const SUPREME_GOD_INTERACTION_ID: u32 = 10;
-        pub const HUGO_INTERACTION_ID: u32 = 11;
+        pub const NPC_TALK_INTERACTION_ID: u32 = 10;
 
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */

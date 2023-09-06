@@ -1,7 +1,7 @@
 use crate::{
     characters::npcs::CharacterInteractionEvent,
     constants::{
-        character::npc::{HUGO_INTERACTION_ID, SUPREME_GOD_INTERACTION_ID},
+        character::npc::{CHARACTER_INTERACT_BUTTON_POSITION, NPC_TALK_INTERACTION_ID},
         interactions::INTERACT_BUTTON_SCALE,
         locations::{
             hall::{BOX_INTERACTION_ID, DOOR_INTERACTION_ID, DOOR_OPEN_DELTA_S},
@@ -59,6 +59,14 @@ impl Interactible {
         Self {
             icon_translation,
             interaction_id,
+            in_range: false,
+        }
+    }
+
+    pub fn new_npc() -> Self {
+        Self {
+            icon_translation: CHARACTER_INTERACT_BUTTON_POSITION.into(),
+            interaction_id: NPC_TALK_INTERACTION_ID,
             in_range: false,
         }
     }
@@ -201,10 +209,7 @@ pub fn interaction(
                         });
                         secret_banner_event.send(SecretBannerEvent(*door_state));
                     }
-                    SUPREME_GOD_INTERACTION_ID => {
-                        character_interact_event.send(CharacterInteractionEvent(entity));
-                    }
-                    HUGO_INTERACTION_ID => {
+                    NPC_TALK_INTERACTION_ID => {
                         character_interact_event.send(CharacterInteractionEvent(entity));
                     }
                     id => error!("Unknown interaction id {id}"),
