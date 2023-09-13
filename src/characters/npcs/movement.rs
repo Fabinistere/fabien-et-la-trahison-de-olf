@@ -1,7 +1,10 @@
 //! Implements Npc for moving and steering entities.
 
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::{ActiveEvents, Collider, CollisionEvent, Sensor, Velocity};
+use bevy_ecs::query::QueryEntityError;
+use bevy_rapier2d::prelude::{
+    ActiveEvents, Collider, CollisionEvent, RapierContext, Sensor, Velocity,
+};
 use rand::Rng;
 
 use crate::{
@@ -44,18 +47,8 @@ pub enum NPCBehavior {
 }
 
 impl NPCBehavior {
-    pub fn follow(target: Entity) -> Self {
-        NPCBehavior::Follow {
-            target,
-            // FIXME: Calculate if close or not
-            close: false,
-        }
-    }
-    pub fn follow_already_close(target: Entity) -> Self {
-        NPCBehavior::Follow {
-            target,
-            close: true,
-        }
+    pub fn follow(target: Entity, close: bool) -> Self {
+        NPCBehavior::Follow { target, close }
     }
 }
 
@@ -143,11 +136,38 @@ pub fn npc_behavior_change(
 
 pub fn follow_event(
     mut follow_event: EventReader<FollowEvent>,
-    mut npc_query: Query<&mut NPCBehavior, With<NPC>>,
+    rapier_context: Res<RapierContext>,
+
+    mut npc_query: Query<(&mut NPCBehavior, &Children), With<NPC>>,
+    follow_sensor_query: Query<Entity, (With<FollowRangeSensor>, With<Collider>, With<Sensor>)>,
+    target_children_query: Query<&Children>,
+    character_hitbox_query: Query<Entity, With<CharacterHitbox>>,
 ) {
     for FollowEvent { npc, target } in follow_event.iter() {
-        let mut behavior = npc_query.get_mut(*npc).unwrap();
-        *behavior = NPCBehavior::follow_already_close(*target);
+        let (mut behavior, npc_children) = npc_query.get_mut(*npc).unwrap();
+        let mut npc_follow_range: Result<Entity, _> = Err(QueryEntityError::NoSuchEntity(*npc));
+        // FIXME: throw the correct error not this
+        for child in npc_children {
+            if follow_sensor_query.get(*child).is_ok() {
+                npc_follow_range = Ok(*child);
+                break;
+            }
+        }
+
+        let target_children = target_children_query.get(*target).unwrap();
+        // FIXME: throw the correct error not this
+        let mut target_hitbox: Result<Entity, _> = Err(QueryEntityError::NoSuchEntity(*target));
+        for child in target_children {
+            if character_hitbox_query.get(*child).is_ok() {
+                target_hitbox = Ok(*child);
+                break;
+            }
+        }
+        *behavior = NPCBehavior::follow(
+            *target,
+            rapier_context.intersection_pair(npc_follow_range.unwrap(), target_hitbox.unwrap())
+                == Some(true),
+        );
     }
 }
 
