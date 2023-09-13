@@ -344,21 +344,18 @@ pub fn chase_management(
                                 let (mut behavior, potential_chaser, _npc_name) =
                                     npc_query.get_mut(**npc).unwrap();
                                 if potential_chaser.is_none() {
-                                    match *behavior {
-                                        NPCBehavior::Follow { target, close: _ } => {
-                                            if target == **character {
-                                                // The npc has their target entering their FollowRangeSensor
-                                                // info!(
-                                                //     "Follow Behavior: {}",
-                                                //     collision_event.is_started()
-                                                // );
-                                                *behavior = NPCBehavior::Follow {
-                                                    target,
-                                                    close: collision_event.is_started(),
-                                                };
-                                            }
+                                    if let NPCBehavior::Follow { target, close: _ } = *behavior {
+                                        if target == **character {
+                                            // The npc has their target entering their FollowRangeSensor
+                                            // info!(
+                                            //     "Follow Behavior: {}",
+                                            //     collision_event.is_started()
+                                            // );
+                                            *behavior = NPCBehavior::Follow {
+                                                target,
+                                                close: collision_event.is_started(),
+                                            };
                                         }
-                                        _ => {}
                                     }
                                 }
                                 continue;
@@ -501,7 +498,7 @@ fn move_to(target_transform: &GlobalTransform, transform: &Transform, speed: &Sp
         vel_y *= (std::f32::consts::PI / 4.).cos();
     }
 
-    return (vel_x, vel_y);
+    (vel_x, vel_y)
 }
 
 /// Give velocity x and y value to move forward a certain vec3
@@ -524,7 +521,7 @@ fn move_to_dest(target_vec3: Vec3, transform: &Transform, speed: &Speed) -> (f32
         vel_y *= (std::f32::consts::PI / 4.).cos();
     }
 
-    return (vel_x, vel_y);
+    (vel_x, vel_y)
 }
 
 /// # Parameters

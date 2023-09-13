@@ -121,54 +121,45 @@ fn landmark_arrival(
                 } else {
                     entity_1
                 };
-                match landmark_sensor_query.get_mut(potential_landmark) {
-                    Ok((landmark_entity, mut landmark)) => {
-                        if let Ok((mut behavior, _npc_name)) = npc_query.get_mut(**character_parent)
-                        {
-                            match *behavior {
-                                NPCBehavior::LandmarkSeeking(landmark_destination) => {
-                                    if landmark_destination == landmark_entity {
-                                        match landmark.status {
-                                            LandmarkStatus::Occupied => {
-                                                // send an event to redirect the npc
-                                                warn!("This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent)
-                                            }
-                                            _ => {
-                                                landmark.status = LandmarkStatus::Occupied;
-                                                // TODO: Or start dialog with the other
-                                                info!(target: "Start Rest", "{:?}, {}", **character_parent, name);
-                                                commands.entity(**character_parent).insert(
-                                                    RestTime {
-                                                        timer: Timer::new(
-                                                            Duration::from_secs(REST_TIMER),
-                                                            TimerMode::Once,
-                                                        ),
-                                                    },
-                                                );
-                                                let next_destination =
-                                                    reserved_random_free_landmark(
-                                                        &mut landmark_sensor_query,
-                                                    )
-                                                    .unwrap();
-
-                                                *behavior =
-                                                    NPCBehavior::LandmarkSeeking(next_destination);
-                                            }
-                                        }
+                if let Ok((landmark_entity, mut landmark)) =
+                    landmark_sensor_query.get_mut(potential_landmark)
+                {
+                    if let Ok((mut behavior, _npc_name)) = npc_query.get_mut(**character_parent) {
+                        if let NPCBehavior::LandmarkSeeking(landmark_destination) = *behavior {
+                            if landmark_destination == landmark_entity {
+                                match landmark.status {
+                                    LandmarkStatus::Occupied => {
+                                        // send an event to redirect the npc
+                                        warn!("This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent)
                                     }
-                                }
-                                _ => {}
-                            }
-                        } else if player_query.get(**character_parent).is_ok() {
-                            match landmark.status {
-                                LandmarkStatus::Occupied => {}
-                                LandmarkStatus::Free | LandmarkStatus::Reserved => {
-                                    landmark.status = LandmarkStatus::Occupied
+                                    _ => {
+                                        landmark.status = LandmarkStatus::Occupied;
+                                        // TODO: Or start dialog with the other
+                                        info!(target: "Start Rest", "{:?}, {}", **character_parent, name);
+                                        commands.entity(**character_parent).insert(RestTime {
+                                            timer: Timer::new(
+                                                Duration::from_secs(REST_TIMER),
+                                                TimerMode::Once,
+                                            ),
+                                        });
+                                        let next_destination = reserved_random_free_landmark(
+                                            &mut landmark_sensor_query,
+                                        )
+                                        .unwrap();
+
+                                        *behavior = NPCBehavior::LandmarkSeeking(next_destination);
+                                    }
                                 }
                             }
                         }
+                    } else if player_query.get(**character_parent).is_ok() {
+                        match landmark.status {
+                            LandmarkStatus::Occupied => {}
+                            LandmarkStatus::Free | LandmarkStatus::Reserved => {
+                                landmark.status = LandmarkStatus::Occupied
+                            }
+                        }
                     }
-                    _ => {}
                 }
             }
             _ => {}

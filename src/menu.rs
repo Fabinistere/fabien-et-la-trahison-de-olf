@@ -230,10 +230,10 @@ fn adjust_art_height(
             width,
             (9. / 16.),
             height,
-            (*width as f32 * (9. / 16.)) / (*height as f32)
+            (*width * (9. / 16.)) / *height
         );
 
-        style.height = Val::Percent(100. * (*width as f32 * (9. / 16.)) / (*height as f32));
+        style.height = Val::Percent(100. * (*width * (9. / 16.)) / *height);
     }
 }
 

@@ -111,7 +111,8 @@ pub mod character {
         /*                                  Animation                                 */
         /* -------------------------------------------------------------------------- */
 
-        pub const PLAYER_LINE_START: usize = 1 * SPRITESHEET_COLUMN_NUMBER;
+        pub const PLAYER_LINE: usize = 1;
+        pub const PLAYER_LINE_START: usize = PLAYER_LINE * SPRITESHEET_COLUMN_NUMBER;
         // (start_frame, end_frame, next_state)
         pub const PLAYER_RUN_FRAMES: (usize, usize, CharacterState) = (
             PLAYER_LINE_START,
