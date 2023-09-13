@@ -7,7 +7,10 @@ use bevy::prelude::*;
 use rand::seq::SliceRandom;
 use yml_dialog::{Content, DialogNode};
 
-use crate::characters::{npcs::movement::FollowEvent, player::Player};
+use crate::{
+    characters::{npcs::movement::FollowEvent, player::Player},
+    HUDState,
+};
 
 use super::{
     dialog_box::ResetDialogBoxEvent,
@@ -48,7 +51,13 @@ pub enum WorldEvent {
     AreaCleared,
     HasCharisma,
     HasFriend,
+    // -- Special Dialog Event --
+    // NOTE: could be in another enum
+    // matched when getting an arror when parsing the WorldEvent
     FollowPlayer,
+    /// Even if the exit_state exists, overide and quit.
+    /// The Content of the node will be displayed after
+    EndDialog,
 }
 
 impl fmt::Display for WorldEvent {
@@ -60,6 +69,7 @@ impl fmt::Display for WorldEvent {
             WorldEvent::HasCharisma => write!(f, "HasCharisma"),
             WorldEvent::HasFriend => write!(f, "HasFriend"),
             WorldEvent::FollowPlayer => write!(f, "FollowPlayer"),
+            WorldEvent::EndDialog => write!(f, "EndDialog"),
         }
     }
 }
@@ -75,6 +85,7 @@ impl FromStr for WorldEvent {
             "HasCharisma" => Ok(WorldEvent::HasCharisma),
             "HasFriend" => Ok(WorldEvent::HasFriend),
             "FollowPlayer" => Ok(WorldEvent::FollowPlayer),
+            "EndDialog" => Ok(WorldEvent::EndDialog),
             _ => Err(()),
         }
     }
@@ -102,19 +113,22 @@ pub fn trigger_event_handler(
     interlocutor: Res<CurrentInterlocutor>,
     player_query: Query<Entity, With<Player>>,
     mut follow_event: EventWriter<FollowEvent>,
+
+    mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
     for TriggerEvents(incomming_events) in trigger_event.iter() {
         for event_to_trigger in incomming_events {
             match WorldEvent::from_str(event_to_trigger) {
                 Err(_) => error!("{} is not recognize as a WorldEvent", event_to_trigger),
                 Ok(WorldEvent::FollowPlayer) => {
-                    info!("Follow Player Event");
+                    // info!("Follow Player Event");
                     let player = player_query.single();
                     follow_event.send(FollowEvent {
                         npc: interlocutor.interlocutor.unwrap(),
                         target: player,
                     });
                 }
+                Ok(WorldEvent::EndDialog) => next_game_state.set(HUDState::Closed),
                 Ok(event) => {
                     if !active_world_events.contains(&event) {
                         active_world_events.push(event)
@@ -144,42 +158,49 @@ pub struct ChangeStateEvent(pub usize);
 /// If the state asked is a `Content::Choice` without any choice verified
 /// don't transit to the new state.
 /// Else transit and throw all trigger events.
+///
+/// If the `new_state` requested doesn't exist, close the Dialog.
 pub fn change_dialog_state(
     mut change_state_event: EventReader<ChangeStateEvent>,
     current_interlocutor: Res<CurrentInterlocutor>,
     mut dialogs: ResMut<DialogMap>,
     active_world_events: Res<ActiveWorldEvents>,
 
+    mut next_game_state: ResMut<NextState<HUDState>>,
     mut trigger_event: EventWriter<TriggerEvents>,
 ) {
     for ChangeStateEvent(new_state) in change_state_event.iter() {
         if let Some(interlocutor) = current_interlocutor.interlocutor {
             if let Some((current_state, ref dialog)) = dialogs.get_mut(&interlocutor) {
-                if let Some(current_node) = dialog.get(new_state) {
-                    let new_state_is_available = match current_node.content() {
-                        Content::Choices(choices) => {
-                            let mut at_least_one_is_verified = false;
-                            for choice in choices {
-                                if choice.is_verified(
-                                    None,
-                                    active_world_events
-                                        .iter()
-                                        .map(|x| x.to_string())
-                                        .collect::<Vec<String>>(),
-                                ) {
-                                    // transit if at least on verified
-                                    at_least_one_is_verified = true;
-                                    break;
+                match dialog.get(new_state) {
+                    None => next_game_state.set(HUDState::Closed),
+                    Some(current_node) => {
+                        let new_state_is_available = match current_node.content() {
+                            Content::Monolog { .. } => true,
+                            Content::Choices(choices) => {
+                                let mut at_least_one_is_verified = false;
+                                for choice in choices {
+                                    if choice.is_verified(
+                                        None,
+                                        active_world_events
+                                            .iter()
+                                            .map(|x| x.to_string())
+                                            .collect::<Vec<String>>(),
+                                    ) {
+                                        // transit if at least on verified
+                                        at_least_one_is_verified = true;
+                                        break;
+                                    }
                                 }
+                                at_least_one_is_verified
                             }
-                            at_least_one_is_verified
-                        }
-                        Content::Monolog { .. } => true,
-                    };
+                        };
 
-                    if new_state_is_available {
-                        *current_state = *new_state;
-                        trigger_event.send(TriggerEvents(current_node.trigger_event().to_vec()));
+                        if new_state_is_available {
+                            *current_state = *new_state;
+                            trigger_event
+                                .send(TriggerEvents(current_node.trigger_event().to_vec()));
+                        }
                     }
                 }
             }

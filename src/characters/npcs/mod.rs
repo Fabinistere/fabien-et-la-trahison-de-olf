@@ -219,8 +219,9 @@ fn spawn_characters(
     /*                                    NPCs                                    */
     /* -------------------------------------------------------------------------- */
 
-    let supreme_god_dialog_path = "data/supreme_god_dialog.yml";
     // let fabien_dialog_path = "data/fabien_dialog.yml";
+    let supreme_god_dialog_path = "data/supreme_god_dialog.yml";
+    let hugo_dialog_path = "data/hugo_dialog.yml";
     // let olf_dialog_path = "data/olf_dialog.yml";
 
     let npcs_infos = vec![
@@ -229,20 +230,23 @@ fn spawn_characters(
             SUPREME_GOD_LINE,
             SUPREME_GOD_SPAWN_POSITION,
             Reputation::new(100, 0),
+            NPCBehavior::Camping,
             supreme_god_dialog_path,
         ),
-        // (
-        //     "Hugo",
-        //     HEALER_V2_LINE,
-        //     PLAYER_SPAWN,
-        //     Reputation::new(100, 0),
-        //     fabien_dialog_path,
-        // ),
+        (
+            "Hugo",
+            HEALER_V2_LINE,
+            PLAYER_SPAWN,
+            Reputation::new(100, 0),
+            NPCBehavior::Camping,
+            hugo_dialog_path,
+        ),
         // (
         //     "Vampire",
         //     VAMPIRE_LINE,
         //     PLAYER_SPAWN,
         //     Reputation::new(100, 0),
+        //     NPCBehavior::LandmarkSeeking(reserved_random_free_landmark(&mut landmark_sensor_query).unwrap()),
         //     fabien_dialog_path,
         // ),
         // (
@@ -261,8 +265,8 @@ fn spawn_characters(
 
         // match if there is none
         // only check the landmark in their zone
-        let free_random_landmark =
-            reserved_random_free_landmark(&mut landmark_sensor_query).unwrap();
+        // let free_random_landmark =
+        //     reserved_random_free_landmark(&mut landmark_sensor_query).unwrap();
 
         let npc = commands
             .spawn((
@@ -278,8 +282,7 @@ fn spawn_characters(
                 Name::new(format!("NPC {}", info.0)),
                 NPC,
                 // -- Movement --
-                NPCBehavior::Camping,
-                // NPCBehavior::LandmarkSeeking(free_random_landmark),
+                info.4,
                 MovementBundle {
                     animation_indices: npc_animation_indices,
                     ..default()
@@ -342,7 +345,7 @@ fn spawn_characters(
             })
             .id();
 
-        let dialog_file = std::fs::File::open(info.4).unwrap();
+        let dialog_file = std::fs::File::open(info.5).unwrap();
         let npc_deserialized_map: BTreeMap<usize, DialogNode> =
             serde_yaml::from_reader(dialog_file).unwrap();
         dialogs.insert(
