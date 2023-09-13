@@ -40,7 +40,7 @@ pub enum HUDState {
     #[default]
     Closed,
     // /// is also the Team's Inventory
-    // CombatWall,
+    CombatWall,
     // LogCave,
     DialogWall,
     OptionsWall,
@@ -148,4 +148,8 @@ pub fn playing(game_state: Res<State<GameState>>) -> bool {
 
 pub fn in_menu(game_state: Res<State<GameState>>) -> bool {
     game_state.get() == &GameState::Menu
+}
+
+pub fn hud_closed(hud_state: Res<State<HUDState>>) -> bool {
+    hud_state.get() == &HUDState::Closed
 }

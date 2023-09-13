@@ -1,51 +1,155 @@
 //! Implements Npc for moving and steering entities.
 
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::Velocity;
+use bevy_rapier2d::prelude::{ActiveEvents, Collider, CollisionEvent, Sensor, Velocity};
 use rand::Rng;
-use std::time::Duration;
 
 use crate::{
     animations::sprite_sheet_animation::CharacterState,
     // GameState,
     characters::{
-        movement::Speed,
+        movement::{CharacterCloseSensor, Speed},
         npcs::{
-            aggression::StopChaseEvent,
-            idle::{IdleBehavior, RestTime},
+            aggression::{
+                DetectionRangeSensor, EngagePursuitEvent, PursuitRangeSensor, StopChaseEvent,
+            },
+            idle::RestTime,
             NPC,
         },
+        CharacterHitbox,
     },
-    combat::{CombatEvent, InCombat, Leader, Reputation},
-    constants::{character::npc::movement::*, TILE_SIZE},
+    collisions::CollisionEventExt,
+    combat::{CombatEvent, Reputation},
+    constants::TILE_SIZE,
+    locations::landmarks::{reserved_random_free_landmark, Landmark, LandmarkStatus},
 };
 
-/// Indicates that an entity should run towards a destination and which.
-#[derive(Default, Component)]
-pub struct JustWalkBehavior {
-    pub destination: Vec3,
-}
-
-#[derive(Default, Component)]
-pub struct FollowupBehavior;
-
-#[derive(Default, Component)]
-pub struct DetectionBehavior;
-
-#[derive(Default, Component)]
-pub struct PursuitBehavior;
 // pub const PROXIMITY_RADIUS: f32 = 64.;
 
-#[derive(Clone, Copy, Component)]
-pub struct Target(pub Option<Entity>);
+/* -------------------------------------------------------------------------- */
+/*                                 Components                                 */
+/* -------------------------------------------------------------------------- */
 
-impl Default for Target {
-    fn default() -> Self {
-        Target { 0: None }
+#[derive(PartialEq, Clone, Copy, Reflect, Component)]
+pub enum NPCBehavior {
+    /// The entity runs to a specify location and occupy this zone.
+    /// Tourist butterfly.
+    LandmarkSeeking(Entity),
+    Camping,
+    Follow {
+        target: Entity,
+        /// DOC: Modify by sensor collisions in `???`
+        close: bool,
+    },
+}
+
+impl NPCBehavior {
+    pub fn follow(target: Entity) -> Self {
+        NPCBehavior::Follow {
+            target,
+            // FIXME: Calculate if close or not
+            close: false,
+        }
+    }
+    pub fn follow_already_close(target: Entity) -> Self {
+        NPCBehavior::Follow {
+            target,
+            close: true,
+        }
     }
 }
 
-// REFACTOR: The whole movement plugin (close sensor, smooth movement)
+impl Default for NPCBehavior {
+    fn default() -> Self {
+        Self::Camping
+    }
+}
+
+#[derive(Reflect, Component)]
+pub struct TargetSeeker(pub TargetType);
+
+#[derive(Reflect)]
+pub enum TargetType {
+    /// can be merge with `TargetType::Special(Entity)`
+    Player,
+    Ally,
+    Enemy,
+    Special(Entity),
+}
+
+#[derive(Debug, Reflect, Component)]
+pub struct Chaser {
+    pub target: Entity,
+    /// DOC: Modify by sensor collisions in `???`
+    pub close: bool,
+}
+
+impl Chaser {
+    pub fn new(target: Entity) -> Self {
+        Chaser {
+            target,
+            close: false,
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct FollowRangeSensor;
+
+/* -------------------------------------------------------------------------- */
+/*                                   Events                                   */
+/* -------------------------------------------------------------------------- */
+
+#[derive(Event)]
+pub struct FollowEvent {
+    /// In many situation, could be the interlocutor
+    pub npc: Entity,
+    pub target: Entity,
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   Systems                                  */
+/* -------------------------------------------------------------------------- */
+
+// REFACTOR: The whole movement plugin ([x] close sensor, smooth movement)
+
+/// Detect any change from the npcs about their behavior
+pub fn npc_behavior_change(
+    mut commands: Commands,
+    npc_query: Query<(&NPCBehavior, &Children), (Changed<NPCBehavior>, With<NPC>)>,
+    follow_sensor_query: Query<Entity, (With<FollowRangeSensor>, With<Collider>, With<Sensor>)>,
+) {
+    for (behavior, children) in &npc_query {
+        match behavior {
+            NPCBehavior::Follow { .. } => {
+                for child in children {
+                    if let Ok(follow_range) = follow_sensor_query.get(*child) {
+                        commands
+                            .entity(follow_range)
+                            .insert(ActiveEvents::COLLISION_EVENTS);
+                    }
+                }
+            }
+            _ => {
+                for child in children {
+                    if let Ok(follow_range) = follow_sensor_query.get(*child) {
+                        commands.entity(follow_range).remove::<ActiveEvents>();
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn follow_event(
+    mut follow_event: EventReader<FollowEvent>,
+    mut npc_query: Query<&mut NPCBehavior, With<NPC>>,
+) {
+    for FollowEvent { npc, target } in follow_event.iter() {
+        let mut behavior = npc_query.get_mut(*npc).unwrap();
+        *behavior = NPCBehavior::follow_already_close(*target);
+    }
+}
 
 pub fn animation(
     mut npc_query: Query<(&Velocity, &mut CharacterState, &mut TextureAtlasSprite), With<NPC>>,
@@ -81,184 +185,278 @@ pub fn animation(
 
 // TODO: feature - use ColliderType::Sensor to delimiter zone
 
-/// For a certain destination contained in [RunToDestinationbehavior], make the npc run towards it
-pub fn just_walk(
-    mut commands: Commands,
+pub fn npc_movement(
     mut npc_query: Query<
         (
-            Entity,
-            &mut JustWalkBehavior,
+            &mut NPCBehavior,
+            Option<&Chaser>,
             &Transform,
             &Speed,
             &mut Velocity,
-            &Name,
         ),
-        (
-            With<JustWalkBehavior>,
-            Without<IdleBehavior>,
-            Without<PursuitBehavior>,
-            Without<InCombat>,
-        ),
+        Without<RestTime>,
     >,
+    mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
+    pos_query: Query<&GlobalTransform>,
 ) {
-    for (npc, mut behavior, transform, speed, mut rb_vel, name) in npc_query.iter_mut() {
-        let direction: Vec3 = behavior.destination;
-
-        // XXX: Approximation Louche
-        if !close(transform.translation, direction, TILE_SIZE / 2.) {
-            // println!(
-            //     "{} direction: ({},{}) \nposition: ({},{})",
-            //     name, direction.x, direction.y,
-            //     transform.translation.x, transform.translation.y
-            // );
-
-            let (vel_x, vel_y) = move_to_dest(direction, transform, speed);
-
-            rb_vel.linvel.x = vel_x;
-            rb_vel.linvel.y = vel_y;
-        } else {
-            info!(target: "Start Rest", "{:?}, {}", npc, name);
-
-            // Stop the npc after reaching the destination
-            // rb_vel.linvel.x = 0.;
-            // rb_vel.linvel.y = 0.;
-
-            // change their destiantion before resting
-            // REFACTOR: handle the direction change with event like in do_flexing
-            behavior.destination = give_a_direction();
-
-            commands.entity(npc).insert(IdleBehavior);
-            // println!("postChange: npc's state: {:#?}", npc.state);
-
-            // REFACTOR: change this part by sending a event : FREEZE
-            commands.entity(npc).insert(RestTime {
-                // create the non-repeating rest timer
-                timer: Timer::new(Duration::from_secs(REST_TIMER), TimerMode::Once),
-            });
-        }
-    }
-}
-
-/// Entity gently follows their target.
-/// depending the team
-///
-/// TODO: feature - Follow an ally by the component Target instead of Leader
-pub fn follow(
-    // mut commands: Commands,
-    mut npc_query: Query<
-        (Entity, &Transform, &Speed, &mut Velocity, &Reputation),
-        (
-            With<NPC>,
-            With<FollowupBehavior>,
-            Without<PursuitBehavior>,
-            Without<InCombat>,
-        ), // only npc can follow
-    >,
-    targets_query: Query<(&GlobalTransform, &Reputation, &Name), With<Leader>>,
-    // pos_query: Query<&GlobalTransform>,
-) {
-    for (_npc, transform, speed, mut rb_vel, reputation) in npc_query.iter_mut() {
-        for (target_transform, target_reputation, _name) in targets_query.iter() {
-            // println!("target: {name}, Leader of team {:#?}", target_reputation);
-            if reputation.in_the_same_team(target_reputation) {
-                // carefull with more than one leader per team
-                // it will be not nice
-
-                // XXX: Approximation Louche
-                // REFACTOR: Sensor Detection
-                if !close(
-                    transform.translation,
-                    target_transform.translation(),
-                    20. * TILE_SIZE,
-                ) {
-                    // println!("moving towards target: {}", name);
-
-                    let (vel_x, vel_y) = move_to(target_transform, transform, speed);
-
-                    rb_vel.linvel.x = vel_x;
-                    rb_vel.linvel.y = vel_y;
+    for (mut behavior, potential_chaser, transform, speed, mut rb_vel) in &mut npc_query {
+        let (vel_x, vel_y) = match potential_chaser {
+            None => match *behavior {
+                NPCBehavior::Camping => (0., 0.),
+                NPCBehavior::LandmarkSeeking(destination) => {
+                    let (_, landmark) = landmark_sensor_query.get(destination).unwrap();
+                    let landmark_transform = pos_query.get(destination).unwrap();
+                    match landmark.status {
+                        LandmarkStatus::Occupied => {
+                            // FIXME: Match the LandmarkReservationError
+                            let next_destination =
+                                reserved_random_free_landmark(&mut landmark_sensor_query).unwrap();
+                            *behavior = NPCBehavior::LandmarkSeeking(next_destination);
+                            let next_transform = pos_query.get(next_destination).unwrap();
+                            move_to(next_transform, transform, speed)
+                        }
+                        _ => move_to(landmark_transform, transform, speed),
+                    }
                 }
-                // if reached the target
-                else {
-                    // TODO: feature - AVOID npc to merge with the target
-                    rb_vel.linvel.x = 0.;
-                    rb_vel.linvel.y = 0.;
+                NPCBehavior::Follow { target, close } => {
+                    if close {
+                        (0., 0.)
+                    } else {
+                        let target_transform = pos_query.get(target).unwrap();
+                        move_to(target_transform, transform, speed)
+                    }
+                }
+            },
+            Some(Chaser { target, close }) => {
+                if *close {
+                    (0., 0.)
+                } else {
+                    let target_transform = pos_query.get(*target).unwrap();
+                    move_to(target_transform, transform, speed)
                 }
             }
-        }
+        };
+
+        rb_vel.linvel.x = vel_x;
+        rb_vel.linvel.y = vel_y;
     }
-
-    // target does not have position. Go to idle state
-    // commands.entity(npc).remove::<FollowupBehavior>();
-    // commands.entity(npc).remove::<RunToDestinationBehavior>();
-    // commands.entity(npc).insert(IdleBehavior);
-
-    // println!("pursue: {:?} entities, {:?} err, {:?} ok.", query.iter_mut().len(), err_count, ok_count);
 }
 
-/// Entity chases their target.
-/// This target has entered in the detection range of the npc
-pub fn pursue(
-    // mut game_state: ResMut<State<GameState>>,
-    mut npc_query: Query<
+/// # Chase Management
+///
+/// - Follow Close Update.
+///   If a character enters/exits the npc's `FollowRangeSensor`,
+///   it will update the `close` field in the npc's behavior.
+/// - Chase Failed.
+///   If a character exits the npc's `PursuitRangeSensor`,
+///   and is the target of the npc, the npc will disengage with them.
+/// - Chase Completed.
+///   If a npc enters the `CharacterCloseSensor` of their target,
+///   it will trigger the `CombatEvent`.
+/// - Target Detection.
+///   If a character enters the `DetectionRangeSensor` of an enemy npc,
+///   seeking of targets, the npc will engage with the character.
+pub fn chase_management(
+    mut collision_events: EventReader<CollisionEvent>,
+    // rapier_context: Res<RapierContext>,
+    character_hitbox_query: Query<(&Parent, &Name), With<CharacterHitbox>>,
+    mut npc_query: Query<(&mut NPCBehavior, Option<&mut Chaser>, &Name), With<NPC>>,
+    target_seeker_query: Query<Entity, With<TargetSeeker>>,
+    reputation_query: Query<&Reputation>,
+
+    follow_sensor_query: Query<
+        (Entity, &Parent),
         (
-            Entity,
-            &Transform,
-            &Speed,
-            &mut Velocity,
-            &Reputation,
-            &Target,
-            &Children,
-            &Name,
+            With<FollowRangeSensor>,
+            Without<PursuitRangeSensor>,
+            Without<DetectionRangeSensor>,
         ),
-        (With<NPC>, With<PursuitBehavior>, Without<InCombat>),
     >,
-    pos_query: Query<&GlobalTransform>,
+    pursuit_sensor_query: Query<
+        (Entity, &Parent),
+        (
+            With<PursuitRangeSensor>,
+            Without<FollowRangeSensor>,
+            Without<DetectionRangeSensor>,
+        ),
+    >,
+    detection_sensor_query: Query<
+        (Entity, &Parent),
+        (
+            With<DetectionRangeSensor>,
+            Without<PursuitRangeSensor>,
+            Without<FollowRangeSensor>,
+        ),
+    >,
+    close_sensor_query: Query<(Entity, &Parent), With<CharacterCloseSensor>>,
+
+    mut ev_engage_pursuit: EventWriter<EngagePursuitEvent>,
     mut ev_combat: EventWriter<CombatEvent>,
     mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
-    for (npc, transform, speed, mut rb_vel, _reputation, target, _colliders, name) in
-        npc_query.iter_mut()
-    {
-        if target.0.is_none() {
-            info!(target: "target is none", "{}", name);
-            continue;
-        }
+    for collision_event in collision_events.iter() {
+        let entity_1 = collision_event.entities().0;
+        let entity_2 = collision_event.entities().1;
 
-        let result = pos_query.get_component::<GlobalTransform>(target.0.expect("target is none"));
-        match result {
-            Err(_) => {
-                // target does not have position. Disengage.
-                ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
-                continue;
-            }
-            Ok(target_transform) => {
-                // If the target is too far away
-                // adjust npc's velocity to reach it
-                if !close(
-                    transform.translation,
-                    target_transform.translation(),
-                    10. * TILE_SIZE,
-                ) {
-                    // println!("moving towards target: {}", name);
-                    let (vel_x, vel_y) = move_to(target_transform, transform, speed);
+        // if rapier_context.intersection_pair(entity_1, entity_2) == Some(true) {
+        //     info!("Some(true) with {:#?}, {:#?}", entity_1, entity_2);
+        // } else if rapier_context.intersection_pair(entity_1, entity_2) == Some(false) {
+        //     info!("Some(false) with {:#?}, {:#?}", entity_1, entity_2);
+        // }
 
-                    rb_vel.linvel.x = vel_x;
-                    rb_vel.linvel.y = vel_y;
-                } else {
-                    info!("Target Caught in 4K by {:?} {}", npc, name);
+        match (
+            character_hitbox_query.get(entity_1),
+            character_hitbox_query.get(entity_2),
+        ) {
+            (Err(_), Ok((character, character_name)))
+            | (Ok((character, character_name)), Err(_)) => {
+                match npc_query.get_mut(**character) {
+                    Err(_) => {
+                        /* -------------------------------------------------------------------------- */
+                        /*                             Follow Close Update                            */
+                        /* -------------------------------------------------------------------------- */
+                        match (
+                            follow_sensor_query.get(entity_1),
+                            follow_sensor_query.get(entity_2),
+                        ) {
+                            (Ok((_follow_sensor, npc)), Err(_))
+                            | (Err(_), Ok((_follow_sensor, npc))) => {
+                                let (mut behavior, potential_chaser, _npc_name) =
+                                    npc_query.get_mut(**npc).unwrap();
+                                if potential_chaser.is_none() {
+                                    match *behavior {
+                                        NPCBehavior::Follow { target, close: _ } => {
+                                            if target == **character {
+                                                // The npc has their target entering their FollowRangeSensor
+                                                // info!(
+                                                //     "Follow Behavior: {}",
+                                                //     collision_event.is_started()
+                                                // );
+                                                *behavior = NPCBehavior::Follow {
+                                                    target,
+                                                    close: collision_event.is_started(),
+                                                };
+                                            }
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                continue;
+                            }
+                            _ => {}
+                        }
 
-                    // open HUD to combat talk after chase
-                    ev_combat.send(CombatEvent { entity: npc });
+                        /* -------------------------------------------------------------------------- */
+                        /*                               Or Chase Failed                              */
+                        /* -------------------------------------------------------------------------- */
+                        if collision_event.is_stopped() {
+                            match (
+                                pursuit_sensor_query.get(entity_1),
+                                pursuit_sensor_query.get(entity_2),
+                            ) {
+                                (Ok((_pursuit_sensor, npc)), Err(_))
+                                | (Err(_), Ok((_pursuit_sensor, npc))) => {
+                                    let (_, potential_chaser, npc_name) =
+                                        npc_query.get_mut(**npc).unwrap();
+                                    match potential_chaser {
+                                        None => {}
+                                        Some(chaser) => {
+                                            if chaser.target == **character {
+                                                // The npc has their target leaving their `PursuitRangeSensor`
+                                                ev_stop_chase.send(StopChaseEvent {
+                                                    npc_entity: **character,
+                                                });
+                                                info!(
+                                                    "{} outran {}: chase canceled",
+                                                    character_name, npc_name
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        /* -------------------------------------------------------------------------- */
+                        /*                           Or Detection Triggered                           */
+                        /* -------------------------------------------------------------------------- */
+                        else if collision_event.is_started() {
+                            match (
+                                detection_sensor_query.get(entity_1),
+                                detection_sensor_query.get(entity_2),
+                            ) {
+                                (Ok((_detection_sensor, npc)), Err(_))
+                                | (Err(_), Ok((_detection_sensor, npc))) => {
+                                    let (_, potential_chaser, npc_name) =
+                                        npc_query.get(**npc).unwrap();
+                                    // REFACTOR: Has The component TargetSeeking
+                                    if potential_chaser.is_none()
+                                        && target_seeker_query.get(**npc).is_ok()
+                                    {
+                                        // The npc has a potential target entering their DetectionRangeSensor
+                                        let [npc_reputation, character_reputation] =
+                                            reputation_query
+                                                .get_many([**npc, **character])
+                                                .unwrap();
+                                        if !npc_reputation.in_the_same_team(character_reputation) {
+                                            ev_engage_pursuit.send(EngagePursuitEvent {
+                                                npc_entity: **npc,
+                                                target_entity: **character,
+                                            });
+                                            info!(
+                                                "{} detected {}: chase initialized",
+                                                npc_name, character_name
+                                            );
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    Ok((_, potential_chaser, npc_name)) => {
+                        /* -------------------------------------------------------------------------- */
+                        /*                               Chase Completed                              */
+                        /* -------------------------------------------------------------------------- */
 
-                    ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
+                        match potential_chaser {
+                            None => {}
+                            Some(mut chaser) => {
+                                match (
+                                    close_sensor_query.get(entity_1),
+                                    close_sensor_query.get(entity_2),
+                                ) {
+                                    (Ok((_close_sensor, closed_character)), Err(_))
+                                    | (Err(_), Ok((_close_sensor, closed_character))) => {
+                                        if chaser.target == **closed_character
+                                            && collision_event.is_started()
+                                        {
+                                            // The npc entered the close sensor of their target
+                                            chaser.close = true;
+                                            ev_combat.send(CombatEvent {
+                                                entity: **character,
+                                            });
+                                            ev_stop_chase.send(StopChaseEvent {
+                                                npc_entity: **character,
+                                            });
+                                            info!(
+                                                "Target Caught in 4K by {:?} {}",
+                                                character, npc_name
+                                            );
 
-                    // handle flee when pressing o or moving ?
-                    // (timer on npc before rechase)
-                    // 'global' timer (on player)
-                    // atm just pressing o won't make you free cause still in the detectionSensor
+                                            // handle flee when pressing o or moving ? (timer on npc before rechase)
+                                            // 'global' timer (on player)
+                                            // atm just pressing o won't make you free cause still in the DetectionRangeSensor
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
                 }
             }
+            _ => {}
         }
     }
 }
@@ -339,12 +537,11 @@ fn close(position: Vec3, direction: Vec3, range: f32) -> bool {
  * return:
  *  Vec3
  */
-pub fn give_a_direction() -> Vec3 {
+fn give_a_direction() -> Vec3 {
     let x =
         rand::thread_rng().gen_range(-100 * (TILE_SIZE as i32)..100 * (TILE_SIZE as i32)) as f32;
     let y =
         rand::thread_rng().gen_range(-100 * (TILE_SIZE as i32)..100 * (TILE_SIZE as i32)) as f32;
-    // let z = rand::thread_rng().gen_range(1..101);
 
     /* shape ideas
      * (x, y) -> A

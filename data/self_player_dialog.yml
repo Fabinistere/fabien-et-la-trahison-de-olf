@@ -1,0 +1,8 @@
+1:
+  source: Player
+  content:
+    text:
+      - Bonjour Flo.
+      - Comment vas-tu ?
+      - J'ai faim.
+    exit_state: 2

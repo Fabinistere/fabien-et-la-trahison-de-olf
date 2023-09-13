@@ -7,6 +7,8 @@ use bevy::prelude::*;
 use rand::seq::SliceRandom;
 use yml_dialog::{Content, DialogNode};
 
+use crate::characters::{npcs::movement::FollowEvent, player::Player};
+
 use super::{
     dialog_box::ResetDialogBoxEvent,
     dialog_scrolls::{ButtonChoice, Monolog, MonologPanel},
@@ -46,6 +48,7 @@ pub enum WorldEvent {
     AreaCleared,
     HasCharisma,
     HasFriend,
+    FollowPlayer,
 }
 
 impl fmt::Display for WorldEvent {
@@ -56,6 +59,7 @@ impl fmt::Display for WorldEvent {
             WorldEvent::AreaCleared => write!(f, "AreaCleared"),
             WorldEvent::HasCharisma => write!(f, "HasCharisma"),
             WorldEvent::HasFriend => write!(f, "HasFriend"),
+            WorldEvent::FollowPlayer => write!(f, "FollowPlayer"),
         }
     }
 }
@@ -70,37 +74,7 @@ impl FromStr for WorldEvent {
             "AreaCleared" => Ok(WorldEvent::AreaCleared),
             "HasCharisma" => Ok(WorldEvent::HasCharisma),
             "HasFriend" => Ok(WorldEvent::HasFriend),
-            _ => Err(()),
-        }
-    }
-}
-
-/// DOC
-///
-/// List all triggerable event,
-/// that can be send when quitting a dialog node
-#[derive(PartialEq, Clone, Copy, Debug)]
-pub enum ThrowableEvent {
-    FightEvent,
-    HasFriend,
-}
-
-impl fmt::Display for ThrowableEvent {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ThrowableEvent::FightEvent => write!(f, "FightEvent"),
-            ThrowableEvent::HasFriend => write!(f, "HasFriend"),
-        }
-    }
-}
-
-impl FromStr for ThrowableEvent {
-    type Err = (); // ParseIntError;
-
-    fn from_str(input: &str) -> Result<ThrowableEvent, Self::Err> {
-        match input {
-            "FightEvent" => Ok(ThrowableEvent::FightEvent),
-            "HasFriend" => Ok(ThrowableEvent::HasFriend),
+            "FollowPlayer" => Ok(WorldEvent::FollowPlayer),
             _ => Err(()),
         }
     }
@@ -124,11 +98,23 @@ pub struct TriggerEvents(Vec<String>);
 pub fn trigger_event_handler(
     mut trigger_event: EventReader<TriggerEvents>,
     mut active_world_events: ResMut<ActiveWorldEvents>,
+
+    interlocutor: Res<CurrentInterlocutor>,
+    player_query: Query<Entity, With<Player>>,
+    mut follow_event: EventWriter<FollowEvent>,
 ) {
     for TriggerEvents(incomming_events) in trigger_event.iter() {
         for event_to_trigger in incomming_events {
             match WorldEvent::from_str(event_to_trigger) {
-                Err(_) => {}
+                Err(_) => error!("{} is not recognize as a WorldEvent", event_to_trigger),
+                Ok(WorldEvent::FollowPlayer) => {
+                    info!("Follow Player Event");
+                    let player = player_query.single();
+                    follow_event.send(FollowEvent {
+                        npc: interlocutor.interlocutor.unwrap(),
+                        target: player,
+                    });
+                }
                 Ok(event) => {
                     if !active_world_events.contains(&event) {
                         active_world_events.push(event)

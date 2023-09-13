@@ -5,6 +5,7 @@ use crate::{
     animations::sprite_sheet_animation::{
         AnimationIndices, CharacterState, SpriteSheetAnimation, TempoAnimation,
     },
+    characters::npcs::movement::{Chaser, NPCBehavior, TargetSeeker, TargetType},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     locations::temple::{OverlappingEntity, PlayerLocation},
     menu::{ManorLightsPattern, ManorLightsTimer},
@@ -38,6 +39,10 @@ impl Plugin for DebugPlugin {
                 /* -------------------------------------------------------------------------- */
                 .register_type::<AnimationIndices>()
                 .register_type::<CharacterState>()
+                .register_type::<NPCBehavior>()
+                .register_type::<TargetSeeker>()
+                .register_type::<TargetType>()
+                .register_type::<Chaser>()
                 /* -------------------------------------------------------------------------- */
                 /*                                     Map                                    */
                 /* -------------------------------------------------------------------------- */

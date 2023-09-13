@@ -126,7 +126,7 @@ pub mod character {
         );
     }
 
-    pub mod npc {
+    pub mod npcs {
         use crate::constants::{
             interactions::INTERACT_BUTTON_Z, locations::main_room::THRONE_POSITION, TILE_SIZE,
         };
@@ -136,7 +136,11 @@ pub mod character {
         pub const CHARACTER_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
             (15. * TILE_SIZE, 10. * TILE_SIZE, INTERACT_BUTTON_Z);
 
+        pub const OLF_CAT_SCALE: f32 = 0.5;
+        pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., 0.);
         pub const SUPREME_GOD_SPAWN_POSITION: (f32, f32, f32) = THRONE_POSITION;
+        pub const OLF_SPAWN_POSITION: (f32, f32, f32) = OLF_CAT_POSITION;
+
         pub const NPC_TALK_INTERACTION_ID: u32 = 10;
 
         /* -------------------------------------------------------------------------- */
@@ -160,9 +164,7 @@ pub mod character {
         pub const BLUE_CAT_LINE: usize = 15;
 
         pub const CAT_SWITCH_Z_OFFSET: f32 = 0.;
-        pub const OLF_CAT_SCALE: f32 = 0.5;
         pub const OLF_CAT_ANIMATION_DELTA: f32 = 0.5;
-        pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., 0.);
         pub const OLF_CAT_HITBOX_OFFSET: (f32, f32, f32) = (0., -5., 0.);
 
         pub mod movement {
@@ -180,102 +182,12 @@ pub mod character {
     pub mod dialog {
         // Flibittygibbit
 
-        // TODO: feature - Read at dialog_file instead of CST
-        // CST = path to the file
-
         pub const RANDOM_DIALOG: &str = "1:
   source: Fabien
   content:
     text:
       - Enfant, j'ai eu un poney
       - Mais j'ai toujours voulu un agneau
-    exit_state: 2\n";
-
-        pub const OLF_DIALOG: &str = "1:
-  source: Olf
-  content:
-    text:
-      - Il faut absolument sauver les Fabien du Chien Geant
-    exit_state: 2
-2:
-  source: Player
-  content:
-    - text: ...
-      condition: null
-      exit_state: 3
-3:
-  source: Olf
-  content:
-    text:
-      - Il me faut donc obtenir le trone
-    exit_state: 4
-4:
-  source: Player
-  content:
-    - text: ...
-      condition: null
-      exit_state: 5
-    - text: et de l'$
-      condition: null
-      exit_state: 6
-5:
-  source: Olf
-  content:
-    text:
-      - Et de l'$
-    exit_state: 6
-6:
-  source: Olf
-  content:
-    text:
-      - C'est essentiel
-    exit_state: 7\n";
-
-        pub const FABIEN_DIALOG: &str = "1:
-  source: Fabien
-  content:
-    text:
-      - Hello
-      - <3
-    exit_state: 2
-2:
-  source: Player
-  content:
-    - text: Hey
-      condition: null
-      exit_state: 3
-    - text: No Hello
-      condition: null
-      exit_state: 4
-    - text: Want to share a flat ?
-      condition: null
-      exit_state: 5
-3:
-  source: Fabien
-  content:
-    text:
-      - :)
-    exit_state: 6
-4:
-  source: Fabien
-  content:
-    text:
-      - :O
-    exit_state: 6
-5:
-  source: Fabien
-  content:
-    text:
-      - Sure
-    exit_state: 6\n";
-
-        pub const MORGAN_DIALOG: &str = "1:
-  source: Player
-  content:
-    text:
-      - Bonjour Flo.
-      - Comment vas-tu ?
-      - J'ai faim.
     exit_state: 2\n";
     }
 }
@@ -453,8 +365,11 @@ pub mod locations {
         ];
 
         // pub const STATUE_SWITCH_Z_OFFSET: f32 = 0.;
-        pub const CAT_STATUE_POSITION: (f32, f32, f32) = (-100., 75., WILL_BE_COMPUTE_LATER);
-        pub const FABIEN_STATUE_POSITION: (f32, f32, f32) = (52., 77., WILL_BE_COMPUTE_LATER);
+        // FIXME: Why the Y of cat/fabien statue are different ??
+        pub const CAT_STATUE_POSITION: (f32, f32, f32) =
+            (-100. * TILE_SIZE, 75. * TILE_SIZE, WILL_BE_COMPUTE_LATER);
+        pub const FABIEN_STATUE_POSITION: (f32, f32, f32) =
+            (52. * TILE_SIZE, 77. * TILE_SIZE, WILL_BE_COMPUTE_LATER);
 
         pub const BANNER_INTERACTION_ID: u32 = 3;
         pub const BANNER_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
@@ -463,6 +378,25 @@ pub mod locations {
         pub const BANNER_SENSOR_OFFSET: (f32, f32, f32) = (0., 0., 0.);
         pub const BANNER_COLLIDER_OFFSET: (f32, f32, f32) = (0., 0.5 * TILE_SIZE, 0.);
         pub const BANNER_OPEN_DELTA_S: f32 = 0.1;
+
+        pub mod landmarks {
+            // use super::*;
+            use crate::constants::TILE_SIZE;
+
+            pub const LANDMARK_CAT_STATUE_LEFT: (f32, f32, f32) =
+                (-110. * TILE_SIZE, 70. * TILE_SIZE, 0.);
+            pub const LANDMARK_CAT_STATUE_MIDDLE: (f32, f32, f32) =
+                (-100. * TILE_SIZE, 65. * TILE_SIZE, 0.);
+            pub const LANDMARK_CAT_STATUE_RIGHT: (f32, f32, f32) =
+                (-90. * TILE_SIZE, 70. * TILE_SIZE, 0.);
+
+            pub const LANDMARK_FABIEN_STATUE_LEFT: (f32, f32, f32) =
+                (-42. * TILE_SIZE, 70. * TILE_SIZE, 0.);
+            pub const LANDMARK_FABIEN_STATUE_MIDDLE: (f32, f32, f32) =
+                (-52. * TILE_SIZE, 65. * TILE_SIZE, 0.);
+            pub const LANDMARK_FABIEN_STATUE_RIGHT: (f32, f32, f32) =
+                (-62. * TILE_SIZE, 70. * TILE_SIZE, 0.);
+        }
     }
 
     pub mod secret_room {

@@ -36,7 +36,7 @@ use std::time::Duration;
 
 use crate::{
     characters::{npcs::NPC, player::Player},
-    constants::character::npc::movement::EVASION_TIMER,
+    constants::character::npcs::movement::EVASION_TIMER,
     HUDState,
 };
 
@@ -54,7 +54,7 @@ impl Plugin for CombatPlugin {
                 ),
             )
             .add_systems(
-                OnExit(HUDState::DialogWall),
+                OnExit(HUDState::CombatWall),
                 exit_combat
                     .in_set(CombatState::Evasion)
                     .before(CombatState::Observation),

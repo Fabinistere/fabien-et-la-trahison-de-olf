@@ -1,0 +1,23 @@
+1:
+  source: Player
+  content:
+    - text: Can you Follow Me ?
+      condition: null
+      exit_state: 2
+    - text: No Nothing
+      condition: null
+      exit_state: 3
+2:
+  source: Dieu Suprème
+  content:
+    text:
+      - Sure
+    exit_state: 4
+  trigger_event:
+    - FollowPlayer
+3:
+  source: Dieu Suprème
+  content:
+    text:
+      - :O
+    exit_state: 4

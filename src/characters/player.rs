@@ -13,18 +13,21 @@ use crate::{
         CharacterHitbox,
     },
     combat::{Leader, Reputation},
-    constants::character::{dialog::MORGAN_DIALOG, player::*, *},
+    constants::character::{player::*, *},
     controls::KeyBindings,
+    hud_closed,
     ui::dialog_systems::DialogMap,
     GameState, PlayerCamera,
 };
+
+use super::movement::CharacterCloseSensor;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(Update, (player_movement, camera_follow));
+            .add_systems(Update, (player_movement.run_if(hud_closed), camera_follow));
     }
 }
 
@@ -35,7 +38,10 @@ pub struct Player;
 struct Immobilized;
 
 #[derive(Component)]
-pub struct PlayerSensor;
+pub struct PlayerInteractionSensor;
+
+#[derive(Component)]
+pub struct PlayerCloseSensor;
 
 fn player_movement(
     key_bindings: Res<KeyBindings>,
@@ -183,8 +189,18 @@ fn spawn_player(
                 Sensor,
                 ActiveEvents::COLLISION_EVENTS,
                 ActiveCollisionTypes::STATIC_STATIC,
-                PlayerSensor,
-                Name::new("Player Sensor"),
+                PlayerInteractionSensor,
+                Name::new("Player Interaction Sensor"),
+            ));
+
+            parent.spawn((
+                Collider::ball(10.),
+                Sensor,
+                ActiveEvents::COLLISION_EVENTS,
+                ActiveCollisionTypes::STATIC_STATIC,
+                PlayerCloseSensor,
+                CharacterCloseSensor,
+                Name::new("Player Close Sensor"),
             ));
         })
         .id();
@@ -193,8 +209,9 @@ fn spawn_player(
     /*                                   Dialog                                   */
     /* -------------------------------------------------------------------------- */
 
+    let player_dialog_file = std::fs::File::open("data/self_player_dialog.yml").unwrap();
     let player_deserialized_map: BTreeMap<usize, DialogNode> =
-        serde_yaml::from_str(MORGAN_DIALOG).unwrap();
+        serde_yaml::from_reader(player_dialog_file).unwrap();
     dialogs.insert(
         player,
         (

@@ -1,7 +1,7 @@
 use crate::{
     characters::npcs::CharacterInteractionEvent,
     constants::{
-        character::npc::{CHARACTER_INTERACT_BUTTON_POSITION, NPC_TALK_INTERACTION_ID},
+        character::npcs::{CHARACTER_INTERACT_BUTTON_POSITION, NPC_TALK_INTERACTION_ID},
         interactions::INTERACT_BUTTON_SCALE,
         locations::{
             hall::{BOX_INTERACTION_ID, DOOR_INTERACTION_ID, DOOR_OPEN_DELTA_S},
