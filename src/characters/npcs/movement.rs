@@ -120,6 +120,7 @@ pub fn npc_behavior_change(
                         commands
                             .entity(follow_range)
                             .insert(ActiveEvents::COLLISION_EVENTS);
+                        break;
                     }
                 }
             }
@@ -127,6 +128,7 @@ pub fn npc_behavior_change(
                 for child in children {
                     if let Ok(follow_range) = follow_sensor_query.get(*child) {
                         commands.entity(follow_range).remove::<ActiveEvents>();
+                        break;
                     }
                 }
             }
@@ -347,14 +349,14 @@ pub fn chase_management(
                                     if let NPCBehavior::Follow { target, close: _ } = *behavior {
                                         if target == **character {
                                             // The npc has their target entering their FollowRangeSensor
-                                            // info!(
-                                            //     "Follow Behavior: {}",
-                                            //     collision_event.is_started()
-                                            // );
                                             *behavior = NPCBehavior::Follow {
                                                 target,
                                                 close: collision_event.is_started(),
                                             };
+                                            // info!(
+                                            //     "Follow Behavior: {}",
+                                            //     collision_event.is_started()
+                                            // );
                                         }
                                     }
                                 }
@@ -380,9 +382,8 @@ pub fn chase_management(
                                         Some(chaser) => {
                                             if chaser.target == **character {
                                                 // The npc has their target leaving their `PursuitRangeSensor`
-                                                ev_stop_chase.send(StopChaseEvent {
-                                                    npc_entity: **character,
-                                                });
+                                                ev_stop_chase
+                                                    .send(StopChaseEvent { npc_entity: **npc });
                                                 info!(
                                                     "{} outran {}: chase canceled",
                                                     character_name, npc_name
@@ -406,7 +407,6 @@ pub fn chase_management(
                                 | (Err(_), Ok((_detection_sensor, npc))) => {
                                     let (_, potential_chaser, npc_name) =
                                         npc_query.get(**npc).unwrap();
-                                    // REFACTOR: Has The component TargetSeeking
                                     if potential_chaser.is_none()
                                         && target_seeker_query.get(**npc).is_ok()
                                     {

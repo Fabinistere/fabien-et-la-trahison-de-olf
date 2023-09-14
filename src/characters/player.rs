@@ -171,6 +171,8 @@ fn spawn_player(
             },
             // -- Hitbox --
             RigidBody::Dynamic,
+            // 10 = Cannot be moved by anything
+            // Dominance::group(1),
             LockedAxes::ROTATION_LOCKED,
         ))
         .with_children(|parent| {

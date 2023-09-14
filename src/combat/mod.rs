@@ -35,7 +35,10 @@ use bevy_rapier2d::prelude::Velocity;
 use std::time::Duration;
 
 use crate::{
-    characters::{npcs::NPC, player::Player},
+    characters::{
+        npcs::{NPCSystems, NPC},
+        player::Player,
+    },
     constants::character::npcs::movement::EVASION_TIMER,
     HUDState,
 };
@@ -59,7 +62,13 @@ impl Plugin for CombatPlugin {
                     .in_set(CombatState::Evasion)
                     .before(CombatState::Observation),
             )
-            .add_systems(FixedUpdate, freeze_in_combat.after(CombatState::Evasion));
+            .add_systems(
+                FixedUpdate,
+                (
+                    freeze_in_combat.after(CombatState::Evasion),
+                    fair_play_wait.after(NPCSystems::StopChase),
+                ),
+            );
     }
 }
 
@@ -77,6 +86,10 @@ enum CombatState {
     // ShowExecution,
     Evasion,
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                 Components                                 */
+/* -------------------------------------------------------------------------- */
 
 /// The reputation an entity got from one another team
 #[derive(Copy, Clone, PartialEq, Eq, Component)]
@@ -109,19 +122,6 @@ impl Reputation {
     }
 }
 
-/// Happens when:
-///   - npc::movement::pursue
-///     - target is reach
-/// Read in
-///   - ui::dialog_panel::create_dialog_panel_on_combat_event
-///     - open combat ui
-///   - combat::mod::freeze_in_combat
-///     - freeze all entities involved in the starting combat
-#[derive(Event)]
-pub struct CombatEvent {
-    pub entity: Entity,
-}
-
 #[derive(Component)]
 pub struct Karma(pub i32);
 
@@ -145,12 +145,18 @@ pub struct Leader;
 /// - Fabicurion who represent a group of 3
 /// - Fabicurion who represent a group of 6
 #[derive(Copy, Clone, PartialEq, Eq, Component)]
-pub struct GroupSize(pub usize);
+pub struct GroupSize(usize);
 
-/// maybe doublon with GroupSize,
-/// must include how much foes are involved to enumerate them
-#[derive(Copy, Clone, PartialEq, Eq, Component)]
-pub struct GroupType(pub usize);
+impl GroupSize {
+    /// 0 < `size` < 5
+    pub fn new(size: usize) -> Self {
+        if size > 5 {
+            GroupSize(5)
+        } else {
+            GroupSize(size)
+        }
+    }
+}
 
 /// The player can recruted some friendly npc
 /// Can be called, TeamPlayer
@@ -161,12 +167,42 @@ pub struct Recruted;
 pub struct FairPlayTimer {
     /// (non-repeating timer)
     /// Let the enemy go when reached/left behind
-    pub timer: Timer,
+    timer: Timer,
+}
+
+impl FairPlayTimer {
+    pub fn new(secs: u64) -> Self {
+        FairPlayTimer {
+            timer: Timer::new(Duration::from_secs(secs), TimerMode::Once),
+        }
+    }
+
+    pub fn get_mut_timer(&mut self) -> &mut Timer {
+        &mut self.timer
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   Events                                   */
+/* -------------------------------------------------------------------------- */
+
+/// Happens when:
+///   - npc::movement::pursue
+///     - target is reach
+/// Read in
+///   - ui::dialog_panel::create_dialog_panel_on_combat_event
+///     - open combat ui
+///   - combat::mod::freeze_in_combat
+///     - freeze all entities involved in the starting combat
+#[derive(Event)]
+pub struct CombatEvent {
+    pub entity: Entity,
 }
 
 /// Happens when:
 ///   - combat::mod::combat
 ///     - A aggressive npc encountered the player's group
+///
 /// Read in:
 ///   - combat::mod::spawn_party_members
 ///     - Spawn every foes hidden behind the initial
@@ -175,6 +211,46 @@ pub struct FairPlayTimer {
 pub struct SpawnCombatFoesEvent {
     pub leader: Entity,
     pub group_size: usize,
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                   Systems                                  */
+/* -------------------------------------------------------------------------- */
+
+/// Decrement the fair play Timer
+/// while doing other things (don't **exclude** entity With<FairPlayTimer>)
+/// remove the FairPlayTimer if the entity is in the player's team
+pub fn fair_play_wait(
+    mut commands: Commands,
+
+    time: Res<Time>,
+    mut npc_query: Query<
+        (
+            Entity,
+            &mut FairPlayTimer,
+            &mut Velocity,
+            &Reputation,
+            &Name,
+        ),
+        (
+            With<NPC>,
+            // Without<InCombat>
+        ),
+    >,
+) {
+    for (npc, mut fair_play_timer, mut _rb_vel, reputation, name) in npc_query.iter_mut() {
+        fair_play_timer.timer.tick(time.delta());
+
+        // not required to control velocity because it is managed elsewhere
+
+        // REFACTOR: compare NPC's team with Player's Team instead of a global Player Team CST
+        // query player to get his TEAM (it's the player who switch team not all npc)
+        if fair_play_timer.timer.finished() || reputation.is_in_supreme_god_team() {
+            info!("{:?}, {} can now aggro", npc, name);
+
+            commands.entity(npc).remove::<FairPlayTimer>();
+        }
+    }
 }
 
 /// Emulate the Combat phase
@@ -193,13 +269,9 @@ pub fn enter_combat(
     mut ev_combat_enter: EventReader<CombatEvent>,
     mut ev_spawn_fabicurion: EventWriter<SpawnCombatFoesEvent>,
 
-    mut player_query: Query<
-        Entity,
-        // must implied the disjunction with player_compagnie
-        (With<Player>, Without<NPC>),
-    >,
+    mut player_query: Query<Entity, (With<Player>, Without<NPC>)>,
     mut player_companie: Query<Entity, (With<NPC>, With<Recruted>)>,
-    mut foes_query: Query<(Entity, &GroupSize), (With<NPC>, Without<Recruted>)>,
+    mut foes_query: Query<(Entity, Option<&GroupSize>), (With<NPC>, Without<Recruted>)>,
 ) {
     for CombatEvent { entity } in ev_combat_enter.iter() {
         info!("Combat Event");
@@ -210,23 +282,17 @@ pub fn enter_combat(
         for member in player_companie.iter_mut() {
             commands.entity(member).insert(InCombat);
 
-            // display / spawn them in the ui (CANCELED)
+            // TODO: (CANCELED) - display / spawn them in the ui
         }
 
-        let (foe, group_size) = foes_query.get_mut(*entity).unwrap();
+        let (foe, potential_group_size) = foes_query.get_mut(*entity).unwrap();
 
         commands.entity(foe).insert(InCombat);
 
-        // could be a assert ?
-        // no the error could happend cause of human error
-        // not an assert matter so. A Require instead
-        if group_size.0 > 5 {
-            error!("GroupSize in invalid: > 5");
-            // Raise Err ?
-        } else {
+        if let Some(GroupSize(size)) = potential_group_size {
             ev_spawn_fabicurion.send(SpawnCombatFoesEvent {
                 leader: foe,
-                group_size: group_size.0,
+                group_size: *size,
             });
         }
 
@@ -258,7 +324,7 @@ pub fn spawn_party_members(
     }
 }
 
-/// exit Combat by pressing 'o'
+/// Occurs `OnExit(HUDState::CombatWall)`
 ///
 /// apply to all npc involved in a interaction the IdleBehavior
 pub fn exit_combat(
@@ -283,19 +349,10 @@ pub fn exit_combat(
     // foes AND being an enemy
     // With InCombat and Without Recruted mean that these entities are enemies.
     for (foes, _name) in foes_query.iter() {
-        commands.entity(foes).insert(FairPlayTimer {
-            timer: Timer::new(Duration::from_secs(EVASION_TIMER), TimerMode::Once),
-        });
+        commands
+            .entity(foes)
+            .insert(FairPlayTimer::new(EVASION_TIMER));
 
         commands.entity(foes).remove::<InCombat>();
     }
-
-    // UI is open
-    // if let Ok((_entity, animator, _style)) = query.get_single()
-    // {
-    //     // FULLY OPEN
-    //     if animator.tweenable().unwrap().progress() >= 1. {
-    //         close_dialog_panel_event.send(CloseDialogPanelEvent);
-    //     }
-    // }
 }
