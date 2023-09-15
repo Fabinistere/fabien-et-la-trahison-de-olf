@@ -72,10 +72,7 @@ impl Plugin for NPCPlugin {
             .add_event::<aggression::EngagePursuitEvent>()
             .add_systems(
                 OnEnter(GameState::Playing),
-                (
-                    // spawn_characters,
-                    spawn_vilains,
-                ),
+                (spawn_characters, spawn_vilains),
             )
             .add_systems(
                 Update,

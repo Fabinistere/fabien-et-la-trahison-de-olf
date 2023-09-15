@@ -19,10 +19,11 @@ use crate::{
             idle::RestTime,
             NPC,
         },
+        player::Player,
         CharacterHitbox,
     },
     collisions::CollisionEventExt,
-    combat::{CombatEvent, Reputation},
+    combat::{CombatEvent, FairPlayTimer, Reputation},
     constants::TILE_SIZE,
     locations::landmarks::{reserved_random_free_landmark, Landmark, LandmarkStatus},
 };
@@ -282,8 +283,10 @@ pub fn chase_management(
     mut collision_events: EventReader<CollisionEvent>,
     // rapier_context: Res<RapierContext>,
     character_hitbox_query: Query<(&Parent, &Name), With<CharacterHitbox>>,
+    player_query: Query<Entity, With<Player>>,
     mut npc_query: Query<(&mut NPCBehavior, Option<&mut Chaser>, &Name), With<NPC>>,
-    target_seeker_query: Query<Entity, With<TargetSeeker>>,
+    target_seeker_query: Query<&TargetSeeker>,
+    fair_play_timer_query: Query<Entity, With<FairPlayTimer>>,
     reputation_query: Query<&Reputation>,
 
     follow_sensor_query: Query<
@@ -409,13 +412,28 @@ pub fn chase_management(
                                         npc_query.get(**npc).unwrap();
                                     if potential_chaser.is_none()
                                         && target_seeker_query.get(**npc).is_ok()
+                                        && fair_play_timer_query.get(**npc).is_err()
                                     {
+                                        let TargetSeeker(target_type) =
+                                            target_seeker_query.get(**npc).unwrap();
                                         // The npc has a potential target entering their DetectionRangeSensor
                                         let [npc_reputation, character_reputation] =
                                             reputation_query
                                                 .get_many([**npc, **character])
                                                 .unwrap();
-                                        if !npc_reputation.in_the_same_team(character_reputation) {
+                                        // DOC: new name ?
+                                        let is_target_type = match target_type {
+                                            TargetType::Player => {
+                                                player_query.get(**character).is_ok()
+                                            }
+                                            TargetType::Enemy => !npc_reputation
+                                                .in_the_same_team(character_reputation),
+                                            TargetType::Ally => npc_reputation
+                                                .in_the_same_team(character_reputation),
+                                            TargetType::Special(target) => *target == **character,
+                                        };
+
+                                        if is_target_type {
                                             ev_engage_pursuit.send(EngagePursuitEvent {
                                                 npc_entity: **npc,
                                                 target_entity: **character,
