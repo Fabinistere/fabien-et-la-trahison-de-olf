@@ -44,3 +44,6 @@ impl MovementBundle {
         }
     }
 }
+
+#[derive(Component)]
+pub struct CharacterCloseSensor;

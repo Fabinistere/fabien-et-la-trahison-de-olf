@@ -1,16 +1,34 @@
 [package]
 name = "fabien-et-la-trahison-de-olf"
-version = "0.3.8"
+version = "0.3.9"
 authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "Olf EPAIN <wabtey@disroot.org>", "Grassouille la Fripouille", "Sombre Roi René"]
+repository = "https://github.com/Fabinistere/fabien-et-la-trahison-de-olf"
+license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [workspace]
 resolver = "2"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+bevy = { version = "0.11",  features = ["dynamic_linking"] }
+bevy_ecs = "0.11"
+bevy_reflect = "0.11"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+bevy = "0.11"
+bevy_ecs = "0.11"
+bevy_reflect = "0.11"
+# wasm-bindgen = "0.2"
+
+
 [dependencies]
 # ----------- Common ----------
-bevy = "0.11"
+# bevy = "0.11"
 bevy_tweening = "0.8"
+
+# ---------- Dialog -----------
+yml_dialog = "0.2"
+serde_yaml = "0.9"
 
 # ----- Hitbox - Velocity -----
 bevy_rapier2d = { version = "0.22", features = ["simd-stable", "debug-render-2d"] }

@@ -7,7 +7,7 @@ use crate::{
         hall::{TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED, TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED},
         *,
     },
-    GameState,
+    playing, GameState,
 };
 
 use self::hall::TempleDoor;
@@ -57,7 +57,8 @@ impl Plugin for TemplePlugin {
                     secret_room::second_layer_fake_wall_visibility,
                     secret_room::remove_secret_room_cover,
                     secret_room::add_secret_room_cover,
-                ),
+                )
+                    .run_if(playing),
             )
             .add_systems(
                 PostUpdate,
@@ -68,9 +69,18 @@ impl Plugin for TemplePlugin {
                 PostUpdate,
                 main_room::secret_banner_interaction.run_if(in_temple_or_secret_room),
             )
-            .add_systems(OnEnter(PlayerLocation::Hall), control_wall_collider)
-            .add_systems(OnEnter(PlayerLocation::Temple), control_wall_collider)
-            .add_systems(OnEnter(PlayerLocation::SecretRoom), control_wall_collider);
+            .add_systems(
+                OnEnter(PlayerLocation::Hall),
+                control_wall_collider.run_if(playing),
+            )
+            .add_systems(
+                OnEnter(PlayerLocation::Temple),
+                control_wall_collider.run_if(playing),
+            )
+            .add_systems(
+                OnEnter(PlayerLocation::SecretRoom),
+                control_wall_collider.run_if(playing),
+            );
     }
 }
 

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
+use yml_dialog::DialogNode;
 
 use crate::{
     animations::{
@@ -11,17 +12,22 @@ use crate::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
     },
+    combat::{Leader, Reputation},
     constants::character::{player::*, *},
     controls::KeyBindings,
+    hud_closed,
+    ui::dialog_systems::DialogMap,
     GameState, PlayerCamera,
 };
+
+use super::movement::CharacterCloseSensor;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(Update, (player_movement, camera_follow));
+            .add_systems(Update, (player_movement.run_if(hud_closed), camera_follow));
     }
 }
 
@@ -32,7 +38,10 @@ pub struct Player;
 struct Immobilized;
 
 #[derive(Component)]
-pub struct PlayerSensor;
+pub struct PlayerInteractionSensor;
+
+#[derive(Component)]
+pub struct PlayerCloseSensor;
 
 fn player_movement(
     key_bindings: Res<KeyBindings>,
@@ -122,7 +131,11 @@ fn camera_follow(
     }
 }
 
-fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpriteSheet>) {
+fn spawn_player(
+    mut commands: Commands,
+    characters_spritesheet: Res<CharacterSpriteSheet>,
+    mut dialogs: ResMut<DialogMap>,
+) {
     /* -------------------------------------------------------------------------- */
     /*                              Animation Indices                             */
     /* -------------------------------------------------------------------------- */
@@ -135,7 +148,7 @@ fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpr
     /*                                  Textures                                  */
     /* -------------------------------------------------------------------------- */
 
-    commands
+    let player = commands
         .spawn((
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
@@ -146,8 +159,11 @@ fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpr
                 },
                 ..default()
             },
-            Player,
             Name::new("Player"),
+            Player,
+            // -- Social --
+            Reputation::new(100, 0),
+            Leader,
             // -- Animation --
             MovementBundle {
                 animation_indices,
@@ -155,6 +171,8 @@ fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpr
             },
             // -- Hitbox --
             RigidBody::Dynamic,
+            // 10 = Cannot be moved by anything
+            // Dominance::group(1),
             LockedAxes::ROTATION_LOCKED,
         ))
         .with_children(|parent| {
@@ -173,8 +191,34 @@ fn spawn_player(mut commands: Commands, characters_spritesheet: Res<CharacterSpr
                 Sensor,
                 ActiveEvents::COLLISION_EVENTS,
                 ActiveCollisionTypes::STATIC_STATIC,
-                PlayerSensor,
-                Name::new("Player Sensor"),
+                PlayerInteractionSensor,
+                Name::new("Player Interaction Sensor"),
             ));
-        });
+
+            parent.spawn((
+                Collider::ball(10.),
+                Sensor,
+                ActiveEvents::COLLISION_EVENTS,
+                ActiveCollisionTypes::STATIC_STATIC,
+                PlayerCloseSensor,
+                CharacterCloseSensor,
+                Name::new("Player Close Sensor"),
+            ));
+        })
+        .id();
+
+    /* -------------------------------------------------------------------------- */
+    /*                                   Dialog                                   */
+    /* -------------------------------------------------------------------------- */
+
+    let player_dialog_file = std::fs::File::open("data/self_player_dialog.yml").unwrap();
+    let player_deserialized_map: BTreeMap<usize, DialogNode> =
+        serde_yaml::from_reader(player_dialog_file).unwrap();
+    dialogs.insert(
+        player,
+        (
+            *player_deserialized_map.first_key_value().unwrap().0,
+            player_deserialized_map,
+        ),
+    );
 }

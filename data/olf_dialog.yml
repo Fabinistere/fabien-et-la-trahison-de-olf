@@ -1,0 +1,39 @@
+1:
+  source: Olf
+  content:
+    text:
+      - Il faut absolument sauver les Fabien du Chien Geant
+    exit_state: 2
+2:
+  source: Player
+  content:
+    - text: ...
+      condition: null
+      exit_state: 3
+3:
+  source: Olf
+  content:
+    text:
+      - Il me faut donc obtenir le trone
+    exit_state: 4
+4:
+  source: Player
+  content:
+    - text: ...
+      condition: null
+      exit_state: 5
+    - text: et de l'$
+      condition: null
+      exit_state: 6
+5:
+  source: Olf
+  content:
+    text:
+      - Et de l'$
+    exit_state: 6
+6:
+  source: Olf
+  content:
+    text:
+      - C'est essentiel
+    exit_state: 7

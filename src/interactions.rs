@@ -1,5 +1,7 @@
 use crate::{
+    characters::npcs::CharacterInteractionEvent,
     constants::{
+        character::npcs::{CHARACTER_INTERACT_BUTTON_POSITION, NPC_TALK_INTERACTION_ID},
         interactions::INTERACT_BUTTON_SCALE,
         locations::{
             hall::{BOX_INTERACTION_ID, DOOR_INTERACTION_ID, DOOR_OPEN_DELTA_S},
@@ -38,7 +40,8 @@ pub struct InteractionIconEvent {
 /// # Constraint
 ///
 /// The first children must be the interaction sensor
-#[derive(Component, Debug)]
+/// REFACTOR: foolproof the children sensor obligation (by pointing at it directly)
+#[derive(Debug, Default, Component)]
 pub struct Interactible {
     pub icon_translation: Vec3,
     pub interaction_id: u32,
@@ -56,6 +59,14 @@ impl Interactible {
         Self {
             icon_translation,
             interaction_id,
+            in_range: false,
+        }
+    }
+
+    pub fn new_npc() -> Self {
+        Self {
+            icon_translation: CHARACTER_INTERACT_BUTTON_POSITION.into(),
+            interaction_id: NPC_TALK_INTERACTION_ID,
             in_range: false,
         }
     }
@@ -88,7 +99,7 @@ fn interaction_icon_events(
             CollisionEvent::Started(e1, e2, _) => {
                 for (entity, children) in interactibles_query.iter() {
                     match interaction_sensor_query.get(children[0]) {
-                        Err(e) => warn!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
+                        Err(e) => error!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
                         Ok(interaction_sensor) => if *e1 == interaction_sensor || *e2 == interaction_sensor {
                             interaction_icon_event.send(InteractionIconEvent {
                                 entering_range: true,
@@ -101,7 +112,7 @@ fn interaction_icon_events(
             CollisionEvent::Stopped(e1, e2, _) => {
                 for (entity, children) in interactibles_query.iter() {
                     match interaction_sensor_query.get(children[0]) {
-                        Err(e) => warn!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
+                        Err(e) => error!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
                         Ok(interaction_sensor) =>
                             if *e1 == interaction_sensor || *e2 == interaction_sensor {
                                 interaction_icon_event.send(InteractionIconEvent {
@@ -147,18 +158,26 @@ pub fn interaction_icon(
                 ));
             });
         } else {
-            match interact_icon_query.get(children[children.len() - 1]) {
-                Err(_e) => warn!("There is no Interaction Icon in {:?}", *entity),
-                Ok(interact_icon) => commands.entity(interact_icon).despawn(),
+            let mut found = false;
+            for child in children {
+                if let Ok(interact_icon) = interact_icon_query.get(*child) {
+                    commands.entity(interact_icon).despawn();
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                warn!("There is no Interaction Icon in {:?}", *entity)
             }
         }
     }
 }
 
+/// TODO: Only interact with the closest interactible
 pub fn interaction(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    interactibles_query: Query<&Interactible>,
+    interactibles_query: Query<(Entity, &Interactible)>,
 
     temple_door_query: Query<Entity, With<TempleDoor>>,
     banner_door_query: Query<(Entity, &DoorState), With<SecretBanner>>,
@@ -166,9 +185,10 @@ pub fn interaction(
     mut door_interact_event: EventWriter<DoorInteractEvent>,
     mut secret_banner_event: EventWriter<SecretBannerEvent>,
     mut props_interaction_event: EventWriter<PropsInteractionEvent>,
+    mut character_interact_event: EventWriter<CharacterInteractionEvent>,
 ) {
     if keyboard_input.any_just_pressed(key_bindings.interact()) {
-        for interactible in interactibles_query.iter() {
+        for (entity, interactible) in interactibles_query.iter() {
             if interactible.in_range {
                 match interactible.interaction_id {
                     BOX_INTERACTION_ID => {
@@ -177,17 +197,20 @@ pub fn interaction(
                     DOOR_INTERACTION_ID => {
                         let temple_door = temple_door_query.single();
                         door_interact_event.send(DoorInteractEvent {
-                            door_entity: temple_door,
+                            door_entity: temple_door, // entity,
                             open_delta_s: DOOR_OPEN_DELTA_S,
                         });
                     }
                     BANNER_INTERACTION_ID => {
                         let (secret_banner, door_state) = banner_door_query.single();
                         door_interact_event.send(DoorInteractEvent {
-                            door_entity: secret_banner,
+                            door_entity: secret_banner, // entity,
                             open_delta_s: BANNER_OPEN_DELTA_S,
                         });
                         secret_banner_event.send(SecretBannerEvent(*door_state));
+                    }
+                    NPC_TALK_INTERACTION_ID => {
+                        character_interact_event.send(CharacterInteractionEvent(entity));
                     }
                     id => error!("Unknown interaction id {id}"),
                 }

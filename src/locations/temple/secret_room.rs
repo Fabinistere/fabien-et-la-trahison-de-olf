@@ -8,7 +8,7 @@ use crate::{
         Fade, FadeType,
     },
     collisions::{TesselatedCollider, TesselatedColliderConfig},
-    constants::{locations::secret_room::*, BACKGROUND_COLOR},
+    constants::{locations::secret_room::*, BACKGROUND_COLOR_INGAME},
     locations::temple::{LocationSensor, OverlappingEntity, PlayerLocation, WallCollider},
 };
 
@@ -124,7 +124,7 @@ pub fn setup_secret_room(
 
     let secret_room = asset_server.load("textures/v4.0.0/Secret_Room/Secret_Room.png");
 
-    let fake_stone = asset_server.load("textures/v4.0.0/Secret_Room/fake_stones.png");
+    let fake_stone = asset_server.load("textures/v4.0.0/Secret_Room/fake_stones_cuted.png");
 
     let first_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/1e_frame.png");
@@ -195,6 +195,8 @@ pub fn setup_secret_room(
 
     let second_layer_fake_wall =
         asset_server.load("textures/v4.0.0/Secret_Room/2nd_layer_fake_wall.png");
+
+    let stairs_down_ramp = asset_server.load("textures/v4.0.0/Secret_Room/stairs_down_ramp.png");
 
     /* -------------------------------------------------------------------------- */
     /*                               Wall Colliders                               */
@@ -393,6 +395,16 @@ pub fn setup_secret_room(
                 Name::new("Flower Wall Pot"),
             ));
 
+            parent.spawn((
+                SpriteBundle {
+                    texture: stairs_down_ramp,
+                    transform: Transform::from_translation(STAIRS_RAMP_POSITION.into()),
+                    ..default()
+                },
+                OverlappingEntity::new(STAIRS_RAMP_SWITCH_Z_OFFSET),
+                Name::new("Stairs Down Ramp"),
+            ));
+
             // Cause the y switch of the temple is too high
             // (up to the stairs)
             // Being in the secret Room behind the Temple Wall
@@ -402,7 +414,6 @@ pub fn setup_secret_room(
             parent.spawn((
                 SpriteBundle {
                     texture: second_layer_fake_wall,
-                    transform: Transform::default(),
                     ..default()
                 },
                 OverlappingEntity::new(SECOND_FAKE_WALL_SWITCH_Z_OFFSET),
@@ -416,7 +427,7 @@ pub fn setup_secret_room(
             transform: Transform::from_translation(SECRET_ROOM_COVER_POSITION.into()),
             sprite: Sprite {
                 custom_size: Some(SECRET_ROOM_COVER_SIZE.into()),
-                color: BACKGROUND_COLOR, // Color::WHITE,
+                color: BACKGROUND_COLOR_INGAME, // Color::WHITE,
                 ..default()
             },
             ..default()

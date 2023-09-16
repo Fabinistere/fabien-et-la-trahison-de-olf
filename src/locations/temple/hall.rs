@@ -12,7 +12,7 @@ use crate::{
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
         locations::{hall::*, CHANDELIER_FLAME_POSITIONS},
-        BACKGROUND_COLOR,
+        BACKGROUND_COLOR_INGAME,
     },
     interactions::{Interactible, InteractionSensor},
     locations::temple::{
@@ -232,7 +232,7 @@ pub fn setup_hall(
                             transform: Transform::from_translation(BALCONY_COVER_POSITION.into()),
                             sprite: Sprite {
                                 custom_size: Some(BALCONY_COVER_SIZE.into()),
-                                color: BACKGROUND_COLOR, // Color::WHITE, //
+                                color: BACKGROUND_COLOR_INGAME, // Color::WHITE, //
                                 ..default()
                             },
                             ..default()
