@@ -365,12 +365,19 @@ pub mod locations {
             (68.5 * TILE_SIZE, 63.5 * TILE_SIZE, WILL_BE_COMPUTE_LATER),   // RightRight
         ];
 
-        // pub const STATUE_SWITCH_Z_OFFSET: f32 = 0.;
-        // FIXME: Why the Y of cat/fabien statue are different ??
-        pub const CAT_STATUE_POSITION: (f32, f32, f32) =
-            (-100. * TILE_SIZE, 75. * TILE_SIZE, WILL_BE_COMPUTE_LATER);
-        pub const FABIEN_STATUE_POSITION: (f32, f32, f32) =
-            (52. * TILE_SIZE, 77. * TILE_SIZE, WILL_BE_COMPUTE_LATER);
+        pub const STATUE_Y: f32 = 75.;
+        pub const CAT_STATUE_X: f32 = -100.;
+        pub const CAT_STATUE_POSITION: (f32, f32, f32) = (
+            CAT_STATUE_X * TILE_SIZE,
+            STATUE_Y * TILE_SIZE,
+            WILL_BE_COMPUTE_LATER,
+        );
+        pub const FABIEN_STATUE_X: f32 = 52.;
+        pub const FABIEN_STATUE_POSITION: (f32, f32, f32) = (
+            FABIEN_STATUE_X * TILE_SIZE,
+            STATUE_Y * TILE_SIZE,
+            WILL_BE_COMPUTE_LATER,
+        );
 
         pub const BANNER_INTERACTION_ID: u32 = 3;
         pub const BANNER_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
@@ -384,19 +391,35 @@ pub mod locations {
             // use super::*;
             use crate::constants::TILE_SIZE;
 
-            pub const LANDMARK_CAT_STATUE_LEFT: (f32, f32, f32) =
-                (-110. * TILE_SIZE, 70. * TILE_SIZE, 0.);
-            pub const LANDMARK_CAT_STATUE_MIDDLE: (f32, f32, f32) =
-                (-100. * TILE_SIZE, 65. * TILE_SIZE, 0.);
-            pub const LANDMARK_CAT_STATUE_RIGHT: (f32, f32, f32) =
-                (-90. * TILE_SIZE, 70. * TILE_SIZE, 0.);
+            use super::{CAT_STATUE_X, FABIEN_STATUE_X, STATUE_Y};
 
-            pub const LANDMARK_FABIEN_STATUE_LEFT: (f32, f32, f32) =
-                (-42. * TILE_SIZE, 70. * TILE_SIZE, 0.);
+            pub const LANDMARK_SENSOR_SIZE: f32 = 2.5;
+
+            pub const LANDMARK_CAT_STATUE_LEFT: (f32, f32, f32) = (
+                CAT_STATUE_X - 10. * TILE_SIZE,
+                STATUE_Y - 25. * TILE_SIZE,
+                0.,
+            );
+            pub const LANDMARK_CAT_STATUE_MIDDLE: (f32, f32, f32) =
+                (CAT_STATUE_X * TILE_SIZE, STATUE_Y - 35. * TILE_SIZE, 0.);
+            pub const LANDMARK_CAT_STATUE_RIGHT: (f32, f32, f32) = (
+                CAT_STATUE_X + 10. * TILE_SIZE,
+                STATUE_Y - 25. * TILE_SIZE,
+                0.,
+            );
+
+            pub const LANDMARK_FABIEN_STATUE_LEFT: (f32, f32, f32) = (
+                FABIEN_STATUE_X - 10. * TILE_SIZE,
+                STATUE_Y - 25. * TILE_SIZE,
+                0.,
+            );
             pub const LANDMARK_FABIEN_STATUE_MIDDLE: (f32, f32, f32) =
-                (-52. * TILE_SIZE, 65. * TILE_SIZE, 0.);
-            pub const LANDMARK_FABIEN_STATUE_RIGHT: (f32, f32, f32) =
-                (-62. * TILE_SIZE, 70. * TILE_SIZE, 0.);
+                (FABIEN_STATUE_X * TILE_SIZE, STATUE_Y - 35. * TILE_SIZE, 0.);
+            pub const LANDMARK_FABIEN_STATUE_RIGHT: (f32, f32, f32) = (
+                FABIEN_STATUE_X + 10. * TILE_SIZE,
+                STATUE_Y - 25. * TILE_SIZE,
+                0.,
+            );
         }
     }
 

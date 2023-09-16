@@ -19,7 +19,7 @@ use crate::{
     constants::{character::npcs::movement::REST_TIMER, locations::main_room::landmarks::*},
 };
 
-use super::temple::PlayerLocation;
+use super::temple::Location;
 
 pub struct LandmarkPlugin;
 
@@ -38,7 +38,7 @@ impl Plugin for LandmarkPlugin {
 /// to occupy one of the free landmark.
 /// The npc will reserved the landmark, only the player can occupy a reserved landmark.
 /// A occupied landmark can only be freed by the occupant.
-#[derive(PartialEq, Eq, Default, Component)]
+#[derive(PartialEq, Eq, Debug, Reflect, Default, Component)]
 pub enum LandmarkStatus {
     #[default]
     Free,
@@ -47,15 +47,15 @@ pub enum LandmarkStatus {
 }
 
 /// TEMP: if there is only the field `status` just use the enum instead.
-#[derive(Component)]
+#[derive(Reflect, Debug, Component)]
 pub struct Landmark {
     pub status: LandmarkStatus,
     /// DOC: ambiguous name
-    pub location: PlayerLocation,
+    pub location: Location,
 }
 
 impl Landmark {
-    pub fn new(landmark_location: PlayerLocation) -> Self {
+    pub fn new(landmark_location: Location) -> Self {
         Landmark {
             status: LandmarkStatus::default(),
             location: landmark_location,
@@ -65,7 +65,7 @@ impl Landmark {
 
 #[derive(Debug)]
 pub enum LandmarkReservationError {
-    EmptyQuery,
+    NoFreeLandmarks,
 }
 
 /// TODO: Create an impl to automatictly Reserved a free landmark
@@ -79,8 +79,7 @@ pub fn reserved_random_free_landmark(
         .filter(|(_, landmark)| landmark.status == LandmarkStatus::Free)
         .choose(&mut rand::thread_rng())
     {
-        // create custom error
-        None => Err(LandmarkReservationError::EmptyQuery),
+        None => Err(LandmarkReservationError::NoFreeLandmarks),
         Some((free_random_landmark, mut landmark)) => {
             landmark.status = LandmarkStatus::Reserved;
             Ok(free_random_landmark)
@@ -183,29 +182,29 @@ fn spawn_landmarks(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Landmark::new(PlayerLocation::Temple),
+                        Landmark::new(Location::Temple),
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_CAT_STATUE_LEFT.into(),
                         )),
-                        Collider::ball(5.),
+                        Collider::ball(LANDMARK_SENSOR_SIZE),
                         Sensor,
                         Name::new("Landmark Cat Statue Left"),
                     ));
                     parent.spawn((
-                        Landmark::new(PlayerLocation::Temple),
+                        Landmark::new(Location::Temple),
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_CAT_STATUE_MIDDLE.into(),
                         )),
-                        Collider::ball(5.),
+                        Collider::ball(LANDMARK_SENSOR_SIZE),
                         Sensor,
                         Name::new("Landmark Cat Statue Middle"),
                     ));
                     parent.spawn((
-                        Landmark::new(PlayerLocation::Temple),
+                        Landmark::new(Location::Temple),
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_CAT_STATUE_RIGHT.into(),
                         )),
-                        Collider::ball(5.),
+                        Collider::ball(LANDMARK_SENSOR_SIZE),
                         Sensor,
                         Name::new("Landmark Cat Statue Right"),
                     ));
@@ -218,29 +217,29 @@ fn spawn_landmarks(mut commands: Commands) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        Landmark::new(PlayerLocation::Temple),
+                        Landmark::new(Location::Temple),
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_FABIEN_STATUE_LEFT.into(),
                         )),
-                        Collider::ball(5.),
+                        Collider::ball(LANDMARK_SENSOR_SIZE),
                         Sensor,
                         Name::new("Landmark Fabien Statue Left"),
                     ));
                     parent.spawn((
-                        Landmark::new(PlayerLocation::Temple),
+                        Landmark::new(Location::Temple),
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_FABIEN_STATUE_MIDDLE.into(),
                         )),
-                        Collider::ball(5.),
+                        Collider::ball(LANDMARK_SENSOR_SIZE),
                         Sensor,
                         Name::new("Landmark Fabien Statue Middle"),
                     ));
                     parent.spawn((
-                        Landmark::new(PlayerLocation::Temple),
+                        Landmark::new(Location::Temple),
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_FABIEN_STATUE_RIGHT.into(),
                         )),
-                        Collider::ball(5.),
+                        Collider::ball(LANDMARK_SENSOR_SIZE),
                         Sensor,
                         Name::new("Landmark Fabien Statue Right"),
                     ));

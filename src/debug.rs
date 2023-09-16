@@ -7,7 +7,10 @@ use crate::{
     },
     characters::npcs::movement::{Chaser, NPCBehavior, TargetSeeker, TargetType},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
-    locations::temple::{OverlappingEntity, PlayerLocation},
+    locations::{
+        landmarks::Landmark,
+        temple::{Location, OverlappingEntity},
+    },
     menu::{ManorLightsPattern, ManorLightsTimer},
     GameState,
 };
@@ -19,10 +22,10 @@ impl Plugin for DebugPlugin {
         if cfg!(debug_assertions) {
             app.add_plugins((WorldInspectorPlugin::new(),))
                 .register_type::<GameState>()
-                .register_type::<PlayerLocation>()
+                .register_type::<Location>()
                 .add_plugins((
                     StateInspectorPlugin::<GameState>::default(),
-                    StateInspectorPlugin::<PlayerLocation>::default(),
+                    StateInspectorPlugin::<Location>::default(),
                 ))
                 /* -------------------------------------------------------------------------- */
                 /*                              Global Animation                              */
@@ -47,6 +50,7 @@ impl Plugin for DebugPlugin {
                 /*                                     Map                                    */
                 /* -------------------------------------------------------------------------- */
                 .register_type::<OverlappingEntity>()
+                .register_type::<Landmark>()
                 /* -------------------------------------------------------------------------- */
                 /*                                   Hitbox                                   */
                 /* -------------------------------------------------------------------------- */

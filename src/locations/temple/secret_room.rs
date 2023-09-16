@@ -9,7 +9,7 @@ use crate::{
     },
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{locations::secret_room::*, BACKGROUND_COLOR_INGAME},
-    locations::temple::{LocationSensor, OverlappingEntity, PlayerLocation, WallCollider},
+    locations::temple::{Location, LocationSensor, OverlappingEntity, WallCollider},
 };
 
 /* -------------------------------------------------------------------------- */
@@ -97,13 +97,13 @@ pub fn add_secret_room_cover(
 
 /// OPTIMIZE: OnEnter of secretRoom => visibility on, OnExit => off
 pub fn second_layer_fake_wall_visibility(
-    location: Res<State<PlayerLocation>>,
+    location: Res<State<Location>>,
     mut second_layer_fake_wall_query: Query<&mut Visibility, With<SecondLayerFakeWall>>,
 ) {
     if location.is_changed() {
         let mut visibility = second_layer_fake_wall_query.single_mut();
         *visibility = match location.get() {
-            PlayerLocation::SecretRoom => Visibility::Inherited,
+            Location::SecretRoom => Visibility::Inherited,
             _ => Visibility::Hidden,
         };
     }
@@ -291,7 +291,7 @@ pub fn setup_secret_room(
                 ActiveEvents::COLLISION_EVENTS,
                 Sensor,
                 LocationSensor {
-                    location: PlayerLocation::SecretRoom,
+                    location: Location::SecretRoom,
                 },
                 Name::new("Secret Sensor from Temple"),
             ));
@@ -313,7 +313,7 @@ pub fn setup_secret_room(
                                 },
                             },
                             Transform::default(),
-                            WallCollider(PlayerLocation::SecretRoom),
+                            WallCollider(Location::SecretRoom),
                         ));
                     }
                 });

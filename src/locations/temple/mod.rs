@@ -19,8 +19,8 @@ pub mod secret_room;
 #[derive(Component, Deref, DerefMut)]
 pub struct ZPosition(f32);
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
-pub enum PlayerLocation {
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, Component, States)]
+pub enum Location {
     #[default]
     Hall,
     Temple,
@@ -31,7 +31,7 @@ pub struct TemplePlugin;
 
 impl Plugin for TemplePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<PlayerLocation>()
+        app.add_state::<Location>()
             .add_event::<main_room::SecretBannerEvent>()
             .add_event::<hall::PropsInteractionEvent>()
             .add_event::<secret_room::SecretRoomTriggerEvent>()
@@ -70,15 +70,15 @@ impl Plugin for TemplePlugin {
                 main_room::secret_banner_interaction.run_if(in_temple_or_secret_room),
             )
             .add_systems(
-                OnEnter(PlayerLocation::Hall),
+                OnEnter(Location::Hall),
                 control_wall_collider.run_if(playing),
             )
             .add_systems(
-                OnEnter(PlayerLocation::Temple),
+                OnEnter(Location::Temple),
                 control_wall_collider.run_if(playing),
             )
             .add_systems(
-                OnEnter(PlayerLocation::SecretRoom),
+                OnEnter(Location::SecretRoom),
                 control_wall_collider.run_if(playing),
             );
     }
@@ -88,26 +88,23 @@ impl Plugin for TemplePlugin {
 /*                               Run If Systems                               */
 /* -------------------------------------------------------------------------- */
 
-fn in_hall(location: Res<State<PlayerLocation>>, game_state: Res<State<GameState>>) -> bool {
-    location.get() == &PlayerLocation::Hall && game_state.get() == &GameState::Playing
+fn in_hall(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
+    location.get() == &Location::Hall && game_state.get() == &GameState::Playing
 }
 
-fn _in_temple(location: Res<State<PlayerLocation>>, game_state: Res<State<GameState>>) -> bool {
-    location.get() == &PlayerLocation::Temple && game_state.get() == &GameState::Playing
+fn _in_temple(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
+    location.get() == &Location::Temple && game_state.get() == &GameState::Playing
 }
 
-fn _in_secret_room(
-    location: Res<State<PlayerLocation>>,
-    game_state: Res<State<GameState>>,
-) -> bool {
-    location.get() == &PlayerLocation::SecretRoom && game_state.get() == &GameState::Playing
+fn _in_secret_room(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
+    location.get() == &Location::SecretRoom && game_state.get() == &GameState::Playing
 }
 
 fn in_temple_or_secret_room(
-    location: Res<State<PlayerLocation>>,
+    location: Res<State<Location>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
-    (location.get() == &PlayerLocation::SecretRoom || location.get() == &PlayerLocation::Temple)
+    (location.get() == &Location::SecretRoom || location.get() == &Location::Temple)
         && game_state.get() == &GameState::Playing
 }
 
@@ -133,11 +130,11 @@ pub struct Chandelier;
 pub struct Flame;
 
 #[derive(Component)]
-pub struct WallCollider(pub PlayerLocation);
+pub struct WallCollider(pub Location);
 
 #[derive(Component)]
 pub struct LocationSensor {
-    pub location: PlayerLocation,
+    pub location: Location,
 }
 
 /// TODO: make it work
@@ -200,8 +197,8 @@ pub fn location_event(
     location_sensor_query: Query<(Entity, &LocationSensor)>,
     character_hitbox_query: Query<(Entity, &Parent), With<CharacterHitbox>>,
 
-    location: Res<State<PlayerLocation>>,
-    mut next_location: ResMut<NextState<PlayerLocation>>,
+    location: Res<State<Location>>,
+    mut next_location: ResMut<NextState<Location>>,
 ) {
     for collision_event in collision_events.iter() {
         match collision_event {
@@ -244,7 +241,7 @@ pub fn location_event(
 /// NOTE: Instead of OnEnter(...), just check if the state has changed
 fn control_wall_collider(
     mut commands: Commands,
-    player_location: Res<State<PlayerLocation>>,
+    player_location: Res<State<Location>>,
     wall_colliders_query: Query<(Entity, &WallCollider)>,
 ) {
     let current_location = player_location.get();

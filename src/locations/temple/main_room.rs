@@ -9,8 +9,8 @@ use crate::{
     interactions::{Interactible, InteractionSensor},
     locations::temple::{
         secret_room::{AddSecretRoomCoverEvent, RemoveSecretRoomCoverEvent},
-        Chandelier, DoorColliderClosed, DoorState, Flame, LocationSensor, OverlappingEntity,
-        PlayerLocation, WallCollider,
+        Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
+        OverlappingEntity, WallCollider,
     },
 };
 
@@ -44,13 +44,13 @@ pub struct SecretBannerEvent(pub DoorState);
 /// REFACTOR: SecretRoomCover
 pub fn secret_banner_interaction(
     mut secret_banner_event: EventReader<SecretBannerEvent>,
-    player_location: Res<State<PlayerLocation>>,
+    player_location: Res<State<Location>>,
 
     mut remove_secret_room_cover_event: EventWriter<RemoveSecretRoomCoverEvent>,
     mut add_secret_room_cover_event: EventWriter<AddSecretRoomCoverEvent>,
 ) {
     for SecretBannerEvent(door_state) in secret_banner_event.iter() {
-        if player_location.get() == &PlayerLocation::Temple {
+        if player_location.get() == &Location::Temple {
             match *door_state {
                 DoorState::Closed => {
                     remove_secret_room_cover_event.send(RemoveSecretRoomCoverEvent)
@@ -181,7 +181,7 @@ pub fn setup_main_room(
                 ActiveEvents::COLLISION_EVENTS,
                 Sensor,
                 LocationSensor {
-                    location: PlayerLocation::Temple,
+                    location: Location::Temple,
                 },
                 Name::new("Temple Sensor from Hall"),
             ));
@@ -192,7 +192,7 @@ pub fn setup_main_room(
                 ActiveEvents::COLLISION_EVENTS,
                 Sensor,
                 LocationSensor {
-                    location: PlayerLocation::Temple,
+                    location: Location::Temple,
                 },
                 Name::new("Temple Sensor from Secret Room"),
             ));
@@ -214,7 +214,7 @@ pub fn setup_main_room(
                                 },
                             },
                             Transform::default(),
-                            WallCollider(PlayerLocation::Temple),
+                            WallCollider(Location::Temple),
                         ));
                     }
                 });

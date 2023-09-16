@@ -16,8 +16,8 @@ use crate::{
     },
     interactions::{Interactible, InteractionSensor},
     locations::temple::{
-        Chandelier, DoorColliderClosed, DoorState, Flame, LocationSensor, OverlappingEntity,
-        PlayerLocation, WallCollider,
+        Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
+        OverlappingEntity, WallCollider,
     },
 };
 
@@ -262,7 +262,7 @@ pub fn setup_hall(
                 ActiveEvents::COLLISION_EVENTS,
                 Sensor,
                 LocationSensor {
-                    location: PlayerLocation::Hall,
+                    location: Location::Hall,
                 },
                 Name::new("Hall Sensor from Temple"),
             ));
@@ -296,7 +296,7 @@ pub fn setup_hall(
                                 },
                             },
                             Transform::default(),
-                            WallCollider(PlayerLocation::Hall),
+                            WallCollider(Location::Hall),
                         ));
                     }
                 });
