@@ -90,6 +90,7 @@ pub mod character {
     pub const COLUMN_FRAME_IDLE_START: usize = 4;
     pub const COLUMN_FRAME_IDLE_END: usize = 5;
 
+    pub const SPRITESHEET_LINE_NUMBER: usize = 16;
     pub const SPRITESHEET_COLUMN_NUMBER: usize = 6;
 
     pub mod player {

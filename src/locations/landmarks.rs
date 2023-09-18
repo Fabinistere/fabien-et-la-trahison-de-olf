@@ -4,8 +4,7 @@
 //! For example, it could be the throne side, statue admiration, etc.
 
 use bevy::prelude::*;
-use bevy_ecs::query::{ReadOnlyWorldQuery, WorldQuery};
-use bevy_rapier2d::prelude::{Collider, CollisionEvent, Sensor};
+use bevy_rapier2d::prelude::{ActiveEvents, Collider, CollisionEvent, Sensor};
 use rand::seq::IteratorRandom;
 use std::time::Duration;
 
@@ -43,14 +42,13 @@ pub enum LandmarkStatus {
     #[default]
     Free,
     Reserved,
-    Occupied,
+    OccupiedBy(Entity),
 }
 
 /// TEMP: if there is only the field `status` just use the enum instead.
 #[derive(Reflect, Debug, Component)]
 pub struct Landmark {
     pub status: LandmarkStatus,
-    /// DOC: ambiguous name
     pub location: Location,
 }
 
@@ -73,10 +71,13 @@ pub enum LandmarkReservationError {
 /// LandmarkReservationError
 pub fn reserved_random_free_landmark(
     landmark_sensor_query: &mut Query<(Entity, &mut Landmark), With<Sensor>>,
+    location: Location,
 ) -> Result<Entity, LandmarkReservationError> {
     match (*landmark_sensor_query)
         .iter_mut()
-        .filter(|(_, landmark)| landmark.status == LandmarkStatus::Free)
+        .filter(|(_, landmark)| {
+            landmark.status == LandmarkStatus::Free && landmark.location == location
+        })
         .choose(&mut rand::thread_rng())
     {
         None => Err(LandmarkReservationError::NoFreeLandmarks),
@@ -99,69 +100,91 @@ fn landmark_arrival(
     mut commands: Commands,
 
     character_hitbox_query: Query<(Entity, &Parent, &Name), With<CharacterHitbox>>,
-    mut npc_query: Query<(&mut NPCBehavior, &Name), With<NPC>>,
+    mut npc_query: Query<(Entity, &mut NPCBehavior, &Name), With<NPC>>,
     player_query: Query<Entity, With<Player>>,
 
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
     // parent_query: Query<&Parent>,
 ) {
     for collision_event in collision_events.iter() {
-        let entity_1 = collision_event.entities().0;
-        let entity_2 = collision_event.entities().1;
+        // info!("{:#?}", collision_event);
+        let (entity_1, entity_2) = collision_event.entities();
 
-        match (
+        if let (Err(_), Ok((character_hitbox, character_parent, name)))
+        | (Ok((character_hitbox, character_parent, name)), Err(_)) = (
             character_hitbox_query.get(entity_1),
             character_hitbox_query.get(entity_2),
         ) {
-            (Err(_), Ok((character_hitbox, character_parent, name)))
-            | (Ok((character_hitbox, character_parent, name)), Err(_)) => {
-                let potential_landmark = if character_hitbox == entity_1 {
-                    entity_2
-                } else {
-                    entity_1
-                };
-                if let Ok((landmark_entity, mut landmark)) =
-                    landmark_sensor_query.get_mut(potential_landmark)
-                {
-                    if let Ok((mut behavior, _npc_name)) = npc_query.get_mut(**character_parent) {
-                        if let NPCBehavior::LandmarkSeeking(landmark_destination) = *behavior {
-                            if landmark_destination == landmark_entity {
-                                match landmark.status {
-                                    LandmarkStatus::Occupied => {
-                                        // send an event to redirect the npc
-                                        warn!("This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent)
-                                    }
-                                    _ => {
-                                        landmark.status = LandmarkStatus::Occupied;
-                                        // TODO: Or start dialog with the other
-                                        info!(target: "Start Rest", "{:?}, {}", **character_parent, name);
-                                        commands.entity(**character_parent).insert(RestTime {
-                                            timer: Timer::new(
-                                                Duration::from_secs(REST_TIMER),
-                                                TimerMode::Once,
-                                            ),
-                                        });
-                                        let next_destination = reserved_random_free_landmark(
-                                            &mut landmark_sensor_query,
-                                        )
-                                        .unwrap();
+            let potential_landmark = if character_hitbox == entity_1 {
+                entity_2
+            } else {
+                entity_1
+            };
+            if let Ok((landmark_entity, mut landmark)) =
+                landmark_sensor_query.get_mut(potential_landmark)
+            {
+                if let Ok((npc, mut behavior, _npc_name)) = npc_query.get_mut(**character_parent) {
+                    if let NPCBehavior::LandmarkSeeking(landmark_destination, location) = *behavior
+                    {
+                        // A npc enters/exits a landmark sensor
+                        match landmark.status {
+                            LandmarkStatus::OccupiedBy(occupant) => {
+                                if collision_event.is_started()
+                                    && landmark_destination == landmark_entity
+                                {
+                                    // info!("This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent)
+                                    let next_destination = reserved_random_free_landmark(
+                                        &mut landmark_sensor_query,
+                                        location,
+                                    )
+                                    .unwrap();
+                                    *behavior =
+                                        NPCBehavior::LandmarkSeeking(next_destination, location);
+                                } else if collision_event.is_stopped() && occupant == npc {
+                                    landmark.status = LandmarkStatus::Free;
+                                }
+                            }
+                            _ => {
+                                if collision_event.is_started()
+                                    && landmark_destination == landmark_entity
+                                {
+                                    landmark.status = LandmarkStatus::OccupiedBy(npc);
+                                    // TODO: Or start dialog with the other
+                                    info!(target: "Start Rest", "{:?}, {}", **character_parent, name);
+                                    commands.entity(**character_parent).insert(RestTime {
+                                        timer: Timer::new(
+                                            Duration::from_secs(REST_TIMER),
+                                            TimerMode::Once,
+                                        ),
+                                    });
+                                    let next_destination = reserved_random_free_landmark(
+                                        &mut landmark_sensor_query,
+                                        location,
+                                    )
+                                    .unwrap();
 
-                                        *behavior = NPCBehavior::LandmarkSeeking(next_destination);
-                                    }
+                                    *behavior =
+                                        NPCBehavior::LandmarkSeeking(next_destination, location);
                                 }
                             }
                         }
-                    } else if player_query.get(**character_parent).is_ok() {
-                        match landmark.status {
-                            LandmarkStatus::Occupied => {}
-                            LandmarkStatus::Free | LandmarkStatus::Reserved => {
-                                landmark.status = LandmarkStatus::Occupied
+                    }
+                } else if player_query.get(**character_parent).is_ok() {
+                    // The player enters/exits a landmark
+                    match landmark.status {
+                        LandmarkStatus::OccupiedBy(occupant) => {
+                            if collision_event.is_stopped() && occupant == **character_parent {
+                                landmark.status = LandmarkStatus::Free;
+                            }
+                        }
+                        LandmarkStatus::Free | LandmarkStatus::Reserved => {
+                            if collision_event.is_started() {
+                                landmark.status = LandmarkStatus::OccupiedBy(**character_parent)
                             }
                         }
                     }
                 }
             }
-            _ => {}
         }
     }
 }
@@ -172,8 +195,14 @@ fn landmark_arrival(
 
 fn spawn_landmarks(mut commands: Commands) {
     commands
-        .spawn(TransformBundle::default())
+        .spawn((TransformBundle::default(), Name::new("Landmarks")))
         .with_children(|parent| {
+            let landmark_sensor = (
+                Collider::ball(LANDMARK_SENSOR_SIZE),
+                ActiveEvents::COLLISION_EVENTS,
+                Sensor,
+            );
+
             parent
                 .spawn((
                     LandmarkGroup,
@@ -186,17 +215,15 @@ fn spawn_landmarks(mut commands: Commands) {
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_CAT_STATUE_LEFT.into(),
                         )),
-                        Collider::ball(LANDMARK_SENSOR_SIZE),
-                        Sensor,
                         Name::new("Landmark Cat Statue Left"),
+                        landmark_sensor.clone(),
                     ));
                     parent.spawn((
                         Landmark::new(Location::Temple),
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_CAT_STATUE_MIDDLE.into(),
                         )),
-                        Collider::ball(LANDMARK_SENSOR_SIZE),
-                        Sensor,
+                        landmark_sensor.clone(),
                         Name::new("Landmark Cat Statue Middle"),
                     ));
                     parent.spawn((
@@ -204,11 +231,11 @@ fn spawn_landmarks(mut commands: Commands) {
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_CAT_STATUE_RIGHT.into(),
                         )),
-                        Collider::ball(LANDMARK_SENSOR_SIZE),
-                        Sensor,
+                        landmark_sensor.clone(),
                         Name::new("Landmark Cat Statue Right"),
                     ));
                 });
+
             parent
                 .spawn((
                     LandmarkGroup,
@@ -221,8 +248,7 @@ fn spawn_landmarks(mut commands: Commands) {
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_FABIEN_STATUE_LEFT.into(),
                         )),
-                        Collider::ball(LANDMARK_SENSOR_SIZE),
-                        Sensor,
+                        landmark_sensor.clone(),
                         Name::new("Landmark Fabien Statue Left"),
                     ));
                     parent.spawn((
@@ -230,8 +256,7 @@ fn spawn_landmarks(mut commands: Commands) {
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_FABIEN_STATUE_MIDDLE.into(),
                         )),
-                        Collider::ball(LANDMARK_SENSOR_SIZE),
-                        Sensor,
+                        landmark_sensor.clone(),
                         Name::new("Landmark Fabien Statue Middle"),
                     ));
                     parent.spawn((
@@ -239,8 +264,7 @@ fn spawn_landmarks(mut commands: Commands) {
                         TransformBundle::from_transform(Transform::from_translation(
                             LANDMARK_FABIEN_STATUE_RIGHT.into(),
                         )),
-                        Collider::ball(LANDMARK_SENSOR_SIZE),
-                        Sensor,
+                        landmark_sensor,
                         Name::new("Landmark Fabien Statue Right"),
                     ));
                 });

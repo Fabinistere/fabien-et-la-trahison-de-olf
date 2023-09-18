@@ -19,7 +19,7 @@ pub mod secret_room;
 #[derive(Component, Deref, DerefMut)]
 pub struct ZPosition(f32);
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, Component, States)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, Component, States)]
 pub enum Location {
     #[default]
     Hall,

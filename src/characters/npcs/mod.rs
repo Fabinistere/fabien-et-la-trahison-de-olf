@@ -12,16 +12,13 @@ use yml_dialog::DialogNode;
 use crate::{
     animations::{
         sprite_sheet_animation::{AnimationIndices, CharacterState},
-        CharacterSpriteSheet,
+        CharacterSpriteSheet, GlobalAnimationIndices,
     },
     characters::{movement::MovementBundle, npcs::movement::NPCBehavior, CharacterHitbox},
     combat::Reputation,
     constants::character::{npcs::*, player::PLAYER_SPAWN, *},
     interactions::{Interactible, InteractionSensor},
-    locations::{
-        landmarks::{reserved_random_free_landmark, Landmark, LandmarkStatus},
-        temple::OverlappingEntity,
-    },
+    locations::temple::OverlappingEntity,
     ui::dialog_systems::{CurrentInterlocutor, DialogMap},
     GameState, HUDState,
 };
@@ -30,8 +27,6 @@ use self::{
     aggression::{DetectionRangeSensor, PursuitRangeSensor},
     movement::{FollowRangeSensor, TargetSeeker, TargetType},
 };
-
-use super::movement::CharacterCloseSensor;
 
 #[derive(Default)]
 pub struct NPCPlugin;
@@ -145,27 +140,9 @@ fn spawn_characters(
     mut commands: Commands,
     characters_spritesheet: Res<CharacterSpriteSheet>,
     mut dialogs: ResMut<DialogMap>,
-    mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
+    global_animations_indices: Res<GlobalAnimationIndices>,
+    // mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
 ) {
-    let mut global_animations_indices: Vec<Vec<(usize, usize, CharacterState)>> = Vec::new();
-    for line in 0..16 {
-        global_animations_indices.push(vec![
-            // Run Indexes for each line
-            (
-                line * SPRITESHEET_COLUMN_NUMBER,
-                line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_RUN_END,
-                CharacterState::Idle,
-                // CharacterState::Run, ?
-            ),
-            // Idle Indexes for each line
-            (
-                line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
-                line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_END,
-                CharacterState::Idle,
-            ),
-        ]);
-    }
-
     /* -------------------------------------------------------------------------- */
     /*                                   Olf Cat                                  */
     /* -------------------------------------------------------------------------- */
@@ -365,27 +342,9 @@ fn spawn_vilains(
     mut commands: Commands,
     characters_spritesheet: Res<CharacterSpriteSheet>,
     mut dialogs: ResMut<DialogMap>,
+    global_animations_indices: Res<GlobalAnimationIndices>,
     // mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
 ) {
-    let mut global_animations_indices: Vec<Vec<(usize, usize, CharacterState)>> = Vec::new();
-    for line in 0..16 {
-        global_animations_indices.push(vec![
-            // Run Indexes for each line
-            (
-                line * SPRITESHEET_COLUMN_NUMBER,
-                line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_RUN_END,
-                CharacterState::Idle,
-                // CharacterState::Run, ?
-            ),
-            // Idle Indexes for each line
-            (
-                line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
-                line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_END,
-                CharacterState::Idle,
-            ),
-        ]);
-    }
-
     /* -------------------------------------------------------------------------- */
     /*                                   Vilains                                  */
     /* -------------------------------------------------------------------------- */

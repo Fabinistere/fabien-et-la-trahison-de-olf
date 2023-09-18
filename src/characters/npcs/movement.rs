@@ -25,7 +25,10 @@ use crate::{
     collisions::CollisionEventExt,
     combat::{CombatEvent, FairPlayTimer, Reputation},
     constants::TILE_SIZE,
-    locations::landmarks::{reserved_random_free_landmark, Landmark, LandmarkStatus},
+    locations::{
+        landmarks::{reserved_random_free_landmark, Landmark, LandmarkStatus},
+        temple::Location,
+    },
 };
 
 // pub const PROXIMITY_RADIUS: f32 = 64.;
@@ -38,7 +41,7 @@ use crate::{
 pub enum NPCBehavior {
     /// The entity runs to a specify location and occupy this zone.
     /// Tourist butterfly.
-    LandmarkSeeking(Entity),
+    LandmarkSeeking(Entity, Location),
     Camping,
     Follow {
         target: Entity,
@@ -226,15 +229,16 @@ pub fn npc_movement(
         let (vel_x, vel_y) = match potential_chaser {
             None => match *behavior {
                 NPCBehavior::Camping => (0., 0.),
-                NPCBehavior::LandmarkSeeking(destination) => {
+                NPCBehavior::LandmarkSeeking(destination, location) => {
                     let (_, landmark) = landmark_sensor_query.get(destination).unwrap();
                     let landmark_transform = pos_query.get(destination).unwrap();
                     match landmark.status {
-                        LandmarkStatus::Occupied => {
+                        LandmarkStatus::OccupiedBy(_) => {
                             // FIXME: Match the LandmarkReservationError
                             let next_destination =
-                                reserved_random_free_landmark(&mut landmark_sensor_query).unwrap();
-                            *behavior = NPCBehavior::LandmarkSeeking(next_destination);
+                                reserved_random_free_landmark(&mut landmark_sensor_query, location)
+                                    .unwrap();
+                            *behavior = NPCBehavior::LandmarkSeeking(next_destination, location);
                             let next_transform = pos_query.get(next_destination).unwrap();
                             move_to(next_transform, transform, speed)
                         }
@@ -320,8 +324,8 @@ pub fn chase_management(
     mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
     for collision_event in collision_events.iter() {
-        let entity_1 = collision_event.entities().0;
-        let entity_2 = collision_event.entities().1;
+        // info!("{:#?}", collision_event);
+        let (entity_1, entity_2) = collision_event.entities();
 
         // if rapier_context.intersection_pair(entity_1, entity_2) == Some(true) {
         //     info!("Some(true) with {:#?}, {:#?}", entity_1, entity_2);
@@ -517,52 +521,6 @@ fn move_to(target_transform: &GlobalTransform, transform: &Transform, speed: &Sp
     }
 
     (vel_x, vel_y)
-}
-
-/// Give velocity x and y value to move forward a certain vec3
-fn move_to_dest(target_vec3: Vec3, transform: &Transform, speed: &Speed) -> (f32, f32) {
-    let up = target_vec3.y > transform.translation.y;
-    let down = target_vec3.y < transform.translation.y;
-    let left = target_vec3.x < transform.translation.x;
-    let right = target_vec3.x > transform.translation.x;
-
-    let x_axis = -(left as i8) + right as i8;
-    let y_axis = -(down as i8) + up as i8;
-
-    // println!("x: {}, y: {}", x_axis, y_axis);
-
-    let mut vel_x = x_axis as f32 * **speed;
-    let mut vel_y = y_axis as f32 * **speed;
-
-    if x_axis != 0 && y_axis != 0 {
-        vel_x *= (std::f32::consts::PI / 4.).cos();
-        vel_y *= (std::f32::consts::PI / 4.).cos();
-    }
-
-    (vel_x, vel_y)
-}
-
-/// # Parameters
-///
-/// position: of a entity
-/// direction: the middle of the future zone,
-///            is on the middle of the segment [a,c]
-///
-/// # Return
-/// returns true if the entity is on the square around the direction point
-///
-/// # Note
-///
-/// XXX: Rework this Approximation Louche
-fn close(position: Vec3, direction: Vec3, range: f32) -> bool {
-    // direction.x == position.x &&
-    // direction.y == position.y
-
-    let a = Vec3::new(direction.x - range, direction.y + range, direction.z);
-
-    let c = Vec3::new(direction.x + range, direction.y - range, direction.z);
-
-    position.x >= a.x && position.x <= c.x && position.y <= a.y && position.y >= c.y
 }
 
 /**

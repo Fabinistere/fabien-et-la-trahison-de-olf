@@ -44,6 +44,7 @@ pub struct SecretRoomTriggerEvent {
     pub started: bool,
 }
 
+/// IDEA: Only remove the cover when entering the secret room
 #[derive(Event)]
 pub struct RemoveSecretRoomCoverEvent;
 
