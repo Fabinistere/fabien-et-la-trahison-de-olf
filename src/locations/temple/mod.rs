@@ -320,6 +320,7 @@ pub fn door_interact(
     }
 }
 
+/// FIXME: When spamming the door, an event can drop and the sprite.index can overflow
 pub fn open_close_door(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlas>>,

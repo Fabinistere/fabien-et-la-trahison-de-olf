@@ -18,7 +18,10 @@ use crate::{
     combat::Reputation,
     constants::character::{npcs::*, player::PLAYER_SPAWN, *},
     interactions::{Interactible, InteractionSensor},
-    locations::temple::OverlappingEntity,
+    locations::{
+        landmarks::{reserved_random_free_landmark, Landmark},
+        temple::{Location, OverlappingEntity},
+    },
     ui::dialog_systems::{CurrentInterlocutor, DialogMap},
     GameState, HUDState,
 };
@@ -141,7 +144,7 @@ fn spawn_characters(
     characters_spritesheet: Res<CharacterSpriteSheet>,
     mut dialogs: ResMut<DialogMap>,
     global_animations_indices: Res<GlobalAnimationIndices>,
-    // mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
+    mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
 ) {
     /* -------------------------------------------------------------------------- */
     /*                                   Olf Cat                                  */
@@ -198,7 +201,7 @@ fn spawn_characters(
     /*                                    NPCs                                    */
     /* -------------------------------------------------------------------------- */
 
-    // let fabien_dialog_path = "data/fabien_dialog.yml";
+    let fabien_dialog_path = "data/fabien_dialog.yml";
     let supreme_god_dialog_path = "data/supreme_god_dialog.yml";
     let hugo_dialog_path = "data/hugo_dialog.yml";
     // let olf_dialog_path = "data/olf_dialog.yml";
@@ -220,32 +223,25 @@ fn spawn_characters(
             NPCBehavior::Camping,
             hugo_dialog_path,
         ),
-        // (
-        //     "Vampire",
-        //     VAMPIRE_LINE,
-        //     PLAYER_SPAWN,
-        //     Reputation::new(100, 0),
-        //     NPCBehavior::LandmarkSeeking(reserved_random_free_landmark(&mut landmark_sensor_query).unwrap()),
-        //     fabien_dialog_path,
-        // ),
-        // (
-        //     "Olf",
-        //     OLF_LINE,
-        //     OLF_SPAWN_POSITION,
-        //     Reputation::new(0, 100),
-        //     olf_dialog_path,
-        // ),
+        (
+            "Vampire",
+            VAMPIRE_LINE,
+            VAMPIRE_SPAWN_POSITION,
+            Reputation::new(100, 0),
+            NPCBehavior::LandmarkSeeking(
+                // match if there is none
+                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
+                    .unwrap(),
+                Location::Temple,
+            ),
+            fabien_dialog_path,
+        ),
     ];
 
     for info in npcs_infos {
         let mut npc_animation_indices = AnimationIndices(HashMap::new());
         npc_animation_indices.insert(CharacterState::Run, global_animations_indices[info.1][0]);
         npc_animation_indices.insert(CharacterState::Idle, global_animations_indices[info.1][1]);
-
-        // match if there is none
-        // only check the landmark in their zone
-        // let free_random_landmark =
-        //     reserved_random_free_landmark(&mut landmark_sensor_query).unwrap();
 
         let npc = commands
             .spawn((

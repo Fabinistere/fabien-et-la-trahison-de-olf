@@ -5,7 +5,6 @@ use bevy_ecs::query::QueryEntityError;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, RapierContext, Sensor, Velocity,
 };
-use rand::Rng;
 
 use crate::{
     animations::sprite_sheet_animation::CharacterState,
@@ -24,7 +23,7 @@ use crate::{
     },
     collisions::CollisionEventExt,
     combat::{CombatEvent, FairPlayTimer, Reputation},
-    constants::TILE_SIZE,
+    constants::character::CHAR_HITBOX_Y_OFFSET,
     locations::{
         landmarks::{reserved_random_free_landmark, Landmark, LandmarkStatus},
         temple::Location,
@@ -240,9 +239,9 @@ pub fn npc_movement(
                                     .unwrap();
                             *behavior = NPCBehavior::LandmarkSeeking(next_destination, location);
                             let next_transform = pos_query.get(next_destination).unwrap();
-                            move_to(next_transform, transform, speed)
+                            move_to(next_transform, false, transform, speed)
                         }
-                        _ => move_to(landmark_transform, transform, speed),
+                        _ => move_to(landmark_transform, false, transform, speed),
                     }
                 }
                 NPCBehavior::Follow { target, close } => {
@@ -250,7 +249,7 @@ pub fn npc_movement(
                         (0., 0.)
                     } else {
                         let target_transform = pos_query.get(target).unwrap();
-                        move_to(target_transform, transform, speed)
+                        move_to(target_transform, true, transform, speed)
                     }
                 }
             },
@@ -259,7 +258,7 @@ pub fn npc_movement(
                     (0., 0.)
                 } else {
                     let target_transform = pos_query.get(*target).unwrap();
-                    move_to(target_transform, transform, speed)
+                    move_to(target_transform, true, transform, speed)
                 }
             }
         };
@@ -501,9 +500,23 @@ pub fn chase_management(
 }
 
 /// Give velocity x and y value to move forward a certain target
-fn move_to(target_transform: &GlobalTransform, transform: &Transform, speed: &Speed) -> (f32, f32) {
-    let up = target_transform.translation().y > transform.translation.y;
-    let down = target_transform.translation().y < transform.translation.y;
+fn move_to(
+    target_transform: &GlobalTransform,
+    target_is_a_character: bool,
+    transform: &Transform,
+    speed: &Speed,
+) -> (f32, f32) {
+    // REFACTOR: use the max_step possible and see if the difference can be lowered.
+    let target_y_offset = if target_is_a_character {
+        CHAR_HITBOX_Y_OFFSET
+    } else {
+        0.
+    };
+
+    let up = target_transform.translation().y + target_y_offset
+        > transform.translation.y + CHAR_HITBOX_Y_OFFSET;
+    let down = target_transform.translation().y + target_y_offset
+        < transform.translation.y + CHAR_HITBOX_Y_OFFSET;
     let left = target_transform.translation().x < transform.translation.x;
     let right = target_transform.translation().x > transform.translation.x;
 
@@ -521,28 +534,4 @@ fn move_to(target_transform: &GlobalTransform, transform: &Transform, speed: &Sp
     }
 
     (vel_x, vel_y)
-}
-
-/**
- * param:
- *  force
- *  range: cuboid ? no ball
- * return:
- *  Vec3
- */
-fn give_a_direction() -> Vec3 {
-    let x =
-        rand::thread_rng().gen_range(-100 * (TILE_SIZE as i32)..100 * (TILE_SIZE as i32)) as f32;
-    let y =
-        rand::thread_rng().gen_range(-100 * (TILE_SIZE as i32)..100 * (TILE_SIZE as i32)) as f32;
-
-    /* shape ideas
-     * (x, y) -> A
-     * (x+1, y-1) -> C
-     * (x+0.5, y-0.5) -> milieu
-     */
-
-    let direction: Vec3 = Vec3::new(x, y, 0.);
-
-    direction
 }

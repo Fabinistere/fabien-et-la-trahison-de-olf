@@ -1,5 +1,5 @@
 use crate::{
-    characters::npcs::CharacterInteractionEvent,
+    characters::{npcs::CharacterInteractionEvent, player::PlayerInteractionSensor},
     constants::{
         character::npcs::{CHARACTER_INTERACT_BUTTON_POSITION, NPC_TALK_INTERACTION_ID},
         interactions::INTERACT_BUTTON_SCALE,
@@ -85,22 +85,26 @@ pub fn setup_interactions(mut commands: Commands, asset_server: Res<AssetServer>
 }
 
 /// REFACTOR: to only the character hitbox triggers it
+/// BUG: When interact with an object, a random npc who's moving can be triggered at the same time
 fn interaction_icon_events(
     mut collision_events: EventReader<CollisionEvent>,
-    mut interaction_icon_event: EventWriter<InteractionIconEvent>,
-    // mut secret_room_trigger_event: EventWriter<SecretRoomTriggerEvent>,
     interactibles_query: Query<(Entity, &Children), With<Interactible>>,
-    // secret_room_sensor_query: Query<Entity, With<SecretRoomSensor>>,
     interaction_sensor_query: Query<Entity, With<InteractionSensor>>,
+    player_interaction_sensor_query: Query<Entity, With<PlayerInteractionSensor>>,
+
+    mut interaction_icon_event: EventWriter<InteractionIconEvent>,
 ) {
     for collision_event in collision_events.iter() {
         // info!("{:#?}", collision_event);
         match collision_event {
             CollisionEvent::Started(e1, e2, _) => {
+                // REFACTOR: match the e1, e2 with `interaction_sensor_query` and use their `&Parent` to send the `InteractionIconEvent`
+                // OPTIMIZE: EZ - O(n) for EACH collision to O(1).
                 for (entity, children) in interactibles_query.iter() {
                     match interaction_sensor_query.get(children[0]) {
                         Err(e) => error!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
-                        Ok(interaction_sensor) => if *e1 == interaction_sensor || *e2 == interaction_sensor {
+                        Ok(interaction_sensor) => if *e1 == interaction_sensor || *e2 == interaction_sensor
+                        && (player_interaction_sensor_query.get(*e1).is_ok() || player_interaction_sensor_query.get(*e2).is_ok()) {
                             interaction_icon_event.send(InteractionIconEvent {
                                 entering_range: true,
                                 entity,
@@ -114,7 +118,8 @@ fn interaction_icon_events(
                     match interaction_sensor_query.get(children[0]) {
                         Err(e) => error!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
                         Ok(interaction_sensor) =>
-                            if *e1 == interaction_sensor || *e2 == interaction_sensor {
+                            if *e1 == interaction_sensor || *e2 == interaction_sensor
+                            && (player_interaction_sensor_query.get(*e1).is_ok() || player_interaction_sensor_query.get(*e2).is_ok()) {
                                 interaction_icon_event.send(InteractionIconEvent {
                                     entering_range: false,
                                     entity,
@@ -127,6 +132,7 @@ fn interaction_icon_events(
     }
 }
 
+/// REFACTOR: don't (de)spawn the icon but (de)activate it
 pub fn interaction_icon(
     mut commands: Commands,
     mut interaction_icon_events: EventReader<InteractionIconEvent>,

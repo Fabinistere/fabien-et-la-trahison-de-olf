@@ -45,7 +45,6 @@ pub enum LandmarkStatus {
     OccupiedBy(Entity),
 }
 
-/// TEMP: if there is only the field `status` just use the enum instead.
 #[derive(Reflect, Debug, Component)]
 pub struct Landmark {
     pub status: LandmarkStatus,
@@ -95,6 +94,7 @@ pub struct LandmarkGroup;
 /*                             Landmark Collision                             */
 /* -------------------------------------------------------------------------- */
 
+/// NOTE: To force NPCs to one particular spot of the landmark, create/use a `CharacterPrecisePosition` with is a sensor limited to point
 fn landmark_arrival(
     mut collision_events: EventReader<CollisionEvent>,
     mut commands: Commands,
@@ -150,7 +150,7 @@ fn landmark_arrival(
                                 {
                                     landmark.status = LandmarkStatus::OccupiedBy(npc);
                                     // TODO: Or start dialog with the other
-                                    info!(target: "Start Rest", "{:?}, {}", **character_parent, name);
+                                    // info!(target: "Start Rest", "{:?}, {}", **character_parent, name);
                                     commands.entity(**character_parent).insert(RestTime {
                                         timer: Timer::new(
                                             Duration::from_secs(REST_TIMER),
@@ -203,70 +203,62 @@ fn spawn_landmarks(mut commands: Commands) {
                 Sensor,
             );
 
-            parent
-                .spawn((
-                    LandmarkGroup,
-                    TransformBundle::default(),
-                    Name::new("Cat Statue Discussion Group"),
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Landmark::new(Location::Temple),
-                        TransformBundle::from_transform(Transform::from_translation(
-                            LANDMARK_CAT_STATUE_LEFT.into(),
-                        )),
-                        Name::new("Landmark Cat Statue Left"),
-                        landmark_sensor.clone(),
-                    ));
-                    parent.spawn((
-                        Landmark::new(Location::Temple),
-                        TransformBundle::from_transform(Transform::from_translation(
-                            LANDMARK_CAT_STATUE_MIDDLE.into(),
-                        )),
-                        landmark_sensor.clone(),
-                        Name::new("Landmark Cat Statue Middle"),
-                    ));
-                    parent.spawn((
-                        Landmark::new(Location::Temple),
-                        TransformBundle::from_transform(Transform::from_translation(
-                            LANDMARK_CAT_STATUE_RIGHT.into(),
-                        )),
-                        landmark_sensor.clone(),
-                        Name::new("Landmark Cat Statue Right"),
-                    ));
-                });
+            /* -------------------------------------------------------------------------- */
+            /*                                   Groups                                   */
+            /* -------------------------------------------------------------------------- */
 
-            parent
-                .spawn((
-                    LandmarkGroup,
-                    TransformBundle::default(),
-                    Name::new("Fabien Statue Discussion Group"),
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Landmark::new(Location::Temple),
-                        TransformBundle::from_transform(Transform::from_translation(
-                            LANDMARK_FABIEN_STATUE_LEFT.into(),
-                        )),
-                        landmark_sensor.clone(),
-                        Name::new("Landmark Fabien Statue Left"),
-                    ));
-                    parent.spawn((
-                        Landmark::new(Location::Temple),
-                        TransformBundle::from_transform(Transform::from_translation(
-                            LANDMARK_FABIEN_STATUE_MIDDLE.into(),
-                        )),
-                        landmark_sensor.clone(),
-                        Name::new("Landmark Fabien Statue Middle"),
-                    ));
-                    parent.spawn((
-                        Landmark::new(Location::Temple),
-                        TransformBundle::from_transform(Transform::from_translation(
-                            LANDMARK_FABIEN_STATUE_RIGHT.into(),
-                        )),
-                        landmark_sensor,
-                        Name::new("Landmark Fabien Statue Right"),
-                    ));
-                });
+            for (group, group_name) in LANDMARK_GROUPS {
+                parent
+                    .spawn((
+                        LandmarkGroup,
+                        TransformBundle::default(),
+                        Name::new(format!("{group_name} Discussion Group")),
+                    ))
+                    .with_children(|parent| {
+                        for (position, landmark_name) in group {
+                            parent.spawn((
+                                Landmark::new(Location::Temple),
+                                TransformBundle::from_transform(Transform::from_translation(
+                                    position.into(),
+                                )),
+                                Name::new(format!("Landmark {group_name} {landmark_name}")),
+                                landmark_sensor.clone(),
+                            ));
+                        }
+                    });
+            }
+
+            /* -------------------------------------------------------------------------- */
+            /*                                 Singletons                                 */
+            /* -------------------------------------------------------------------------- */
+
+            for (position, landmark_name) in LANDMARK_SINGLETONS {
+                parent.spawn((
+                    Landmark::new(Location::Temple),
+                    TransformBundle::from_transform(Transform::from_translation(position.into())),
+                    Name::new(format!("Landmark {landmark_name}")),
+                    landmark_sensor.clone(),
+                ));
+            }
+
+            for (landmarks, pillar_name) in LANDMARK_PILLARS {
+                parent
+                    .spawn((
+                        TransformBundle::default(),
+                        Name::new(format!("{pillar_name}'s landmarks")),
+                    ))
+                    .with_children(|parent| {
+                        for (position, landmark_name) in landmarks {
+                            parent.spawn((
+                                Landmark::new(Location::Temple),
+                                TransformBundle::from_transform(Transform::from_translation(
+                                    position.into(),
+                                )),
+                                Name::new(format!("Landmark {pillar_name} {landmark_name}")),
+                                landmark_sensor.clone(),
+                            ));
+                        }
+                    });
+            }
         });
 }
