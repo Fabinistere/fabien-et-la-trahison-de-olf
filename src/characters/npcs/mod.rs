@@ -103,6 +103,10 @@ impl Plugin for NPCPlugin {
 #[derive(Component)]
 pub struct NPC;
 
+// /// Global Direction TODO: or StareAt Entity
+// #[derive(Deref, Component)]
+// pub struct StareAt(pub Entity);
+
 #[derive(Component)]
 pub struct OlfCat;
 

@@ -45,17 +45,35 @@ pub enum LandmarkStatus {
     OccupiedBy(Entity),
 }
 
+#[derive(Clone, Copy, Reflect, Debug, Component)]
+pub enum Direction {
+    Right,
+    Left,
+}
+
+impl From<Direction> for bool {
+    fn from(direction: Direction) -> bool {
+        match direction {
+            Direction::Left => true,
+            Direction::Right => false,
+        }
+    }
+}
+
 #[derive(Reflect, Debug, Component)]
 pub struct Landmark {
     pub status: LandmarkStatus,
     pub location: Location,
+    /// Used for `flip_x`.
+    pub direction: Option<Direction>,
 }
 
 impl Landmark {
-    pub fn new(landmark_location: Location) -> Self {
+    pub fn new(landmark_location: Location, direction: Option<Direction>) -> Self {
         Landmark {
             status: LandmarkStatus::default(),
             location: landmark_location,
+            direction,
         }
     }
 }
@@ -110,8 +128,8 @@ fn landmark_arrival(
         // info!("{:#?}", collision_event);
         let (entity_1, entity_2) = collision_event.entities();
 
-        if let (Err(_), Ok((character_hitbox, character_parent, name)))
-        | (Ok((character_hitbox, character_parent, name)), Err(_)) = (
+        if let (Err(_), Ok((character_hitbox, character_parent, _name)))
+        | (Ok((character_hitbox, character_parent, _name)), Err(_)) = (
             character_hitbox_query.get(entity_1),
             character_hitbox_query.get(entity_2),
         ) {
@@ -142,6 +160,7 @@ fn landmark_arrival(
                                         NPCBehavior::LandmarkSeeking(next_destination, location);
                                 } else if collision_event.is_stopped() && occupant == npc {
                                     landmark.status = LandmarkStatus::Free;
+                                    commands.entity(**character_parent).remove::<Direction>();
                                 }
                             }
                             _ => {
@@ -149,8 +168,15 @@ fn landmark_arrival(
                                     && landmark_destination == landmark_entity
                                 {
                                     landmark.status = LandmarkStatus::OccupiedBy(npc);
+
+                                    if let Some(forced_direction) = landmark.direction {
+                                        info!("Forced Direction for {npc:?}: {forced_direction:?}",);
+                                        commands
+                                            .entity(**character_parent)
+                                            .insert(forced_direction);
+                                    }
                                     // TODO: Or start dialog with the other
-                                    // info!(target: "Start Rest", "{:?}, {}", **character_parent, name);
+                                    // info!(target: "Start Rest", "{:?}, {}", **character_parent, _name);
                                     commands.entity(**character_parent).insert(RestTime {
                                         timer: Timer::new(
                                             Duration::from_secs(REST_TIMER),
@@ -162,7 +188,6 @@ fn landmark_arrival(
                                         location,
                                     )
                                     .unwrap();
-
                                     *behavior =
                                         NPCBehavior::LandmarkSeeking(next_destination, location);
                                 }
@@ -215,9 +240,9 @@ fn spawn_landmarks(mut commands: Commands) {
                         Name::new(format!("{group_name} Discussion Group")),
                     ))
                     .with_children(|parent| {
-                        for (position, landmark_name) in group {
+                        for (position, landmark_name, landmark_direction) in group {
                             parent.spawn((
-                                Landmark::new(Location::Temple),
+                                Landmark::new(Location::Temple, landmark_direction),
                                 TransformBundle::from_transform(Transform::from_translation(
                                     position.into(),
                                 )),
@@ -232,9 +257,9 @@ fn spawn_landmarks(mut commands: Commands) {
             /*                                 Singletons                                 */
             /* -------------------------------------------------------------------------- */
 
-            for (position, landmark_name) in LANDMARK_SINGLETONS {
+            for (position, landmark_name, landmark_direction) in LANDMARK_SINGLETONS {
                 parent.spawn((
-                    Landmark::new(Location::Temple),
+                    Landmark::new(Location::Temple, landmark_direction),
                     TransformBundle::from_transform(Transform::from_translation(position.into())),
                     Name::new(format!("Landmark {landmark_name}")),
                     landmark_sensor.clone(),
@@ -248,9 +273,9 @@ fn spawn_landmarks(mut commands: Commands) {
                         Name::new(format!("{pillar_name}'s landmarks")),
                     ))
                     .with_children(|parent| {
-                        for (position, landmark_name) in landmarks {
+                        for (position, landmark_name, landmark_direction) in landmarks {
                             parent.spawn((
-                                Landmark::new(Location::Temple),
+                                Landmark::new(Location::Temple, landmark_direction),
                                 TransformBundle::from_transform(Transform::from_translation(
                                     position.into(),
                                 )),

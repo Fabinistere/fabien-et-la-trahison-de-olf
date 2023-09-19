@@ -17,14 +17,14 @@ pub fn flexing_timer(
         (With<NPC>, With<NPCBehavior>),
     >,
 ) {
-    for (npc, mut rest_timer, mut rb_vel, name) in npc_query.iter_mut() {
+    for (npc, mut rest_timer, mut rb_vel, _name) in npc_query.iter_mut() {
         rest_timer.timer.tick(time.delta());
 
         rb_vel.linvel.x = 0.;
         rb_vel.linvel.y = 0.;
         // info!("{:#?}", rest_timer.timer);
         if rest_timer.timer.finished() {
-            // info!(target: "Stop Rest", "{:?}, {}", npc, name);
+            // info!(target: "Stop Rest", "{:?}, {}", npc, _name);
 
             // restart previous behavior
             commands.entity(npc).remove::<RestTime>();

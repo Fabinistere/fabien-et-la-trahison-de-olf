@@ -50,7 +50,7 @@ pub mod player {
 pub mod npcs {
     use crate::constants::{
         interactions::INTERACT_BUTTON_Z,
-        locations::main_room::{CAT_STATUE_POSITION, THRONE_POSITION},
+        locations::main_room::{landmarks::LANDMARK_CAT_STATUE, THRONE_POSITION},
         TILE_SIZE,
     };
 
@@ -63,7 +63,7 @@ pub mod npcs {
     pub const OLF_CAT_POSITION: (f32, f32, f32) = (-104., 134., 0.);
     pub const SUPREME_GOD_SPAWN_POSITION: (f32, f32, f32) = THRONE_POSITION;
     pub const OLF_SPAWN_POSITION: (f32, f32, f32) = OLF_CAT_POSITION;
-    pub const VAMPIRE_SPAWN_POSITION: (f32, f32, f32) = CAT_STATUE_POSITION;
+    pub const VAMPIRE_SPAWN_POSITION: (f32, f32, f32) = LANDMARK_CAT_STATUE[0].0;
 
     pub const NPC_TALK_INTERACTION_ID: u32 = 10;
 

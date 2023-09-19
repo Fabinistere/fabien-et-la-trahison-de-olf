@@ -225,7 +225,7 @@ pub fn location_event(
                             || (*e1 == character_hitbox && *e2 == location_sensor)
                         {
                             if location.get() != &location_point.location {
-                                next_location.set(location_point.location.clone());
+                                next_location.set(location_point.location);
                             }
                             break;
                         }
