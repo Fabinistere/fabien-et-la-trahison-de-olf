@@ -15,7 +15,14 @@ use crate::{
         CharacterHitbox,
     },
     collisions::CollisionEventExt,
-    constants::{character::npcs::movement::REST_TIMER, locations::main_room::landmarks::*},
+    constants::{
+        character::npcs::movement::REST_TIMER,
+        locations::{
+            hall,
+            main_room::{self, landmarks::LANDMARK_SENSOR_SIZE},
+            secret_room,
+        },
+    },
 };
 
 use super::temple::Location;
@@ -170,7 +177,7 @@ fn landmark_arrival(
                                     landmark.status = LandmarkStatus::OccupiedBy(npc);
 
                                     if let Some(forced_direction) = landmark.direction {
-                                        info!("Forced Direction for {npc:?}: {forced_direction:?}",);
+                                        // info!("Forced Direction for {npc:?}: {forced_direction:?}",);
                                         commands
                                             .entity(**character_parent)
                                             .insert(forced_direction);
@@ -228,60 +235,94 @@ fn spawn_landmarks(mut commands: Commands) {
                 Sensor,
             );
 
-            /* -------------------------------------------------------------------------- */
-            /*                                   Groups                                   */
-            /* -------------------------------------------------------------------------- */
+            let mut secret_room_singletons = secret_room::landmarks::LANDMARK_SINGLETONS.to_vec();
+            secret_room_singletons.extend(secret_room::landmarks::LANDMARKS_FLOWER_PANELS.to_vec());
 
-            for (group, group_name) in LANDMARK_GROUPS {
+            let zone_landmarks = [
+                (
+                    "Hall",
+                    Location::Hall,
+                    hall::landmarks::LANDMARK_GROUPS.to_vec(),
+                    hall::landmarks::LANDMARK_SINGLETONS.to_vec(),
+                ),
+                (
+                    "Temple",
+                    Location::Temple,
+                    main_room::landmarks::LANDMARK_GROUPS.to_vec(),
+                    main_room::landmarks::LANDMARK_SINGLETONS.to_vec(),
+                ),
+                (
+                    "SecretRoom",
+                    Location::SecretRoom,
+                    Vec::new(),
+                    secret_room_singletons,
+                ),
+            ];
+
+            for (name, location, groups, singletons) in zone_landmarks {
                 parent
-                    .spawn((
-                        LandmarkGroup,
-                        TransformBundle::default(),
-                        Name::new(format!("{group_name} Discussion Group")),
-                    ))
+                    .spawn((TransformBundle::default(), Name::new(name)))
                     .with_children(|parent| {
-                        for (position, landmark_name, landmark_direction) in group {
+                        // ----- Groups -----
+                        for (group, group_name) in groups {
+                            parent
+                                .spawn((
+                                    LandmarkGroup,
+                                    TransformBundle::default(),
+                                    Name::new(format!("{group_name} Discussion Group")),
+                                ))
+                                .with_children(|parent| {
+                                    for (position, landmark_name, landmark_direction) in group {
+                                        parent.spawn((
+                                            Landmark::new(location, landmark_direction),
+                                            TransformBundle::from_transform(
+                                                Transform::from_translation(position.into()),
+                                            ),
+                                            Name::new(format!(
+                                                "Landmark {group_name} {landmark_name}"
+                                            )),
+                                            landmark_sensor.clone(),
+                                        ));
+                                    }
+                                });
+                        }
+
+                        // ----- Singletons -----
+                        for (position, landmark_name, landmark_direction) in singletons {
                             parent.spawn((
-                                Landmark::new(Location::Temple, landmark_direction),
+                                Landmark::new(location, landmark_direction),
                                 TransformBundle::from_transform(Transform::from_translation(
                                     position.into(),
                                 )),
-                                Name::new(format!("Landmark {group_name} {landmark_name}")),
+                                Name::new(format!("Landmark {landmark_name}")),
                                 landmark_sensor.clone(),
                             ));
                         }
-                    });
-            }
 
-            /* -------------------------------------------------------------------------- */
-            /*                                 Singletons                                 */
-            /* -------------------------------------------------------------------------- */
-
-            for (position, landmark_name, landmark_direction) in LANDMARK_SINGLETONS {
-                parent.spawn((
-                    Landmark::new(Location::Temple, landmark_direction),
-                    TransformBundle::from_transform(Transform::from_translation(position.into())),
-                    Name::new(format!("Landmark {landmark_name}")),
-                    landmark_sensor.clone(),
-                ));
-            }
-
-            for (landmarks, pillar_name) in LANDMARK_PILLARS {
-                parent
-                    .spawn((
-                        TransformBundle::default(),
-                        Name::new(format!("{pillar_name}'s landmarks")),
-                    ))
-                    .with_children(|parent| {
-                        for (position, landmark_name, landmark_direction) in landmarks {
-                            parent.spawn((
-                                Landmark::new(Location::Temple, landmark_direction),
-                                TransformBundle::from_transform(Transform::from_translation(
-                                    position.into(),
-                                )),
-                                Name::new(format!("Landmark {pillar_name} {landmark_name}")),
-                                landmark_sensor.clone(),
-                            ));
+                        if location == Location::Temple {
+                            for (landmarks, pillar_name) in main_room::landmarks::LANDMARK_PILLARS {
+                                parent
+                                    .spawn((
+                                        TransformBundle::default(),
+                                        Name::new(format!("{pillar_name}'s landmarks")),
+                                    ))
+                                    .with_children(|parent| {
+                                        for (position, landmark_name, landmark_direction) in
+                                            landmarks
+                                        {
+                                            parent.spawn((
+                                                Landmark::new(location, landmark_direction),
+                                                TransformBundle::from_transform(
+                                                    Transform::from_translation(position.into()),
+                                                ),
+                                                Name::new(format!(
+                                                    "Landmark {pillar_name} {landmark_name}"
+                                                )),
+                                                landmark_sensor.clone(),
+                                            ));
+                                        }
+                                    });
+                            }
                         }
                     });
             }

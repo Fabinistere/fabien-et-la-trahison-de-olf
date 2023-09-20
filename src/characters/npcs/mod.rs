@@ -210,9 +210,9 @@ fn spawn_characters(
     let hugo_dialog_path = "data/hugo_dialog.yml";
     // let olf_dialog_path = "data/olf_dialog.yml";
 
-    let npcs_infos = vec![
+    let mut npcs_infos = vec![
         (
-            "Supreme God",
+            "Supreme God".to_string(),
             SUPREME_GOD_LINE,
             SUPREME_GOD_SPAWN_POSITION,
             Reputation::new(100, 0),
@@ -220,7 +220,7 @@ fn spawn_characters(
             supreme_god_dialog_path,
         ),
         (
-            "Hugo",
+            "Hugo".to_string(),
             HEALER_V2_LINE,
             PLAYER_SPAWN,
             Reputation::new(100, 0),
@@ -228,7 +228,7 @@ fn spawn_characters(
             hugo_dialog_path,
         ),
         (
-            "Vampire",
+            "Vampire".to_string(),
             VAMPIRE_LINE,
             VAMPIRE_SPAWN_POSITION,
             Reputation::new(100, 0),
@@ -241,6 +241,21 @@ fn spawn_characters(
             fabien_dialog_path,
         ),
     ];
+    for i in 0..5 {
+        npcs_infos.push((
+            format!("Fabien {}", i),
+            FABIEN_LOYAL_LINE,
+            FABIEN_SPAWN_POSITION,
+            Reputation::new(0, 0),
+            NPCBehavior::LandmarkSeeking(
+                // match if there is none
+                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
+                    .unwrap(),
+                Location::Temple,
+            ),
+            fabien_dialog_path,
+        ));
+    }
 
     for info in npcs_infos {
         let mut npc_animation_indices = AnimationIndices(HashMap::new());
@@ -266,6 +281,7 @@ fn spawn_characters(
                     animation_indices: npc_animation_indices,
                     ..default()
                 },
+                Location::Temple,
                 // -- Social --
                 Interactible::new_npc(),
                 info.3,
@@ -343,7 +359,7 @@ fn spawn_vilains(
     characters_spritesheet: Res<CharacterSpriteSheet>,
     mut dialogs: ResMut<DialogMap>,
     global_animations_indices: Res<GlobalAnimationIndices>,
-    // mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
+    mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
 ) {
     /* -------------------------------------------------------------------------- */
     /*                                   Vilains                                  */
@@ -356,7 +372,12 @@ fn spawn_vilains(
         OLF_LINE,
         OLF_SPAWN_POSITION,
         Reputation::new(0, 100),
-        NPCBehavior::Camping,
+        NPCBehavior::LandmarkSeeking(
+            // match if there is none
+            reserved_random_free_landmark(&mut landmark_sensor_query, Location::SecretRoom)
+                .unwrap(),
+            Location::SecretRoom,
+        ),
         olf_dialog_path,
     )];
 
@@ -389,6 +410,7 @@ fn spawn_vilains(
                     animation_indices: npc_animation_indices,
                     ..default()
                 },
+                Location::SecretRoom,
                 // -- Social --
                 Interactible::new_npc(),
                 info.3,

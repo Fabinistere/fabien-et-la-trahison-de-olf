@@ -228,18 +228,27 @@ pub fn animation(
 pub fn npc_movement(
     mut npc_query: Query<
         (
+            Entity,
             &mut NPCBehavior,
             Option<&Chaser>,
             &Transform,
             &Speed,
             &mut Velocity,
+            &Name,
         ),
         Without<RestTime>,
     >,
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
     pos_query: Query<&GlobalTransform>,
+
+    player_query: Query<Entity, With<Player>>,
+    location_query: Query<&Location>,
+    player_location: Res<State<Location>>,
+    mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
-    for (mut behavior, potential_chaser, transform, speed, mut rb_vel) in &mut npc_query {
+    for (npc, mut behavior, potential_chaser, transform, speed, mut rb_vel, npc_name) in
+        &mut npc_query
+    {
         let (vel_x, vel_y) = match potential_chaser {
             None => match *behavior {
                 NPCBehavior::Camping => (0., 0.),
@@ -272,8 +281,21 @@ pub fn npc_movement(
                 if *close {
                     (0., 0.)
                 } else {
-                    let target_transform = pos_query.get(*target).unwrap();
-                    move_to(target_transform, true, transform, speed)
+                    let player = player_query.single();
+                    let [npc_location, target_location] = if *target == player {
+                        [location_query.get(npc).unwrap(), player_location.get()]
+                    } else {
+                        location_query.get_many([*target, npc]).unwrap()
+                    };
+
+                    if target_location != npc_location {
+                        ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
+                        info!("{} change zone. {:?}: chase canceled", npc_name, *target);
+                        (0., 0.)
+                    } else {
+                        let target_transform = pos_query.get(*target).unwrap();
+                        move_to(target_transform, true, transform, speed)
+                    }
                 }
             }
         };
@@ -332,6 +354,9 @@ pub fn chase_management(
         ),
     >,
     close_sensor_query: Query<(Entity, &Parent), With<CharacterCloseSensor>>,
+
+    location_query: Query<&Location>,
+    player_location: Res<State<Location>>,
 
     mut ev_engage_pursuit: EventWriter<EngagePursuitEvent>,
     mut ev_combat: EventWriter<CombatEvent>,
@@ -452,14 +477,31 @@ pub fn chase_management(
                                         };
 
                                         if is_target_type {
-                                            ev_engage_pursuit.send(EngagePursuitEvent {
-                                                npc_entity: **npc,
-                                                target_entity: **character,
-                                            });
-                                            info!(
-                                                "{} detected {}: chase initialized",
-                                                npc_name, character_name
-                                            );
+                                            // The Target muist be in the same zone
+                                            // NOTE: Can be abstracted - target and self location verification
+                                            let player = player_query.single();
+                                            let [npc_location, target_location] =
+                                                if **character == player {
+                                                    [
+                                                        location_query.get(**npc).unwrap(),
+                                                        player_location.get(),
+                                                    ]
+                                                } else {
+                                                    location_query
+                                                        .get_many([**character, **npc])
+                                                        .unwrap()
+                                                };
+
+                                            if npc_location == target_location {
+                                                ev_engage_pursuit.send(EngagePursuitEvent {
+                                                    npc_entity: **npc,
+                                                    target_entity: **character,
+                                                });
+                                                info!(
+                                                    "{} detected {}: chase initialized",
+                                                    npc_name, character_name
+                                                );
+                                            }
                                         }
                                     }
                                 }

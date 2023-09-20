@@ -1,6 +1,7 @@
-use crate::constants::{interactions::INTERACT_BUTTON_Z, TILE_SIZE};
+pub mod landmarks;
 
 use super::{MAP_DISTANCE_IN_Z, MAP_START_Y, PROPS_Z, ROOF_Z, WILL_BE_COMPUTE_LATER, Y_UNIT};
+use crate::constants::{interactions::INTERACT_BUTTON_Z, TILE_SIZE};
 
 // HALL_END_Y
 // FIXME: hair hang over the temple door (could be like the second_layer of fake wall)
@@ -20,8 +21,13 @@ pub const BALCONY_LOCATION_SENSOR_SIZE: (f32, f32) = (13., 6.5);
 pub const BALCONY_LOCATION_SENSOR_POSITION: (f32, f32, f32) = (95., -162.5, 0.);
 
 pub const BOX_INTERACTION_ID: u32 = 0;
-pub const BOX_POSITION: (f32, f32, f32) =
-    (-121.5 * TILE_SIZE, -158. * TILE_SIZE, WILL_BE_COMPUTE_LATER);
+pub const BOXES_X: f32 = -121.5;
+pub const BOXES_Y: f32 = -158.;
+pub const BOX_POSITION: (f32, f32, f32) = (
+    BOXES_X * TILE_SIZE,
+    BOXES_Y * TILE_SIZE,
+    WILL_BE_COMPUTE_LATER,
+);
 pub const BOX_SENSOR_OFFSET: (f32, f32, f32) = (0., -10. * TILE_SIZE, 0.);
 pub const BOX_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
     (12. * TILE_SIZE, 7. * TILE_SIZE, INTERACT_BUTTON_Z);
@@ -37,7 +43,13 @@ pub const DOOR_OPEN_DELTA_S: f32 = 0.2;
 pub const TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED: f32 = 0.25;
 pub const TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED: f32 = 0.3;
 
-pub const STATUE_POSITION: (f32, f32, f32) = (59., -101., WILL_BE_COMPUTE_LATER);
+pub const STATUE_X: f32 = 59.;
+pub const STATUE_Y: f32 = -101.;
+pub const STATUE_POSITION: (f32, f32, f32) = (
+    STATUE_X * TILE_SIZE,
+    STATUE_Y * TILE_SIZE,
+    WILL_BE_COMPUTE_LATER,
+);
 pub const STATUE_INTERACTION_ID: u32 = 2;
 pub const STATUE_INTERACT_BUTTON_POSITION: (f32, f32, f32) =
     (-8.3 * TILE_SIZE, 0., INTERACT_BUTTON_Z);
