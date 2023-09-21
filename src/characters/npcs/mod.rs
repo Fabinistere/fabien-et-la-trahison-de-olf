@@ -20,6 +20,7 @@ use crate::{
         character::{npcs::*, player::PLAYER_SPAWN, *},
         interactions::INTERACT_BUTTON_SCALE,
     },
+    hud_opened,
     interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
     locations::{
         landmarks::{reserved_random_free_landmark, Landmark},
@@ -33,6 +34,8 @@ use self::{
     aggression::{DetectionRangeSensor, PursuitRangeSensor},
     movement::{FollowRangeSensor, TargetSeeker, TargetType},
 };
+
+use super::player::Player;
 
 #[derive(Default)]
 pub struct NPCPlugin;
@@ -87,6 +90,7 @@ impl Plugin for NPCPlugin {
                     idle::flexing_timer
                         .in_set(NPCSystems::Idle)
                         .after(NPCSystems::Movement),
+                    freeze_player_in_dialog.run_if(hud_opened),
                 )
                     .run_if(in_state(GameState::Playing)),
             )
@@ -143,6 +147,17 @@ pub fn character_interaction_event(
         current_interlocutor.interlocutor = Some(*character);
         next_game_state.set(HUDState::DialogWall);
     }
+}
+
+/// FIXME: Freeze ALL character in Dialog
+fn freeze_player_in_dialog(
+    // talker_query: Query<&mut Velocity, With<InDialog>>,
+    mut player_query: Query<(&mut Velocity, &mut CharacterState), With<Player>>,
+) {
+    let (mut rb_vel, mut character_state) = player_query.single_mut();
+    rb_vel.linvel.x = 0.;
+    rb_vel.linvel.y = 0.;
+    *character_state = CharacterState::Idle;
 }
 
 /// Cats and all friendly npc
