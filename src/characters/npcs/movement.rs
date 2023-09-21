@@ -5,7 +5,6 @@ use bevy_ecs::query::QueryEntityError;
 use bevy_rapier2d::prelude::{
     ActiveEvents, Collider, CollisionEvent, RapierContext, Sensor, Velocity,
 };
-use rand::Rng;
 
 use crate::{
     animations::sprite_sheet_animation::CharacterState,
@@ -24,8 +23,11 @@ use crate::{
     },
     collisions::CollisionEventExt,
     combat::{CombatEvent, FairPlayTimer, Reputation},
-    constants::TILE_SIZE,
-    locations::landmarks::{reserved_random_free_landmark, Landmark, LandmarkStatus},
+    constants::character::CHAR_HITBOX_Y_OFFSET,
+    locations::{
+        landmarks::{reserved_random_free_landmark, Direction, Landmark, LandmarkStatus},
+        temple::Location,
+    },
 };
 
 // pub const PROXIMITY_RADIUS: f32 = 64.;
@@ -38,7 +40,7 @@ use crate::{
 pub enum NPCBehavior {
     /// The entity runs to a specify location and occupy this zone.
     /// Tourist butterfly.
-    LandmarkSeeking(Entity),
+    LandmarkSeeking(Entity, Location),
     Camping,
     Follow {
         target: Entity,
@@ -175,9 +177,19 @@ pub fn follow_event(
 }
 
 pub fn animation(
-    mut npc_query: Query<(&Velocity, &mut CharacterState, &mut TextureAtlasSprite), With<NPC>>,
+    mut npc_query: Query<
+        (
+            &Velocity,
+            &mut CharacterState,
+            &mut TextureAtlasSprite,
+            Option<&Direction>,
+        ),
+        (Or<(Changed<Velocity>, Changed<Direction>)>, With<NPC>),
+    >,
 ) {
-    for (rb_vel, mut npc_state, mut texture_atlas_sprite) in &mut npc_query {
+    for (rb_vel, mut npc_state, mut texture_atlas_sprite, potential_forced_direction) in
+        &mut npc_query
+    {
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */
         /* -------------------------------------------------------------------------- */
@@ -198,10 +210,15 @@ pub fn animation(
         /*                                  Direction                                 */
         /* -------------------------------------------------------------------------- */
 
-        if rb_vel.linvel.x > 0. {
-            texture_atlas_sprite.flip_x = false;
-        } else if rb_vel.linvel.x < 0. {
-            texture_atlas_sprite.flip_x = true;
+        match potential_forced_direction {
+            None => {
+                if rb_vel.linvel.x > 0. {
+                    texture_atlas_sprite.flip_x = false;
+                } else if rb_vel.linvel.x < 0. {
+                    texture_atlas_sprite.flip_x = true;
+                }
+            }
+            Some(direction) => texture_atlas_sprite.flip_x = (*direction).into(),
         }
     }
 }
@@ -211,34 +228,44 @@ pub fn animation(
 pub fn npc_movement(
     mut npc_query: Query<
         (
+            Entity,
             &mut NPCBehavior,
             Option<&Chaser>,
             &Transform,
             &Speed,
             &mut Velocity,
+            &Name,
         ),
         Without<RestTime>,
     >,
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
     pos_query: Query<&GlobalTransform>,
+
+    player_query: Query<Entity, With<Player>>,
+    location_query: Query<&Location>,
+    player_location: Res<State<Location>>,
+    mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
-    for (mut behavior, potential_chaser, transform, speed, mut rb_vel) in &mut npc_query {
+    for (npc, mut behavior, potential_chaser, transform, speed, mut rb_vel, npc_name) in
+        &mut npc_query
+    {
         let (vel_x, vel_y) = match potential_chaser {
             None => match *behavior {
                 NPCBehavior::Camping => (0., 0.),
-                NPCBehavior::LandmarkSeeking(destination) => {
+                NPCBehavior::LandmarkSeeking(destination, location) => {
                     let (_, landmark) = landmark_sensor_query.get(destination).unwrap();
                     let landmark_transform = pos_query.get(destination).unwrap();
                     match landmark.status {
-                        LandmarkStatus::Occupied => {
+                        LandmarkStatus::OccupiedBy(_) => {
                             // FIXME: Match the LandmarkReservationError
                             let next_destination =
-                                reserved_random_free_landmark(&mut landmark_sensor_query).unwrap();
-                            *behavior = NPCBehavior::LandmarkSeeking(next_destination);
+                                reserved_random_free_landmark(&mut landmark_sensor_query, location)
+                                    .unwrap();
+                            *behavior = NPCBehavior::LandmarkSeeking(next_destination, location);
                             let next_transform = pos_query.get(next_destination).unwrap();
-                            move_to(next_transform, transform, speed)
+                            move_to(next_transform, false, transform, speed)
                         }
-                        _ => move_to(landmark_transform, transform, speed),
+                        _ => move_to(landmark_transform, false, transform, speed),
                     }
                 }
                 NPCBehavior::Follow { target, close } => {
@@ -246,7 +273,7 @@ pub fn npc_movement(
                         (0., 0.)
                     } else {
                         let target_transform = pos_query.get(target).unwrap();
-                        move_to(target_transform, transform, speed)
+                        move_to(target_transform, true, transform, speed)
                     }
                 }
             },
@@ -254,8 +281,21 @@ pub fn npc_movement(
                 if *close {
                     (0., 0.)
                 } else {
-                    let target_transform = pos_query.get(*target).unwrap();
-                    move_to(target_transform, transform, speed)
+                    let player = player_query.single();
+                    let [npc_location, target_location] = if *target == player {
+                        [location_query.get(npc).unwrap(), player_location.get()]
+                    } else {
+                        location_query.get_many([*target, npc]).unwrap()
+                    };
+
+                    if target_location != npc_location {
+                        ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
+                        info!("{} change zone. {:?}: chase canceled", npc_name, *target);
+                        (0., 0.)
+                    } else {
+                        let target_transform = pos_query.get(*target).unwrap();
+                        move_to(target_transform, true, transform, speed)
+                    }
                 }
             }
         };
@@ -315,13 +355,16 @@ pub fn chase_management(
     >,
     close_sensor_query: Query<(Entity, &Parent), With<CharacterCloseSensor>>,
 
+    location_query: Query<&Location>,
+    player_location: Res<State<Location>>,
+
     mut ev_engage_pursuit: EventWriter<EngagePursuitEvent>,
     mut ev_combat: EventWriter<CombatEvent>,
     mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
     for collision_event in collision_events.iter() {
-        let entity_1 = collision_event.entities().0;
-        let entity_2 = collision_event.entities().1;
+        // info!("{:#?}", collision_event);
+        let (entity_1, entity_2) = collision_event.entities();
 
         // if rapier_context.intersection_pair(entity_1, entity_2) == Some(true) {
         //     info!("Some(true) with {:#?}, {:#?}", entity_1, entity_2);
@@ -434,14 +477,31 @@ pub fn chase_management(
                                         };
 
                                         if is_target_type {
-                                            ev_engage_pursuit.send(EngagePursuitEvent {
-                                                npc_entity: **npc,
-                                                target_entity: **character,
-                                            });
-                                            info!(
-                                                "{} detected {}: chase initialized",
-                                                npc_name, character_name
-                                            );
+                                            // The Target muist be in the same zone
+                                            // NOTE: Can be abstracted - target and self location verification
+                                            let player = player_query.single();
+                                            let [npc_location, target_location] =
+                                                if **character == player {
+                                                    [
+                                                        location_query.get(**npc).unwrap(),
+                                                        player_location.get(),
+                                                    ]
+                                                } else {
+                                                    location_query
+                                                        .get_many([**character, **npc])
+                                                        .unwrap()
+                                                };
+
+                                            if npc_location == target_location {
+                                                ev_engage_pursuit.send(EngagePursuitEvent {
+                                                    npc_entity: **npc,
+                                                    target_entity: **character,
+                                                });
+                                                info!(
+                                                    "{} detected {}: chase initialized",
+                                                    npc_name, character_name
+                                                );
+                                            }
                                         }
                                     }
                                 }
@@ -497,9 +557,23 @@ pub fn chase_management(
 }
 
 /// Give velocity x and y value to move forward a certain target
-fn move_to(target_transform: &GlobalTransform, transform: &Transform, speed: &Speed) -> (f32, f32) {
-    let up = target_transform.translation().y > transform.translation.y;
-    let down = target_transform.translation().y < transform.translation.y;
+fn move_to(
+    target_transform: &GlobalTransform,
+    target_is_a_character: bool,
+    transform: &Transform,
+    speed: &Speed,
+) -> (f32, f32) {
+    // REFACTOR: use the max_step possible and see if the difference can be lowered.
+    let target_y_offset = if target_is_a_character {
+        CHAR_HITBOX_Y_OFFSET
+    } else {
+        0.
+    };
+
+    let up = target_transform.translation().y + target_y_offset
+        > transform.translation.y + CHAR_HITBOX_Y_OFFSET;
+    let down = target_transform.translation().y + target_y_offset
+        < transform.translation.y + CHAR_HITBOX_Y_OFFSET;
     let left = target_transform.translation().x < transform.translation.x;
     let right = target_transform.translation().x > transform.translation.x;
 
@@ -517,74 +591,4 @@ fn move_to(target_transform: &GlobalTransform, transform: &Transform, speed: &Sp
     }
 
     (vel_x, vel_y)
-}
-
-/// Give velocity x and y value to move forward a certain vec3
-fn move_to_dest(target_vec3: Vec3, transform: &Transform, speed: &Speed) -> (f32, f32) {
-    let up = target_vec3.y > transform.translation.y;
-    let down = target_vec3.y < transform.translation.y;
-    let left = target_vec3.x < transform.translation.x;
-    let right = target_vec3.x > transform.translation.x;
-
-    let x_axis = -(left as i8) + right as i8;
-    let y_axis = -(down as i8) + up as i8;
-
-    // println!("x: {}, y: {}", x_axis, y_axis);
-
-    let mut vel_x = x_axis as f32 * **speed;
-    let mut vel_y = y_axis as f32 * **speed;
-
-    if x_axis != 0 && y_axis != 0 {
-        vel_x *= (std::f32::consts::PI / 4.).cos();
-        vel_y *= (std::f32::consts::PI / 4.).cos();
-    }
-
-    (vel_x, vel_y)
-}
-
-/// # Parameters
-///
-/// position: of a entity
-/// direction: the middle of the future zone,
-///            is on the middle of the segment [a,c]
-///
-/// # Return
-/// returns true if the entity is on the square around the direction point
-///
-/// # Note
-///
-/// XXX: Rework this Approximation Louche
-fn close(position: Vec3, direction: Vec3, range: f32) -> bool {
-    // direction.x == position.x &&
-    // direction.y == position.y
-
-    let a = Vec3::new(direction.x - range, direction.y + range, direction.z);
-
-    let c = Vec3::new(direction.x + range, direction.y - range, direction.z);
-
-    position.x >= a.x && position.x <= c.x && position.y <= a.y && position.y >= c.y
-}
-
-/**
- * param:
- *  force
- *  range: cuboid ? no ball
- * return:
- *  Vec3
- */
-fn give_a_direction() -> Vec3 {
-    let x =
-        rand::thread_rng().gen_range(-100 * (TILE_SIZE as i32)..100 * (TILE_SIZE as i32)) as f32;
-    let y =
-        rand::thread_rng().gen_range(-100 * (TILE_SIZE as i32)..100 * (TILE_SIZE as i32)) as f32;
-
-    /* shape ideas
-     * (x, y) -> A
-     * (x+1, y-1) -> C
-     * (x+0.5, y-0.5) -> milieu
-     */
-
-    let direction: Vec3 = Vec3::new(x, y, 0.);
-
-    direction
 }

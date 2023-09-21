@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Dialog Update - [v0.4.0](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0) - 2023-09-04
 
+### Changed
+
+- globalize `PlayerLocation` to `Location`
+  - The component `Location` is given to
+    - Each npc
+    - Each landmark
+  - `Location` is still a `State` to keep the quick and easy access to the player's location
+
+### Dialog
+
+- YML Dialog and reorganize ui components
+
+### NPCs' Behavior
+
+#### Refactored
+
+- Follow Behavior
+  - add and use a `FollowRangeSensor` to detect the follow_target's hitbox
+
+#### Added
+
+- Detection Behavior
+  - `TargetSeeker`
+  - `DetectionRangeSensor` used to analyze all entering characters' hitbox and compare with their `TargetType`
+    - if it correpond: Deactivate this sensor and start the Chase Behavior with the component `Chaser`.
+- Chase Behavior
+  - `Chaser`
+  - `PursuitRangeSensor` used to analyze all exiting characters' hitbox and compare with their `Chaser`'s `target`
+    - if it correpond: Deactivate this sensor and remove the Chase Behavior.
+  - The `CharacterCloseSensor` used to detect all entering `Chaser`s hitbox and start a Combat if the `Chaser`'s `target` is the parent of the `CharacterCloseSensor`.
+
 ## Map, Title Screen and Animation Update - [v0.3.9](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9) - 2023-08-31
 
 [![v0.3.9](https://img.shields.io/badge/v0.3.9-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9)

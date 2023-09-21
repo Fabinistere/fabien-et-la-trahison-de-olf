@@ -7,7 +7,15 @@ use bevy::prelude::*;
 pub use fade::{Fade, FadeType};
 pub use slide::{Slide, UiSlide, UiSlideType};
 
-use crate::in_menu;
+use crate::{
+    constants::character::{
+        COLUMN_FRAME_IDLE_END, COLUMN_FRAME_IDLE_START, COLUMN_FRAME_RUN_END,
+        SPRITESHEET_COLUMN_NUMBER, SPRITESHEET_LINE_NUMBER,
+    },
+    in_menu,
+};
+
+use self::sprite_sheet_animation::CharacterState;
 
 // DOC: create systemsLabel for `sprite_sheet_animation::tempo_animation_timer`
 
@@ -16,6 +24,7 @@ pub struct AnimationPlugin;
 impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CharacterSpriteSheet>()
+            .init_resource::<GlobalAnimationIndices>()
             .add_systems(
                 PostUpdate,
                 (
@@ -66,5 +75,33 @@ impl FromWorld for CharacterSpriteSheet {
         CharacterSpriteSheet {
             texture_atlas: atlas_handle,
         }
+    }
+}
+
+#[derive(Deref, Clone, Resource)]
+pub struct GlobalAnimationIndices(Vec<Vec<(usize, usize, CharacterState)>>);
+
+impl FromWorld for GlobalAnimationIndices {
+    fn from_world(_world: &mut World) -> Self {
+        let mut global_animations_indices: Vec<Vec<(usize, usize, CharacterState)>> = Vec::new();
+        for line in 0..SPRITESHEET_LINE_NUMBER {
+            global_animations_indices.push(vec![
+                // Run Indexes for each line
+                (
+                    line * SPRITESHEET_COLUMN_NUMBER,
+                    line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_RUN_END,
+                    CharacterState::Idle,
+                    // CharacterState::Run, ?
+                ),
+                // Idle Indexes for each line
+                (
+                    line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
+                    line * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_END,
+                    CharacterState::Idle,
+                ),
+            ]);
+        }
+
+        GlobalAnimationIndices(global_animations_indices)
     }
 }

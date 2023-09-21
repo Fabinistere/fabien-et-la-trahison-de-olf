@@ -1,8 +1,8 @@
+use crate::collisions::CollisionEventExt;
 use crate::{
-    characters::npcs::CharacterInteractionEvent,
+    characters::{npcs::CharacterInteractionEvent, player::PlayerInteractionSensor},
     constants::{
         character::npcs::{CHARACTER_INTERACT_BUTTON_POSITION, NPC_TALK_INTERACTION_ID},
-        interactions::INTERACT_BUTTON_SCALE,
         locations::{
             hall::{BOX_INTERACTION_ID, DOOR_INTERACTION_ID, DOOR_OPEN_DELTA_S},
             main_room::{BANNER_INTERACTION_ID, BANNER_OPEN_DELTA_S},
@@ -41,7 +41,7 @@ pub struct InteractionIconEvent {
 ///
 /// The first children must be the interaction sensor
 /// REFACTOR: foolproof the children sensor obligation (by pointing at it directly)
-#[derive(Debug, Default, Component)]
+#[derive(Copy, Clone, Debug, Default, Component)]
 pub struct Interactible {
     pub icon_translation: Vec3,
     pub interaction_id: u32,
@@ -74,7 +74,7 @@ impl Interactible {
 
 #[derive(Resource)]
 pub struct InteractionResources {
-    interact_button: Handle<Image>,
+    pub interact_button: Handle<Image>,
 }
 
 pub fn setup_interactions(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -84,55 +84,37 @@ pub fn setup_interactions(mut commands: Commands, asset_server: Res<AssetServer>
     });
 }
 
-/// REFACTOR: to only the character hitbox triggers it
+/// BUG: When interact with an object, a random npc who's moving can be triggered at the same time
 fn interaction_icon_events(
     mut collision_events: EventReader<CollisionEvent>,
+    interaction_sensor_query: Query<&Parent, With<InteractionSensor>>,
+    player_interaction_sensor_query: Query<Entity, With<PlayerInteractionSensor>>,
+
     mut interaction_icon_event: EventWriter<InteractionIconEvent>,
-    // mut secret_room_trigger_event: EventWriter<SecretRoomTriggerEvent>,
-    interactibles_query: Query<(Entity, &Children), With<Interactible>>,
-    // secret_room_sensor_query: Query<Entity, With<SecretRoomSensor>>,
-    interaction_sensor_query: Query<Entity, With<InteractionSensor>>,
 ) {
     for collision_event in collision_events.iter() {
         // info!("{:#?}", collision_event);
-        match collision_event {
-            CollisionEvent::Started(e1, e2, _) => {
-                for (entity, children) in interactibles_query.iter() {
-                    match interaction_sensor_query.get(children[0]) {
-                        Err(e) => error!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
-                        Ok(interaction_sensor) => if *e1 == interaction_sensor || *e2 == interaction_sensor {
-                            interaction_icon_event.send(InteractionIconEvent {
-                                entering_range: true,
-                                entity,
-                            });
-                        },
-                    }
-                }
-            }
-            CollisionEvent::Stopped(e1, e2, _) => {
-                for (entity, children) in interactibles_query.iter() {
-                    match interaction_sensor_query.get(children[0]) {
-                        Err(e) => error!("hint: The Interactible must have as first children an Interaction Sensor.\n{}",e),
-                        Ok(interaction_sensor) =>
-                            if *e1 == interaction_sensor || *e2 == interaction_sensor {
-                                interaction_icon_event.send(InteractionIconEvent {
-                                    entering_range: false,
-                                    entity,
-                                });
-                            },
-                    }
-                }
-            }
+        let (e1, e2) = collision_event.entities();
+
+        if let (Ok(interacted), Err(_), Err(_), Ok(_)) | (Err(_), Ok(interacted), Ok(_), Err(_)) = (
+            interaction_sensor_query.get(e1),
+            interaction_sensor_query.get(e2),
+            player_interaction_sensor_query.get(e1),
+            player_interaction_sensor_query.get(e2),
+        ) {
+            interaction_icon_event.send(InteractionIconEvent {
+                entering_range: collision_event.is_started(),
+                entity: **interacted,
+            });
         }
     }
 }
 
+/// REFACTOR: don't (de)spawn the icon but (de)activate it
 pub fn interaction_icon(
-    mut commands: Commands,
     mut interaction_icon_events: EventReader<InteractionIconEvent>,
     mut interactibles_query: Query<(&Children, &mut Interactible)>,
-    interaction_resources: Res<InteractionResources>,
-    interact_icon_query: Query<Entity, With<InteractIcon>>,
+    mut interact_icon_query: Query<&mut Visibility, With<InteractIcon>>,
 ) {
     for InteractionIconEvent {
         entering_range,
@@ -142,33 +124,20 @@ pub fn interaction_icon(
         let (children, mut interactible) = interactibles_query.get_mut(*entity).unwrap();
         interactible.in_range = *entering_range;
 
-        if *entering_range {
-            commands.entity(*entity).with_children(|parent| {
-                parent.spawn((
-                    SpriteBundle {
-                        texture: interaction_resources.interact_button.clone(),
-                        transform: Transform {
-                            translation: interactible.icon_translation,
-                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
-                            ..default()
-                        },
-                        ..default()
-                    },
-                    InteractIcon,
-                ));
-            });
-        } else {
-            let mut found = false;
-            for child in children {
-                if let Ok(interact_icon) = interact_icon_query.get(*child) {
-                    commands.entity(interact_icon).despawn();
-                    found = true;
-                    break;
-                }
+        let mut found = false;
+        for child in children {
+            if let Ok(mut interact_icon_visibility) = interact_icon_query.get_mut(*child) {
+                *interact_icon_visibility = if *entering_range {
+                    Visibility::Inherited
+                } else {
+                    Visibility::Hidden
+                };
+                found = true;
+                break;
             }
-            if !found {
-                warn!("There is no Interaction Icon in {:?}", *entity)
-            }
+        }
+        if !found {
+            error!("Theres is no Interaction Icon in {:?}", *entity)
         }
     }
 }

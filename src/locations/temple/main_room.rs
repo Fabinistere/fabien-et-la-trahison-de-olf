@@ -5,12 +5,15 @@ use std::time::Duration;
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
-    constants::locations::{main_room::*, CHANDELIER_FLAME_POSITIONS},
-    interactions::{Interactible, InteractionSensor},
+    constants::{
+        interactions::INTERACT_BUTTON_SCALE,
+        locations::{main_room::*, CHANDELIER_FLAME_POSITIONS},
+    },
+    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
     locations::temple::{
         secret_room::{AddSecretRoomCoverEvent, RemoveSecretRoomCoverEvent},
-        Chandelier, DoorColliderClosed, DoorState, Flame, LocationSensor, OverlappingEntity,
-        PlayerLocation, WallCollider,
+        Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
+        OverlappingEntity, WallCollider,
     },
 };
 
@@ -44,13 +47,13 @@ pub struct SecretBannerEvent(pub DoorState);
 /// REFACTOR: SecretRoomCover
 pub fn secret_banner_interaction(
     mut secret_banner_event: EventReader<SecretBannerEvent>,
-    player_location: Res<State<PlayerLocation>>,
+    player_location: Res<State<Location>>,
 
     mut remove_secret_room_cover_event: EventWriter<RemoveSecretRoomCoverEvent>,
     mut add_secret_room_cover_event: EventWriter<AddSecretRoomCoverEvent>,
 ) {
     for SecretBannerEvent(door_state) in secret_banner_event.iter() {
-        if player_location.get() == &PlayerLocation::Temple {
+        if player_location.get() == &Location::Temple {
             match *door_state {
                 DoorState::Closed => {
                     remove_secret_room_cover_event.send(RemoveSecretRoomCoverEvent)
@@ -71,6 +74,7 @@ pub fn setup_main_room(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
+    interaction_resources: Res<InteractionResources>,
 ) {
     /* -------------------------------------------------------------------------- */
     /*                                Assets Loader                               */
@@ -181,7 +185,7 @@ pub fn setup_main_room(
                 ActiveEvents::COLLISION_EVENTS,
                 Sensor,
                 LocationSensor {
-                    location: PlayerLocation::Temple,
+                    location: Location::Temple,
                 },
                 Name::new("Temple Sensor from Hall"),
             ));
@@ -192,7 +196,7 @@ pub fn setup_main_room(
                 ActiveEvents::COLLISION_EVENTS,
                 Sensor,
                 LocationSensor {
-                    location: PlayerLocation::Temple,
+                    location: Location::Temple,
                 },
                 Name::new("Temple Sensor from Secret Room"),
             ));
@@ -214,7 +218,7 @@ pub fn setup_main_room(
                                 },
                             },
                             Transform::default(),
-                            WallCollider(PlayerLocation::Temple),
+                            WallCollider(Location::Temple),
                         ));
                     }
                 });
@@ -241,6 +245,20 @@ pub fn setup_main_room(
                         Transform::from_translation(BANNER_SENSOR_OFFSET.into()),
                         Sensor,
                         InteractionSensor,
+                    ));
+
+                    parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BANNER_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
                     ));
 
                     parent.spawn((

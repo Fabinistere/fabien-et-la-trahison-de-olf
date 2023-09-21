@@ -153,3 +153,7 @@ pub fn in_menu(game_state: Res<State<GameState>>) -> bool {
 pub fn hud_closed(hud_state: Res<State<HUDState>>) -> bool {
     hud_state.get() == &HUDState::Closed
 }
+
+pub fn hud_opened(hud_state: Res<State<HUDState>>) -> bool {
+    hud_state.get() != &HUDState::Closed
+}
