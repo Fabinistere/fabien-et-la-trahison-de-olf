@@ -7,13 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Dialog Update - [v0.4.0](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0) - 2023-09-04
 
-### Changed
+[![v0.4.0](https://img.shields.io/badge/v0.4.0-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)
+
+### Landmarks
+
+#### Added
+
+- Landmarks Sensor
+  - Hall
+  - Temple
+  - Secret Room
+- Landmarks forcing
+
+#### Changed
 
 - globalize `PlayerLocation` to `Location`
   - The component `Location` is given to
     - Each npc
     - Each landmark
   - `Location` is still a `State` to keep the quick and easy access to the player's location
+- globalize Spritesheet Indices
 
 ### Dialog
 
@@ -25,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Follow Behavior
   - add and use a `FollowRangeSensor` to detect the follow_target's hitbox
+- JustWalk to LandmarkSeeking
 
 #### Added
 
