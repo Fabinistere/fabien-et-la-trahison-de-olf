@@ -16,8 +16,11 @@ use crate::{
     },
     characters::{movement::MovementBundle, npcs::movement::NPCBehavior, CharacterHitbox},
     combat::Reputation,
-    constants::character::{npcs::*, player::PLAYER_SPAWN, *},
-    interactions::{Interactible, InteractionSensor},
+    constants::{
+        character::{npcs::*, player::PLAYER_SPAWN, *},
+        interactions::INTERACT_BUTTON_SCALE,
+    },
+    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
     locations::{
         landmarks::{reserved_random_free_landmark, Landmark},
         temple::{Location, OverlappingEntity},
@@ -70,7 +73,7 @@ impl Plugin for NPCPlugin {
             .add_event::<aggression::EngagePursuitEvent>()
             .add_systems(
                 OnEnter(GameState::Playing),
-                (spawn_characters, spawn_vilains),
+                (spawn_characters, spawn_vilains, spawn_cat),
             )
             .add_systems(
                 Update,
@@ -148,8 +151,342 @@ fn spawn_characters(
     characters_spritesheet: Res<CharacterSpriteSheet>,
     mut dialogs: ResMut<DialogMap>,
     global_animations_indices: Res<GlobalAnimationIndices>,
+    interaction_resources: Res<InteractionResources>,
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
 ) {
+    /* -------------------------------------------------------------------------- */
+    /*                                    NPCs                                    */
+    /* -------------------------------------------------------------------------- */
+
+    let fabien_dialog_path = "data/fabien_dialog.yml";
+    let supreme_god_dialog_path = "data/supreme_god_dialog.yml";
+    let hugo_dialog_path = "data/hugo_dialog.yml";
+    // let olf_dialog_path = "data/olf_dialog.yml";
+
+    let mut npcs_infos = vec![
+        (
+            "Supreme God".to_string(),
+            SUPREME_GOD_LINE,
+            SUPREME_GOD_SPAWN_POSITION,
+            Reputation::new(100, 0),
+            NPCBehavior::Camping,
+            Location::Temple,
+            supreme_god_dialog_path,
+        ),
+        (
+            "Hugo".to_string(),
+            HEALER_V2_LINE,
+            PLAYER_SPAWN,
+            Reputation::new(100, 0),
+            NPCBehavior::Camping,
+            Location::SecretRoom,
+            hugo_dialog_path,
+        ),
+        (
+            "Vampire".to_string(),
+            VAMPIRE_LINE,
+            VAMPIRE_SPAWN_POSITION,
+            Reputation::new(100, 0),
+            NPCBehavior::LandmarkSeeking(
+                // match if there is none
+                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
+                    .unwrap(),
+                Location::Temple,
+            ),
+            Location::Temple,
+            fabien_dialog_path,
+        ),
+    ];
+    for i in 0..5 {
+        npcs_infos.push((
+            format!("Fabien {}", i),
+            FABIEN_LOYAL_LINE,
+            FABIEN_SPAWN_POSITION,
+            Reputation::new(0, 0),
+            NPCBehavior::LandmarkSeeking(
+                // match if there is none
+                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
+                    .unwrap(),
+                Location::Temple,
+            ),
+            Location::Temple,
+            fabien_dialog_path,
+        ));
+    }
+
+    for (name, spritesheet_line, spawn_position, reputation, behavior, location, dialog_path) in
+        npcs_infos
+    {
+        let mut npc_animation_indices = AnimationIndices(HashMap::new());
+        npc_animation_indices.insert(
+            CharacterState::Run,
+            global_animations_indices[spritesheet_line][0],
+        );
+        npc_animation_indices.insert(
+            CharacterState::Idle,
+            global_animations_indices[spritesheet_line][1],
+        );
+
+        let interactible = Interactible::new_npc();
+
+        let npc = commands
+            .spawn((
+                SpriteSheetBundle {
+                    texture_atlas: characters_spritesheet.texture_atlas.clone(),
+                    transform: Transform {
+                        translation: spawn_position.into(),
+                        scale: Vec3::splat(NPC_SCALE),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Name::new(format!("NPC {}", name)),
+                NPC,
+                // -- Movement --
+                behavior,
+                MovementBundle {
+                    animation_indices: npc_animation_indices,
+                    ..default()
+                },
+                location,
+                // -- Social --
+                interactible,
+                reputation,
+                // -- Hitbox --
+                RigidBody::Dynamic,
+                LockedAxes::ROTATION_LOCKED,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Collider::ball(15.),
+                    Transform::IDENTITY,
+                    Sensor,
+                    InteractionSensor,
+                    Name::new(format!("{} Interaction Sensor", name)),
+                ));
+
+                parent.spawn((
+                    SpriteBundle {
+                        texture: interaction_resources.interact_button.clone(),
+                        transform: Transform {
+                            translation: interactible.icon_translation,
+                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                            ..default()
+                        },
+                        visibility: Visibility::Hidden,
+                        ..default()
+                    },
+                    InteractIcon,
+                ));
+
+                parent.spawn((
+                    Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
+                    Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
+                    CharacterHitbox,
+                    Name::new(format!("{} Hitbox", name)),
+                ));
+
+                // REFACTOR: Spawn all sensor (but with a component "InactiveSensor" or query With<ActiveEvents>)
+
+                // parent.spawn((
+                //     Collider::ball(10.),
+                //     Sensor,
+                //     ActiveEvents::COLLISION_EVENTS,
+                //     ActiveCollisionTypes::STATIC_STATIC,
+                //     CharacterCloseSensor,
+                //     Name::new(format!("{} Close Sensor", name)),
+                // ));
+
+                // parent.spawn((
+                //     Collider::ball(60.),
+                //     // ActiveEvents::COLLISION_EVENTS,
+                //     Sensor,
+                //     PursuitRangeSensor,
+                //     Name::new(format!("{} Pursuit Range", name)),
+                // ));
+
+                // parent.spawn((
+                //     Collider::ball(40.),
+                //     // ActiveEvents::COLLISION_EVENTS,
+                //     Sensor,
+                //     DetectionRangeSensor,
+                //     Name::new(format!("{} Detection Range", name)),
+                // ));
+
+                parent.spawn((
+                    Collider::ball(20.),
+                    // ActiveEvents::COLLISION_EVENTS,
+                    Sensor,
+                    FollowRangeSensor,
+                    Name::new(format!("{} Follow Range", name)),
+                ));
+            })
+            .id();
+
+        let dialog_file = std::fs::File::open(dialog_path).unwrap();
+        let npc_deserialized_map: BTreeMap<usize, DialogNode> =
+            serde_yaml::from_reader(dialog_file).unwrap();
+        dialogs.insert(
+            npc,
+            (
+                *npc_deserialized_map.first_key_value().unwrap().0,
+                npc_deserialized_map,
+            ),
+        );
+    }
+}
+
+/// All vilain npc
+///
+/// Merge all spawn npcs function
+fn spawn_vilains(
+    mut commands: Commands,
+    characters_spritesheet: Res<CharacterSpriteSheet>,
+    mut dialogs: ResMut<DialogMap>,
+    global_animations_indices: Res<GlobalAnimationIndices>,
+    interaction_resources: Res<InteractionResources>,
+    mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
+) {
+    /* -------------------------------------------------------------------------- */
+    /*                                   Vilains                                  */
+    /* -------------------------------------------------------------------------- */
+
+    let olf_dialog_path = "data/olf_dialog.yml";
+
+    let npcs_infos = vec![(
+        "Olf",
+        OLF_LINE,
+        OLF_SPAWN_POSITION,
+        Reputation::new(0, 100),
+        NPCBehavior::LandmarkSeeking(
+            // match if there is none
+            reserved_random_free_landmark(&mut landmark_sensor_query, Location::SecretRoom)
+                .unwrap(),
+            Location::SecretRoom,
+        ),
+        olf_dialog_path,
+    )];
+
+    for (name, spritesheet_line, spawn_position, reputation, behavior, dialog_path) in npcs_infos {
+        let mut npc_animation_indices = AnimationIndices(HashMap::new());
+        npc_animation_indices.insert(
+            CharacterState::Run,
+            global_animations_indices[spritesheet_line][0],
+        );
+        npc_animation_indices.insert(
+            CharacterState::Idle,
+            global_animations_indices[spritesheet_line][1],
+        );
+
+        let interactible = Interactible::new_npc();
+
+        let npc = commands
+            .spawn((
+                SpriteSheetBundle {
+                    texture_atlas: characters_spritesheet.texture_atlas.clone(),
+                    transform: Transform {
+                        translation: spawn_position.into(),
+                        scale: Vec3::splat(NPC_SCALE),
+                        ..default()
+                    },
+                    ..default()
+                },
+                Name::new(format!("NPC {}", name)),
+                NPC,
+                // -- Movement --
+                behavior,
+                MovementBundle {
+                    animation_indices: npc_animation_indices,
+                    ..default()
+                },
+                Location::SecretRoom,
+                // -- Social --
+                interactible,
+                reputation,
+                TargetSeeker(TargetType::Player),
+                // -- Hitbox --
+                RigidBody::Dynamic,
+                LockedAxes::ROTATION_LOCKED,
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Collider::ball(15.),
+                    Transform::IDENTITY,
+                    Sensor,
+                    InteractionSensor,
+                    Name::new(format!("{} Interaction Sensor", name)),
+                ));
+
+                parent.spawn((
+                    SpriteBundle {
+                        texture: interaction_resources.interact_button.clone(),
+                        transform: Transform {
+                            translation: interactible.icon_translation,
+                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                            ..default()
+                        },
+                        visibility: Visibility::Hidden,
+                        ..default()
+                    },
+                    InteractIcon,
+                ));
+
+                parent.spawn((
+                    Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
+                    Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
+                    CharacterHitbox,
+                    Name::new(format!("{} Hitbox", name)),
+                ));
+
+                // parent.spawn((
+                //     Collider::ball(10.),
+                //     Sensor,
+                //     ActiveEvents::COLLISION_EVENTS,
+                //     ActiveCollisionTypes::STATIC_STATIC,
+                //     CharacterCloseSensor,
+                //     Name::new(format!("{} Close Sensor", name)),
+                // ));
+
+                parent.spawn((
+                    Collider::ball(60.),
+                    // ActiveEvents::COLLISION_EVENTS,
+                    Sensor,
+                    PursuitRangeSensor,
+                    Name::new(format!("{} Pursuit Range", name)),
+                ));
+
+                parent.spawn((
+                    Collider::ball(40.),
+                    ActiveEvents::COLLISION_EVENTS,
+                    Sensor,
+                    DetectionRangeSensor,
+                    Name::new(format!("{} Detection Range", name)),
+                ));
+
+                // parent.spawn((
+                //     Collider::ball(20.),
+                //     // ActiveEvents::COLLISION_EVENTS,
+                //     Sensor,
+                //     FollowRangeSensor,
+                //     Name::new(format!("{} Follow Range", name)),
+                // ));
+            })
+            .id();
+
+        let dialog_file = std::fs::File::open(dialog_path).unwrap();
+        let npc_deserialized_map: BTreeMap<usize, DialogNode> =
+            serde_yaml::from_reader(dialog_file).unwrap();
+        dialogs.insert(
+            npc,
+            (
+                *npc_deserialized_map.first_key_value().unwrap().0,
+                npc_deserialized_map,
+            ),
+        );
+    }
+}
+
+fn spawn_cat(mut commands: Commands, characters_spritesheet: Res<CharacterSpriteSheet>) {
     /* -------------------------------------------------------------------------- */
     /*                                   Olf Cat                                  */
     /* -------------------------------------------------------------------------- */
@@ -200,285 +537,4 @@ fn spawn_characters(
                 Transform::from_translation(OLF_CAT_HITBOX_OFFSET.into()),
             ));
         });
-
-    /* -------------------------------------------------------------------------- */
-    /*                                    NPCs                                    */
-    /* -------------------------------------------------------------------------- */
-
-    let fabien_dialog_path = "data/fabien_dialog.yml";
-    let supreme_god_dialog_path = "data/supreme_god_dialog.yml";
-    let hugo_dialog_path = "data/hugo_dialog.yml";
-    // let olf_dialog_path = "data/olf_dialog.yml";
-
-    let mut npcs_infos = vec![
-        (
-            "Supreme God".to_string(),
-            SUPREME_GOD_LINE,
-            SUPREME_GOD_SPAWN_POSITION,
-            Reputation::new(100, 0),
-            NPCBehavior::Camping,
-            supreme_god_dialog_path,
-        ),
-        (
-            "Hugo".to_string(),
-            HEALER_V2_LINE,
-            PLAYER_SPAWN,
-            Reputation::new(100, 0),
-            NPCBehavior::Camping,
-            hugo_dialog_path,
-        ),
-        (
-            "Vampire".to_string(),
-            VAMPIRE_LINE,
-            VAMPIRE_SPAWN_POSITION,
-            Reputation::new(100, 0),
-            NPCBehavior::LandmarkSeeking(
-                // match if there is none
-                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
-                    .unwrap(),
-                Location::Temple,
-            ),
-            fabien_dialog_path,
-        ),
-    ];
-    for i in 0..5 {
-        npcs_infos.push((
-            format!("Fabien {}", i),
-            FABIEN_LOYAL_LINE,
-            FABIEN_SPAWN_POSITION,
-            Reputation::new(0, 0),
-            NPCBehavior::LandmarkSeeking(
-                // match if there is none
-                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
-                    .unwrap(),
-                Location::Temple,
-            ),
-            fabien_dialog_path,
-        ));
-    }
-
-    for info in npcs_infos {
-        let mut npc_animation_indices = AnimationIndices(HashMap::new());
-        npc_animation_indices.insert(CharacterState::Run, global_animations_indices[info.1][0]);
-        npc_animation_indices.insert(CharacterState::Idle, global_animations_indices[info.1][1]);
-
-        let npc = commands
-            .spawn((
-                SpriteSheetBundle {
-                    texture_atlas: characters_spritesheet.texture_atlas.clone(),
-                    transform: Transform {
-                        translation: info.2.into(),
-                        scale: Vec3::splat(NPC_SCALE),
-                        ..default()
-                    },
-                    ..default()
-                },
-                Name::new(format!("NPC {}", info.0)),
-                NPC,
-                // -- Movement --
-                info.4,
-                MovementBundle {
-                    animation_indices: npc_animation_indices,
-                    ..default()
-                },
-                Location::Temple,
-                // -- Social --
-                Interactible::new_npc(),
-                info.3,
-                // -- Hitbox --
-                RigidBody::Dynamic,
-                LockedAxes::ROTATION_LOCKED,
-            ))
-            .with_children(|parent| {
-                parent.spawn((
-                    Collider::ball(15.),
-                    Transform::IDENTITY,
-                    Sensor,
-                    InteractionSensor,
-                    Name::new(format!("{} Interaction Sensor", info.0)),
-                ));
-
-                parent.spawn((
-                    Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
-                    Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
-                    CharacterHitbox,
-                    Name::new(format!("{} Hitbox", info.0)),
-                ));
-
-                // parent.spawn((
-                //     Collider::ball(10.),
-                //     Sensor,
-                //     ActiveEvents::COLLISION_EVENTS,
-                //     ActiveCollisionTypes::STATIC_STATIC,
-                //     CharacterCloseSensor,
-                //     Name::new(format!("{} Close Sensor", info.0)),
-                // ));
-
-                // parent.spawn((
-                //     Collider::ball(60.),
-                //     // ActiveEvents::COLLISION_EVENTS,
-                //     Sensor,
-                //     PursuitRangeSensor,
-                //     Name::new(format!("{} Pursuit Range", info.0)),
-                // ));
-
-                // parent.spawn((
-                //     Collider::ball(40.),
-                //     // ActiveEvents::COLLISION_EVENTS,
-                //     Sensor,
-                //     DetectionRangeSensor,
-                //     Name::new(format!("{} Detection Range", info.0)),
-                // ));
-
-                parent.spawn((
-                    Collider::ball(20.),
-                    // ActiveEvents::COLLISION_EVENTS,
-                    Sensor,
-                    FollowRangeSensor,
-                    Name::new(format!("{} Follow Range", info.0)),
-                ));
-            })
-            .id();
-
-        let dialog_file = std::fs::File::open(info.5).unwrap();
-        let npc_deserialized_map: BTreeMap<usize, DialogNode> =
-            serde_yaml::from_reader(dialog_file).unwrap();
-        dialogs.insert(
-            npc,
-            (
-                *npc_deserialized_map.first_key_value().unwrap().0,
-                npc_deserialized_map,
-            ),
-        );
-    }
-}
-
-/// All vilain npc
-fn spawn_vilains(
-    mut commands: Commands,
-    characters_spritesheet: Res<CharacterSpriteSheet>,
-    mut dialogs: ResMut<DialogMap>,
-    global_animations_indices: Res<GlobalAnimationIndices>,
-    mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
-) {
-    /* -------------------------------------------------------------------------- */
-    /*                                   Vilains                                  */
-    /* -------------------------------------------------------------------------- */
-
-    let olf_dialog_path = "data/olf_dialog.yml";
-
-    let npcs_infos = vec![(
-        "Olf",
-        OLF_LINE,
-        OLF_SPAWN_POSITION,
-        Reputation::new(0, 100),
-        NPCBehavior::LandmarkSeeking(
-            // match if there is none
-            reserved_random_free_landmark(&mut landmark_sensor_query, Location::SecretRoom)
-                .unwrap(),
-            Location::SecretRoom,
-        ),
-        olf_dialog_path,
-    )];
-
-    for info in npcs_infos {
-        let mut npc_animation_indices = AnimationIndices(HashMap::new());
-        npc_animation_indices.insert(CharacterState::Run, global_animations_indices[info.1][0]);
-        npc_animation_indices.insert(CharacterState::Idle, global_animations_indices[info.1][1]);
-
-        // match if there is none
-        // only check the landmark in their zone
-        // let free_random_landmark =
-        //     reserved_random_free_landmark(&mut landmark_sensor_query).unwrap();
-
-        let npc = commands
-            .spawn((
-                SpriteSheetBundle {
-                    texture_atlas: characters_spritesheet.texture_atlas.clone(),
-                    transform: Transform {
-                        translation: info.2.into(),
-                        scale: Vec3::splat(NPC_SCALE),
-                        ..default()
-                    },
-                    ..default()
-                },
-                Name::new(format!("NPC {}", info.0)),
-                NPC,
-                // -- Movement --
-                info.4,
-                MovementBundle {
-                    animation_indices: npc_animation_indices,
-                    ..default()
-                },
-                Location::SecretRoom,
-                // -- Social --
-                Interactible::new_npc(),
-                info.3,
-                TargetSeeker(TargetType::Player),
-                // -- Hitbox --
-                RigidBody::Dynamic,
-                LockedAxes::ROTATION_LOCKED,
-            ))
-            .with_children(|parent| {
-                parent.spawn((
-                    Collider::ball(15.),
-                    Transform::IDENTITY,
-                    Sensor,
-                    InteractionSensor,
-                    Name::new(format!("{} Interaction Sensor", info.0)),
-                ));
-
-                parent.spawn((
-                    Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
-                    Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
-                    CharacterHitbox,
-                    Name::new(format!("{} Hitbox", info.0)),
-                ));
-
-                // parent.spawn((
-                //     Collider::ball(10.),
-                //     Sensor,
-                //     ActiveEvents::COLLISION_EVENTS,
-                //     ActiveCollisionTypes::STATIC_STATIC,
-                //     CharacterCloseSensor,
-                //     Name::new(format!("{} Close Sensor", info.0)),
-                // ));
-
-                parent.spawn((
-                    Collider::ball(60.),
-                    // ActiveEvents::COLLISION_EVENTS,
-                    Sensor,
-                    PursuitRangeSensor,
-                    Name::new(format!("{} Pursuit Range", info.0)),
-                ));
-
-                parent.spawn((
-                    Collider::ball(40.),
-                    ActiveEvents::COLLISION_EVENTS,
-                    Sensor,
-                    DetectionRangeSensor,
-                    Name::new(format!("{} Detection Range", info.0)),
-                ));
-
-                // parent.spawn((
-                //     Collider::ball(20.),
-                //     // ActiveEvents::COLLISION_EVENTS,
-                //     Sensor,
-                //     FollowRangeSensor,
-                //     Name::new(format!("{} Follow Range", info.0)),
-                // ));
-            })
-            .id();
-
-        let dialog_file = std::fs::File::open(info.5).unwrap();
-        let npc_deserialized_map: BTreeMap<usize, DialogNode> =
-            serde_yaml::from_reader(dialog_file).unwrap();
-        dialogs.insert(
-            npc,
-            (
-                *npc_deserialized_map.first_key_value().unwrap().0,
-                npc_deserialized_map,
-            ),
-        );
-    }
 }

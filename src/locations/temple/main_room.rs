@@ -5,8 +5,11 @@ use std::time::Duration;
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
-    constants::locations::{main_room::*, CHANDELIER_FLAME_POSITIONS},
-    interactions::{Interactible, InteractionSensor},
+    constants::{
+        interactions::INTERACT_BUTTON_SCALE,
+        locations::{main_room::*, CHANDELIER_FLAME_POSITIONS},
+    },
+    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
     locations::temple::{
         secret_room::{AddSecretRoomCoverEvent, RemoveSecretRoomCoverEvent},
         Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
@@ -71,6 +74,7 @@ pub fn setup_main_room(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
+    interaction_resources: Res<InteractionResources>,
 ) {
     /* -------------------------------------------------------------------------- */
     /*                                Assets Loader                               */
@@ -241,6 +245,20 @@ pub fn setup_main_room(
                         Transform::from_translation(BANNER_SENSOR_OFFSET.into()),
                         Sensor,
                         InteractionSensor,
+                    ));
+
+                    parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BANNER_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
                     ));
 
                     parent.spawn((

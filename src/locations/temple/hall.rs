@@ -11,10 +11,11 @@ use crate::{
     characters::CharacterHitbox,
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
+        interactions::INTERACT_BUTTON_SCALE,
         locations::{hall::*, CHANDELIER_FLAME_POSITIONS},
         BACKGROUND_COLOR_INGAME,
     },
-    interactions::{Interactible, InteractionSensor},
+    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
     locations::temple::{
         Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
         OverlappingEntity, WallCollider,
@@ -125,6 +126,7 @@ pub fn setup_hall(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
+    interaction_resources: Res<InteractionResources>,
 ) {
     /* -------------------------------------------------------------------------- */
     /*                                Assets Loader                               */
@@ -322,6 +324,20 @@ pub fn setup_hall(
                     ));
 
                     parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
+                    ));
+
+                    parent.spawn((
                         TesselatedCollider {
                             texture: props_hitbox,
                             tesselator_config: TesselatedColliderConfig {
@@ -353,6 +369,20 @@ pub fn setup_hall(
                         Transform::from_translation(DOOR_SENSOR_OFFSET.into()),
                         Sensor,
                         InteractionSensor,
+                    ));
+
+                    parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
                     ));
 
                     parent.spawn((
@@ -413,6 +443,20 @@ pub fn setup_hall(
                         Transform::IDENTITY,
                         Sensor,
                         InteractionSensor,
+                    ));
+
+                    parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
                     ));
 
                     parent.spawn((

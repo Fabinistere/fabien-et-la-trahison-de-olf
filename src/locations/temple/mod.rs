@@ -357,26 +357,18 @@ pub fn open_close_door(
 
                 if sprite.index >= texture_atlas.len() - 1 {
                     commands.entity(entity).remove::<DoorInteract>();
-                    match door_collider_closed_query.get(children[1]) {
-                        Err(e) => warn!("{}", e),
-                        Ok(collider) => {
+
+                    for child in children {
+                        if let Ok(collider) = door_collider_closed_query.get(*child) {
                             commands.entity(collider).insert(Sensor);
+                        } else if let Ok(collider) = door_collider_opened_query.get(*child) {
+                            commands.entity(collider).remove::<Sensor>();
                         }
                     }
-                    *door_state = DoorState::Opened;
 
-                    match temple_door_query.get_mut(entity) {
-                        Err(_) => {}
-                        Ok(mut ovelapping_setting) => {
-                            match door_collider_opened_query.get_many([children[2], children[3]]) {
-                                Err(e) => warn!("{}", e),
-                                Ok([collider_1, collider_2]) => {
-                                    commands.entity(collider_1).remove::<Sensor>();
-                                    commands.entity(collider_2).remove::<Sensor>();
-                                }
-                            }
-                            ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
-                        }
+                    *door_state = DoorState::Opened;
+                    if let Ok(mut ovelapping_setting) = temple_door_query.get_mut(entity) {
+                        ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
                     }
                 }
             } else if *door_state == DoorState::Closing {
@@ -384,26 +376,18 @@ pub fn open_close_door(
 
                 if sprite.index == 0 {
                     commands.entity(entity).remove::<DoorInteract>();
-                    match door_collider_closed_query.get(children[1]) {
-                        Err(e) => warn!("{}", e),
-                        Ok(collider) => {
+
+                    for child in children {
+                        if let Ok(collider) = door_collider_closed_query.get(*child) {
                             commands.entity(collider).remove::<Sensor>();
+                        } else if let Ok(collider) = door_collider_opened_query.get(*child) {
+                            commands.entity(collider).insert(Sensor);
                         }
                     }
-                    *door_state = DoorState::Closed;
 
-                    match temple_door_query.get_mut(entity) {
-                        Err(_) => {}
-                        Ok(mut ovelapping_setting) => {
-                            match door_collider_opened_query.get_many([children[2], children[3]]) {
-                                Err(e) => warn!("{}", e),
-                                Ok([collider_1, collider_2]) => {
-                                    commands.entity(collider_1).insert(Sensor);
-                                    commands.entity(collider_2).insert(Sensor);
-                                }
-                            }
-                            ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
-                        }
+                    *door_state = DoorState::Closed;
+                    if let Ok(mut ovelapping_setting) = temple_door_query.get_mut(entity) {
+                        ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
                     }
                 }
             }
