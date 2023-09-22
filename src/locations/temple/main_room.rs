@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
+    characters::player::Player,
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
         interactions::INTERACT_BUTTON_SCALE,
@@ -47,13 +48,13 @@ pub struct SecretBannerEvent(pub DoorState);
 /// REFACTOR: SecretRoomCover
 pub fn secret_banner_interaction(
     mut secret_banner_event: EventReader<SecretBannerEvent>,
-    player_location: Res<State<Location>>,
+    player_location_query: Query<&Location, With<Player>>,
 
     mut remove_secret_room_cover_event: EventWriter<RemoveSecretRoomCoverEvent>,
     mut add_secret_room_cover_event: EventWriter<AddSecretRoomCoverEvent>,
 ) {
     for SecretBannerEvent(door_state) in secret_banner_event.iter() {
-        if player_location.get() == &Location::Temple {
+        if player_location_query.single() == &Location::Temple {
             match *door_state {
                 DoorState::Closed => {
                     remove_secret_room_cover_event.send(RemoveSecretRoomCoverEvent)

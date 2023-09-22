@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::{CollisionEvent, Sensor};
 
 use crate::{
-    characters::{player::Player, CharacterHitbox},
+    characters::player::{Player, PlayerHitbox},
     constants::locations::{
         hall::{TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED, TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED},
         *,
@@ -19,7 +19,7 @@ pub mod secret_room;
 #[derive(Component, Deref, DerefMut)]
 pub struct ZPosition(f32);
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, Component, States)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, Component)]
 pub enum Location {
     #[default]
     Hall,
@@ -31,8 +31,7 @@ pub struct TemplePlugin;
 
 impl Plugin for TemplePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<Location>()
-            .add_event::<main_room::SecretBannerEvent>()
+        app.add_event::<main_room::SecretBannerEvent>()
             .add_event::<hall::PropsInteractionEvent>()
             .add_event::<secret_room::SecretRoomTriggerEvent>()
             .add_event::<secret_room::RemoveSecretRoomCoverEvent>()
@@ -57,6 +56,7 @@ impl Plugin for TemplePlugin {
                     secret_room::second_layer_fake_wall_visibility,
                     secret_room::remove_secret_room_cover,
                     secret_room::add_secret_room_cover,
+                    control_wall_collider,
                 )
                     .run_if(playing),
             )
@@ -68,18 +68,6 @@ impl Plugin for TemplePlugin {
             .add_systems(
                 PostUpdate,
                 main_room::secret_banner_interaction.run_if(in_temple_or_secret_room),
-            )
-            .add_systems(
-                OnEnter(Location::Hall),
-                control_wall_collider.run_if(playing),
-            )
-            .add_systems(
-                OnEnter(Location::Temple),
-                control_wall_collider.run_if(playing),
-            )
-            .add_systems(
-                OnEnter(Location::SecretRoom),
-                control_wall_collider.run_if(playing),
             );
     }
 }
@@ -88,23 +76,40 @@ impl Plugin for TemplePlugin {
 /*                               Run If Systems                               */
 /* -------------------------------------------------------------------------- */
 
-fn in_hall(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
-    location.get() == &Location::Hall && game_state.get() == &GameState::Playing
+fn in_hall(
+    player_query: Query<&Location, With<Player>>,
+    game_state: Res<State<GameState>>,
+) -> bool {
+    player_query.get_single().is_ok()
+        && player_query.single() == &Location::Hall
+        && game_state.get() == &GameState::Playing
 }
 
-fn _in_temple(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
-    location.get() == &Location::Temple && game_state.get() == &GameState::Playing
+fn _in_temple(
+    player_query: Query<&Location, With<Player>>,
+    game_state: Res<State<GameState>>,
+) -> bool {
+    player_query.get_single().is_ok()
+        && player_query.single() == &Location::Temple
+        && game_state.get() == &GameState::Playing
 }
 
-fn _in_secret_room(location: Res<State<Location>>, game_state: Res<State<GameState>>) -> bool {
-    location.get() == &Location::SecretRoom && game_state.get() == &GameState::Playing
+fn _in_secret_room(
+    player_query: Query<&Location, With<Player>>,
+    game_state: Res<State<GameState>>,
+) -> bool {
+    player_query.get_single().is_ok()
+        && player_query.single() == &Location::SecretRoom
+        && game_state.get() == &GameState::Playing
 }
 
 fn in_temple_or_secret_room(
-    location: Res<State<Location>>,
+    player_query: Query<&Location, With<Player>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
-    (location.get() == &Location::SecretRoom || location.get() == &Location::Temple)
+    player_query.get_single().is_ok()
+        && (player_query.single() == &Location::SecretRoom
+            || player_query.single() == &Location::Temple)
         && game_state.get() == &GameState::Playing
 }
 
@@ -190,42 +195,42 @@ pub fn y_to_z_conversion(
     }
 }
 
-/// Manage where characters are
+/// Manage where the player is
 pub fn location_event(
     mut collision_events: EventReader<CollisionEvent>,
 
     location_sensor_query: Query<(Entity, &LocationSensor)>,
-    character_hitbox_query: Query<(Entity, &Parent), With<CharacterHitbox>>,
+    player_hitbox_query: Query<(Entity, &Parent), With<PlayerHitbox>>,
 
-    location: Res<State<Location>>,
-    mut next_location: ResMut<NextState<Location>>,
+    mut player_location_query: Query<&mut Location, With<Player>>,
 ) {
     for collision_event in collision_events.iter() {
         match collision_event {
             CollisionEvent::Started(e1, e2, _) => {
                 match (
-                    character_hitbox_query.get(*e1),
-                    character_hitbox_query.get(*e2),
+                    player_hitbox_query.get(*e1),
+                    player_hitbox_query.get(*e2),
                     location_sensor_query.get(*e1),
                     location_sensor_query.get(*e2),
                 ) {
                     (
-                        Ok((character_hitbox, _character)),
+                        Ok((player_hitbox, _player)),
                         Err(_),
                         Err(_),
                         Ok((location_sensor, location_point)),
                     )
                     | (
                         Err(_),
-                        Ok((character_hitbox, _character)),
+                        Ok((player_hitbox, _player)),
                         Ok((location_sensor, location_point)),
                         Err(_),
                     ) => {
-                        if (*e1 == location_sensor && *e2 == character_hitbox)
-                            || (*e1 == character_hitbox && *e2 == location_sensor)
+                        if (*e1 == location_sensor && *e2 == player_hitbox)
+                            || (*e1 == player_hitbox && *e2 == location_sensor)
                         {
-                            if location.get() != &location_point.location {
-                                next_location.set(location_point.location);
+                            let mut player_location = player_location_query.single_mut();
+                            if *player_location != location_point.location {
+                                *player_location = location_point.location;
                             }
                             break;
                         }
@@ -238,18 +243,18 @@ pub fn location_event(
     }
 }
 
-/// NOTE: Instead of OnEnter(...), just check if the state has changed
 fn control_wall_collider(
     mut commands: Commands,
-    player_location: Res<State<Location>>,
+    player_location_query: Query<&Location, (Changed<Location>, With<Player>)>,
     wall_colliders_query: Query<(Entity, &WallCollider)>,
 ) {
-    let current_location = player_location.get();
-    for (collider, WallCollider(collider_location)) in &wall_colliders_query {
-        if current_location == collider_location {
-            commands.entity(collider).remove::<Sensor>();
-        } else {
-            commands.entity(collider).insert(Sensor);
+    if let Ok(current_location) = player_location_query.get_single() {
+        for (collider, WallCollider(collider_location)) in &wall_colliders_query {
+            if current_location == collider_location {
+                commands.entity(collider).remove::<Sensor>();
+            } else {
+                commands.entity(collider).insert(Sensor);
+            }
         }
     }
 }

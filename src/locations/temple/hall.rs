@@ -8,7 +8,7 @@ use crate::{
         sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
         Fade, FadeType,
     },
-    characters::CharacterHitbox,
+    characters::{player::PlayerHitbox, CharacterHitbox},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
         interactions::INTERACT_BUTTON_SCALE,
@@ -67,7 +67,7 @@ pub fn remove_balcony_cover(
     mut collision_events: EventReader<CollisionEvent>,
 
     balcony_sensor_query: Query<Entity, With<BalconySensor>>,
-    character_hitbox_query: Query<Entity, With<CharacterHitbox>>,
+    player_hitbox_query: Query<Entity, With<PlayerHitbox>>,
 
     mut commands: Commands,
     mut balcony_cover_query: Query<(Entity, Option<&mut Fade>, &mut BalconyCover)>,
@@ -77,15 +77,15 @@ pub fn remove_balcony_cover(
         match collision_event {
             CollisionEvent::Started(e1, e2, _) => {
                 match (
-                    character_hitbox_query.get(*e1),
-                    character_hitbox_query.get(*e2),
+                    player_hitbox_query.get(*e1),
+                    player_hitbox_query.get(*e2),
                     balcony_sensor_query.get(*e1),
                     balcony_sensor_query.get(*e2),
                 ) {
-                    (Ok(character_hitbox), Err(_), Err(_), Ok(balcony_sensor))
-                    | (Err(_), Ok(character_hitbox), Ok(balcony_sensor), Err(_)) => {
-                        if (*e1 == balcony_sensor && *e2 == character_hitbox)
-                            || (*e1 == character_hitbox && *e2 == balcony_sensor)
+                    (Ok(player_hitbox), Err(_), Err(_), Ok(balcony_sensor))
+                    | (Err(_), Ok(player_hitbox), Ok(balcony_sensor), Err(_)) => {
+                        if (*e1 == balcony_sensor && *e2 == player_hitbox)
+                            || (*e1 == player_hitbox && *e2 == balcony_sensor)
                         {
                             if let Ok((cover_entity, fade_opt, mut cover)) =
                                 balcony_cover_query.get_single_mut()

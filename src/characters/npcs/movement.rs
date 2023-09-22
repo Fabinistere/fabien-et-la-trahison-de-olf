@@ -241,9 +241,7 @@ pub fn npc_movement(
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
     pos_query: Query<&GlobalTransform>,
 
-    player_query: Query<Entity, With<Player>>,
     location_query: Query<&Location>,
-    player_location: Res<State<Location>>,
     mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
     for (npc, mut behavior, potential_chaser, transform, speed, mut rb_vel, npc_name) in
@@ -281,12 +279,8 @@ pub fn npc_movement(
                 if *close {
                     (0., 0.)
                 } else {
-                    let player = player_query.single();
-                    let [npc_location, target_location] = if *target == player {
-                        [location_query.get(npc).unwrap(), player_location.get()]
-                    } else {
-                        location_query.get_many([*target, npc]).unwrap()
-                    };
+                    let [npc_location, target_location] =
+                        location_query.get_many([*target, npc]).unwrap();
 
                     if target_location != npc_location {
                         ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
@@ -356,7 +350,6 @@ pub fn chase_management(
     close_sensor_query: Query<(Entity, &Parent), With<CharacterCloseSensor>>,
 
     location_query: Query<&Location>,
-    player_location: Res<State<Location>>,
 
     mut ev_engage_pursuit: EventWriter<EngagePursuitEvent>,
     mut ev_combat: EventWriter<CombatEvent>,
@@ -477,20 +470,10 @@ pub fn chase_management(
                                         };
 
                                         if is_target_type {
-                                            // The Target muist be in the same zone
-                                            // NOTE: Can be abstracted - target and self location verification
-                                            let player = player_query.single();
-                                            let [npc_location, target_location] =
-                                                if **character == player {
-                                                    [
-                                                        location_query.get(**npc).unwrap(),
-                                                        player_location.get(),
-                                                    ]
-                                                } else {
-                                                    location_query
-                                                        .get_many([**character, **npc])
-                                                        .unwrap()
-                                                };
+                                            // The Target must be in the same zone
+                                            let [npc_location, target_location] = location_query
+                                                .get_many([**character, **npc])
+                                                .unwrap();
 
                                             if npc_location == target_location {
                                                 ev_engage_pursuit.send(EngagePursuitEvent {
