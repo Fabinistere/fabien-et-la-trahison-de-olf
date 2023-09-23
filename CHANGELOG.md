@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [![v0.4.0](https://img.shields.io/badge/v0.4.0-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)
 
+### Preview
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/151188b8-ee5b-40d0-ac3a-e92cad0880fe>
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/d5eb97c4-7fd5-4f6d-ad8c-9d50d57a14d1>
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/9af22dd1-0d50-4121-86dd-66f67e0946c1>
+
 ### Landmarks
 
 #### Added
