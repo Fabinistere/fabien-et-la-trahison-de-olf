@@ -8,7 +8,7 @@ use crate::{
         sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
         Fade, FadeType,
     },
-    characters::{player::PlayerHitbox, CharacterHitbox},
+    characters::player::PlayerHitbox,
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
         interactions::INTERACT_BUTTON_SCALE,
