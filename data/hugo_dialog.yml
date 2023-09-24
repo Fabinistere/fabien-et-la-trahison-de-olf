@@ -1,0 +1,37 @@
+1:
+  source: Hugo
+  content:
+    text:
+      - Hello fellow friend
+    exit_state: 2
+2:
+  source: Player
+  content:
+    - text: Just Follow me for a sec.
+      condition: null
+      exit_state: 3
+    - text: Who are you again ?
+      condition: null
+      exit_state: 4
+3:
+  source: Hugo
+  content:
+    text:
+      - :)
+    exit_state: 6
+  trigger_event:
+    - FollowPlayer
+4:
+  source: Hugo
+  content:
+    text:
+      - :O
+    exit_state: 5
+5:
+  source: Hugo
+  content:
+    text:
+      - Still shocked.
+    exit_state: 2
+  trigger_event:
+    - EndDialog

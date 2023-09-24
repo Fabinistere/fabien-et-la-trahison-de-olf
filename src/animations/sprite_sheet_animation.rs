@@ -96,7 +96,7 @@ pub fn jump_frame_character_state(
 ) {
     for (character, indices, mut sprite, character_state) in &mut query {
         // info!("{character_state:#?}",);
-        let (first_indice, _, _) = &indices.get(&character_state).unwrap();
+        let (first_indice, _, _) = &indices.get(character_state).unwrap();
         sprite.index = *first_indice;
 
         match character_state {
@@ -173,13 +173,13 @@ pub fn animate_character(
             if sprite.index == *last_frame {
                 // update state
                 sprite.index = indices.get(next_phase).unwrap().0;
-                *character_state = next_phase.clone();
+                *character_state = *next_phase;
             } else if sprite.index + 1 < texture_atlas.textures.len() {
-                sprite.index = sprite.index + 1
+                sprite.index += 1;
             } else {
                 error!("anim limit reached: {}", name);
                 // commands.entity(character).remove::<AnimationTimer>();
-                *character_state = next_phase.clone();
+                *character_state = *next_phase;
                 sprite.index = indices.get(next_phase).unwrap().0;
             }
         }

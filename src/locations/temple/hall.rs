@@ -8,16 +8,17 @@ use crate::{
         sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
         Fade, FadeType,
     },
-    characters::CharacterHitbox,
+    characters::player::PlayerHitbox,
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
+        interactions::INTERACT_BUTTON_SCALE,
         locations::{hall::*, CHANDELIER_FLAME_POSITIONS},
         BACKGROUND_COLOR_INGAME,
     },
-    interactions::{Interactible, InteractionSensor},
+    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
     locations::temple::{
-        Chandelier, DoorColliderClosed, DoorState, Flame, LocationSensor, OverlappingEntity,
-        PlayerLocation, WallCollider,
+        Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
+        OverlappingEntity, WallCollider,
     },
 };
 
@@ -66,7 +67,7 @@ pub fn remove_balcony_cover(
     mut collision_events: EventReader<CollisionEvent>,
 
     balcony_sensor_query: Query<Entity, With<BalconySensor>>,
-    character_hitbox_query: Query<Entity, With<CharacterHitbox>>,
+    player_hitbox_query: Query<Entity, With<PlayerHitbox>>,
 
     mut commands: Commands,
     mut balcony_cover_query: Query<(Entity, Option<&mut Fade>, &mut BalconyCover)>,
@@ -76,15 +77,15 @@ pub fn remove_balcony_cover(
         match collision_event {
             CollisionEvent::Started(e1, e2, _) => {
                 match (
-                    character_hitbox_query.get(*e1),
-                    character_hitbox_query.get(*e2),
+                    player_hitbox_query.get(*e1),
+                    player_hitbox_query.get(*e2),
                     balcony_sensor_query.get(*e1),
                     balcony_sensor_query.get(*e2),
                 ) {
-                    (Ok(character_hitbox), Err(_), Err(_), Ok(balcony_sensor))
-                    | (Err(_), Ok(character_hitbox), Ok(balcony_sensor), Err(_)) => {
-                        if (*e1 == balcony_sensor && *e2 == character_hitbox)
-                            || (*e1 == character_hitbox && *e2 == balcony_sensor)
+                    (Ok(player_hitbox), Err(_), Err(_), Ok(balcony_sensor))
+                    | (Err(_), Ok(player_hitbox), Ok(balcony_sensor), Err(_)) => {
+                        if (*e1 == balcony_sensor && *e2 == player_hitbox)
+                            || (*e1 == player_hitbox && *e2 == balcony_sensor)
                         {
                             if let Ok((cover_entity, fade_opt, mut cover)) =
                                 balcony_cover_query.get_single_mut()
@@ -125,6 +126,7 @@ pub fn setup_hall(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     asset_server: Res<AssetServer>,
+    interaction_resources: Res<InteractionResources>,
 ) {
     /* -------------------------------------------------------------------------- */
     /*                                Assets Loader                               */
@@ -262,7 +264,7 @@ pub fn setup_hall(
                 ActiveEvents::COLLISION_EVENTS,
                 Sensor,
                 LocationSensor {
-                    location: PlayerLocation::Hall,
+                    location: Location::Hall,
                 },
                 Name::new("Hall Sensor from Temple"),
             ));
@@ -296,7 +298,7 @@ pub fn setup_hall(
                                 },
                             },
                             Transform::default(),
-                            WallCollider(PlayerLocation::Hall),
+                            WallCollider(Location::Hall),
                         ));
                     }
                 });
@@ -319,6 +321,20 @@ pub fn setup_hall(
                         Transform::from_translation(BOX_SENSOR_OFFSET.into()),
                         Sensor,
                         InteractionSensor,
+                    ));
+
+                    parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
                     ));
 
                     parent.spawn((
@@ -353,6 +369,20 @@ pub fn setup_hall(
                         Transform::from_translation(DOOR_SENSOR_OFFSET.into()),
                         Sensor,
                         InteractionSensor,
+                    ));
+
+                    parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
                     ));
 
                     parent.spawn((
@@ -413,6 +443,20 @@ pub fn setup_hall(
                         Transform::IDENTITY,
                         Sensor,
                         InteractionSensor,
+                    ));
+
+                    parent.spawn((
+                        SpriteBundle {
+                            texture: interaction_resources.interact_button.clone(),
+                            transform: Transform {
+                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
+                                ..default()
+                            },
+                            visibility: Visibility::Hidden,
+                            ..default()
+                        },
+                        InteractIcon,
                     ));
 
                     parent.spawn((

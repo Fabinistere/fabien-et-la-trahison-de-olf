@@ -1,6 +1,6 @@
 # Fabien et la trahison de Olf
 
-[![v0.3.9](https://img.shields.io/badge/v0.3.9-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9)
+[![v0.4.0](https://img.shields.io/badge/v0.4.0-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-released%20version-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 [![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf#license)
 ![Demo](https://img.shields.io/badge/Demo-gray?style=flat&logo=darkreader&logoColor=181717&link=https://fabinistere.github.io/fabien-et-la-trahison-de-olf/)
@@ -10,6 +10,12 @@
 [![Title Banner](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/4cf67c3a-f587-4604-9990-db44143e6fcc)](https://fabinistere.github.io/fabien-et-la-trahison-de-olf/)
 
 <https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/07cf5f8c-ac60-4d46-be3b-9365b00c6abd>
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/151188b8-ee5b-40d0-ac3a-e92cad0880fe>
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/d5eb97c4-7fd5-4f6d-ad8c-9d50d57a14d1>
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/9af22dd1-0d50-4121-86dd-66f67e0946c1>
 
 Play the [technical demo here](https://fabinistere.github.io/fabien-et-la-trahison-de-olf/)
 

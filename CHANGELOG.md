@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## NPCs Update - [v0.4.0](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0) - 2023-09-24
+
+[![v0.4.0](https://img.shields.io/badge/v0.4.0-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)
+
+### Preview
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/151188b8-ee5b-40d0-ac3a-e92cad0880fe>
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/d5eb97c4-7fd5-4f6d-ad8c-9d50d57a14d1>
+
+<https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/assets/73140258/9af22dd1-0d50-4121-86dd-66f67e0946c1>
+
+### Landmarks
+
+#### Added
+
+- Landmarks Sensor
+  - Hall
+  - Temple
+  - Secret Room
+- Landmarks forcing
+
+#### Changed
+
+- globalize `PlayerLocation` to `Location`
+  - The component `Location` is given to
+    - Each npc
+    - Each landmark
+  - `Location` is still a `State` to keep the quick and easy access to the player's location
+- globalize Spritesheet Indices
+
+### Dialog
+
+- YML Dialog and reorganize ui components
+
+### NPCs' Behavior
+
+#### Refactored
+
+- Follow Behavior
+  - add and use a `FollowRangeSensor` to detect the follow_target's hitbox
+- JustWalk to LandmarkSeeking
+
+#### Added
+
+- Detection Behavior
+  - `TargetSeeker`
+  - `DetectionRangeSensor` used to analyze all entering characters' hitbox and compare with their `TargetType`
+    - if it correpond: Deactivate this sensor and start the Chase Behavior with the component `Chaser`.
+- Chase Behavior
+  - `Chaser`
+  - `PursuitRangeSensor` used to analyze all exiting characters' hitbox and compare with their `Chaser`'s `target`
+    - if it correpond: Deactivate this sensor and remove the Chase Behavior.
+  - The `CharacterCloseSensor` used to detect all entering `Chaser`s hitbox and start a Combat if the `Chaser`'s `target` is the parent of the `CharacterCloseSensor`.
+
 ## Map, Title Screen and Animation Update - [v0.3.9](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9) - 2023-08-31
 
 [![v0.3.9](https://img.shields.io/badge/v0.3.9-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9)

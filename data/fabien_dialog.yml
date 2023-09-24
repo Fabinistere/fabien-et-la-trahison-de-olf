@@ -1,0 +1,37 @@
+1:
+  source: Fabien
+  content:
+    text:
+      - Hello
+      - <3
+    exit_state: 2
+2:
+  source: Player
+  content:
+    - text: Hey
+      condition: null
+      exit_state: 3
+    - text: No Hello
+      condition: null
+      exit_state: 4
+    - text: Want to share a flat ?
+      condition: null
+      exit_state: 5
+3:
+  source: Fabien
+  content:
+    text:
+      - :)
+    exit_state: 6
+4:
+  source: Fabien
+  content:
+    text:
+      - :O
+    exit_state: 6
+5:
+  source: Fabien
+  content:
+    text:
+      - Sure
+    exit_state: 6

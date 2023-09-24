@@ -5,8 +5,12 @@ use crate::{
     animations::sprite_sheet_animation::{
         AnimationIndices, CharacterState, SpriteSheetAnimation, TempoAnimation,
     },
+    characters::npcs::movement::{Chaser, NPCBehavior, TargetSeeker, TargetType},
     collisions::{TesselatedCollider, TesselatedColliderConfig},
-    locations::temple::{OverlappingEntity, PlayerLocation},
+    locations::{
+        landmarks::Landmark,
+        temple::{Location, OverlappingEntity},
+    },
     menu::{ManorLightsPattern, ManorLightsTimer},
     GameState,
 };
@@ -18,11 +22,8 @@ impl Plugin for DebugPlugin {
         if cfg!(debug_assertions) {
             app.add_plugins((WorldInspectorPlugin::new(),))
                 .register_type::<GameState>()
-                .register_type::<PlayerLocation>()
-                .add_plugins((
-                    StateInspectorPlugin::<GameState>::default(),
-                    StateInspectorPlugin::<PlayerLocation>::default(),
-                ))
+                .register_type::<Location>()
+                .add_plugins((StateInspectorPlugin::<GameState>::default(),))
                 /* -------------------------------------------------------------------------- */
                 /*                              Global Animation                              */
                 /* -------------------------------------------------------------------------- */
@@ -38,10 +39,16 @@ impl Plugin for DebugPlugin {
                 /* -------------------------------------------------------------------------- */
                 .register_type::<AnimationIndices>()
                 .register_type::<CharacterState>()
+                .register_type::<NPCBehavior>()
+                .register_type::<TargetSeeker>()
+                .register_type::<TargetType>()
+                .register_type::<Chaser>()
+                .register_type::<Location>()
                 /* -------------------------------------------------------------------------- */
                 /*                                     Map                                    */
                 /* -------------------------------------------------------------------------- */
                 .register_type::<OverlappingEntity>()
+                .register_type::<Landmark>()
                 /* -------------------------------------------------------------------------- */
                 /*                                   Hitbox                                   */
                 /* -------------------------------------------------------------------------- */

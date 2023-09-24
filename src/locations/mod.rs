@@ -1,23 +1,14 @@
+pub mod landmarks;
 pub mod temple;
 
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
 pub struct LocationsPlugin;
 
 impl Plugin for LocationsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(temple::TemplePlugin);
+        app.add_plugins((temple::TemplePlugin, landmarks::LandmarkPlugin));
     }
-}
-
-pub fn _spawn_collision_cuboid(commands: &mut Commands, x: f32, y: f32, width: f32, height: f32) {
-    commands.spawn((
-        Collider::cuboid(width, height),
-        Transform::from_xyz(x, y, 0.),
-        Friction::coefficient(0.),
-        Restitution::coefficient(0.),
-    ));
 }
 
 /*

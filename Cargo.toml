@@ -1,7 +1,9 @@
 [package]
 name = "fabien-et-la-trahison-de-olf"
-version = "0.3.9"
+version = "0.4.0"
 authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "Olf EPAIN <wabtey@disroot.org>", "Grassouille la Fripouille", "Sombre Roi René"]
+repository = "https://github.com/Fabinistere/fabien-et-la-trahison-de-olf"
+license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [workspace]
@@ -23,6 +25,10 @@ bevy_reflect = "0.11"
 # ----------- Common ----------
 # bevy = "0.11"
 bevy_tweening = "0.8"
+
+# ---------- Dialog -----------
+yml_dialog = "0.2"
+serde_yaml = "0.9"
 
 # ----- Hitbox - Velocity -----
 bevy_rapier2d = { version = "0.22", features = ["simd-stable", "debug-render-2d"] }

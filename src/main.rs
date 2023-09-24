@@ -3,6 +3,7 @@
 pub mod animations;
 pub mod characters;
 mod collisions;
+pub mod combat;
 pub mod constants;
 pub mod controls;
 pub mod debug;
@@ -29,7 +30,20 @@ use crate::{
 pub enum GameState {
     #[default]
     Menu,
+    /// Game without any HUD.
+    /// Exploration.
     Playing,
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
+pub enum HUDState {
+    #[default]
+    Closed,
+    // /// is also the Team's Inventory
+    CombatWall,
+    // LogCave,
+    DialogWall,
+    OptionsWall,
 }
 
 #[derive(Component)]
@@ -37,7 +51,7 @@ struct PlayerCamera;
 
 fn main() {
     let mut app = App::new();
-    
+
     #[cfg(debug_assertions)]
     app.add_plugins(RapierDebugRenderPlugin::default());
 
@@ -54,7 +68,7 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        title: "Fabien et le trahison de Olf".to_string(),
+                        title: "Fabien et la Trahison de Olf".to_string(),
                         // vsync: true,
                         mode: bevy::window::WindowMode::BorderlessFullscreen,
                         ..Window::default()
@@ -77,9 +91,11 @@ fn main() {
             locations::LocationsPlugin,
             menu::MenuPlugin,
             characters::CharactersPlugin,
+            combat::CombatPlugin,
             ui::UiPlugin,
         ))
         .add_state::<GameState>()
+        .add_state::<HUDState>()
         .add_systems(Startup, (game_setup, music))
         .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 
@@ -132,4 +148,12 @@ pub fn playing(game_state: Res<State<GameState>>) -> bool {
 
 pub fn in_menu(game_state: Res<State<GameState>>) -> bool {
     game_state.get() == &GameState::Menu
+}
+
+pub fn hud_closed(hud_state: Res<State<HUDState>>) -> bool {
+    hud_state.get() == &HUDState::Closed
+}
+
+pub fn hud_opened(hud_state: Res<State<HUDState>>) -> bool {
+    hud_state.get() != &HUDState::Closed
 }
