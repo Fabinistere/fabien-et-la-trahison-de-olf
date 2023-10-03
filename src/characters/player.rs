@@ -16,6 +16,7 @@ use crate::{
     constants::character::{player::*, *},
     controls::KeyBindings,
     hud_closed,
+    locations::temple::Location,
     ui::dialog_systems::DialogMap,
     GameState, PlayerCamera,
 };
@@ -33,6 +34,9 @@ impl Plugin for PlayerPlugin {
 
 #[derive(Component)]
 pub struct Player;
+
+#[derive(Component)]
+pub struct PlayerHitbox;
 
 #[derive(Component)]
 struct Immobilized;
@@ -162,6 +166,7 @@ fn spawn_player(
             },
             Name::new("Player"),
             Player,
+            Location::default(),
             // -- Social --
             Reputation::new(100, 0),
             Leader,
@@ -180,6 +185,7 @@ fn spawn_player(
             parent.spawn((
                 Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
                 Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
+                PlayerHitbox,
                 CharacterHitbox,
                 Name::new("Player Hitbox"),
             ));

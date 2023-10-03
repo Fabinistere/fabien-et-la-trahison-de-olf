@@ -23,10 +23,7 @@ impl Plugin for DebugPlugin {
             app.add_plugins((WorldInspectorPlugin::new(),))
                 .register_type::<GameState>()
                 .register_type::<Location>()
-                .add_plugins((
-                    StateInspectorPlugin::<GameState>::default(),
-                    StateInspectorPlugin::<Location>::default(),
-                ))
+                .add_plugins((StateInspectorPlugin::<GameState>::default(),))
                 /* -------------------------------------------------------------------------- */
                 /*                              Global Animation                              */
                 /* -------------------------------------------------------------------------- */
@@ -46,6 +43,7 @@ impl Plugin for DebugPlugin {
                 .register_type::<TargetSeeker>()
                 .register_type::<TargetType>()
                 .register_type::<Chaser>()
+                .register_type::<Location>()
                 /* -------------------------------------------------------------------------- */
                 /*                                     Map                                    */
                 /* -------------------------------------------------------------------------- */
