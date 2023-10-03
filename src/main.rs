@@ -54,6 +54,9 @@ fn main() {
 
     #[cfg(debug_assertions)]
     app.add_plugins(RapierDebugRenderPlugin::default());
+    // When building for WASM, print panics to the browser console
+    #[cfg(target_arch = "wasm32")]
+    console_error_panic_hook::set_once();
 
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
