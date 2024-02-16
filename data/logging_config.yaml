@@ -1,0 +1,44 @@
+appenders:
+  my_stdout:
+    kind: console
+    encoder:
+      pattern: "{h({d(%Y-%m-%d %H:%M:%S)(utc)} - {l}: {m}{n})}"
+  my_file_logger:
+    kind: rolling_file
+    path: "log/all.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)(utc)} - {h({l})}: {m}{n}"
+  combat:
+    kind: rolling_file
+    path: "log/combat.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)(utc)} - {h({l})}: {m}{n}"
+  movement:
+    kind: rolling_file
+    path: "log/movement.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)(utc)} - {h({l})}: {m}{n}"
+  npcs_behaviors:
+    kind: rolling_file
+    path: "log/npcs_behaviors.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)(utc)} - {h({l})}: {m}{n}"
+  misc:
+    kind: rolling_file
+    path: "log/misc.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S)(utc)} - {h({l})}: {m}{n}"
+root:
+  level: trace
+  appenders:
+    - my_stdout
+    - my_file_logger
+loggers:
+  special:
+    level: info
+    appenders:
+      - combat
+      - movement
+      - npcs_behaviors
+      - misc
+    additive: true

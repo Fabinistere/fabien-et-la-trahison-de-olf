@@ -3,7 +3,9 @@ use bevy_rapier2d::prelude::*;
 use std::time::Duration;
 
 use crate::{
-    animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
+    animations::sprite_sheet_animation::{
+        AnimationDuration, SpriteSheetAnimation, SpriteSheetIndex,
+    },
     characters::player::Player,
     collisions::{TesselatedCollider, TesselatedColliderConfig},
     constants::{
@@ -428,8 +430,10 @@ pub fn setup_main_room(
                                     ..default()
                                 },
                                 SpriteSheetAnimation {
-                                    start_index: 0,
-                                    end_index: small_flame_texture_atlas.clone().len() - 1,
+                                    index: SpriteSheetIndex::new(
+                                        0,
+                                        small_flame_texture_atlas.clone().len() - 1,
+                                    ),
                                     duration: AnimationDuration::Infinite,
                                     timer: Timer::new(
                                         Duration::from_millis(100),
@@ -495,8 +499,10 @@ pub fn setup_main_room(
                                 ..default()
                             },
                             SpriteSheetAnimation {
-                                start_index: 0,
-                                end_index: medium_flame_texture_atlas.clone().len() - 1,
+                                index: SpriteSheetIndex::new(
+                                    0,
+                                    medium_flame_texture_atlas.clone().len() - 1,
+                                ),
                                 duration: AnimationDuration::Infinite,
                                 timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                             },

@@ -78,7 +78,7 @@ pub struct InteractionResources {
 }
 
 pub fn setup_interactions(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let button = asset_server.load("textures/hud/interact_button.png");
+    let button = asset_server.load("textures/UI/HUD/dialog/interact_button.png");
     commands.insert_resource(InteractionResources {
         interact_button: button,
     });

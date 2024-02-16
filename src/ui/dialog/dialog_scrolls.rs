@@ -3,7 +3,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    constants::ui::dialogs::SCROLL_ANIMATION_FRAMES_NUMBER, ui::dialog_panel::DialogPanelResources,
+    constants::ui::dialogs::SCROLL_ANIMATION_FRAMES_NUMBER,
+    ui::dialog::dialog_panel::DialogPanelResources,
 };
 
 /// Any scroll should have this component.

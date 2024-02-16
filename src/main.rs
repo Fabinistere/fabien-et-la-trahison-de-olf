@@ -1,4 +1,6 @@
 #![allow(clippy::type_complexity)]
+// #![feature(trivial_bounds)]
+// // ^^--- allow reflect on Vec<T>
 
 pub mod animations;
 pub mod characters;
@@ -30,12 +32,10 @@ use crate::{
 pub enum GameState {
     #[default]
     Menu,
-    /// Game without any HUD.
-    /// Exploration.
     Playing,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Reflect, States)]
 pub enum HUDState {
     #[default]
     Closed,
@@ -86,16 +86,16 @@ fn main() {
             bevy_tweening::TweeningPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.),
             // ----- Our plugins -----
-            animations::AnimationPlugin,
-            dialogs::DialogsPlugin,
             debug::DebugPlugin,
-            collisions::CollisionsPlugin,
-            interactions::InteractionsPlugin,
-            locations::LocationsPlugin,
+            animations::AnimationPlugin,
             menu::MenuPlugin,
+            collisions::CollisionsPlugin,
             characters::CharactersPlugin,
-            combat::CombatPlugin,
+            locations::LocationsPlugin,
+            interactions::InteractionsPlugin,
             ui::UiPlugin,
+            dialogs::DialogsPlugin,
+            combat::CombatPlugin,
         ))
         .add_state::<GameState>()
         .add_state::<HUDState>()
@@ -113,8 +113,8 @@ fn main() {
 }
 
 fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+    // NOTE: Why is this time, gravity settings are required ?
     rapier_config.gravity = Vect::ZERO;
-
     let mut camera = Camera2dBundle::default();
     camera.projection.scale = 0.1;
     commands.spawn((camera, PlayerCamera));
@@ -138,7 +138,7 @@ fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
         CastleTheme,
     ));
 
-    info!("audio playing...");
+    info!(target: "misc", "audio playing...");
 }
 
 /* -------------------------------------------------------------------------- */

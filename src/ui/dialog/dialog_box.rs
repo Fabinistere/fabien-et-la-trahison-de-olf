@@ -2,7 +2,9 @@
 
 use bevy::prelude::*;
 
-use crate::{constants::ui::dialogs::DIALOG_BOX_UPDATE_DELTA_S, ui::dialog_scrolls::ButtonChoice};
+use crate::{
+    constants::ui::dialogs::DIALOG_BOX_UPDATE_DELTA_S, ui::dialog::dialog_scrolls::ButtonChoice,
+};
 
 use super::dialog_scrolls::MonologPanel;
 
@@ -78,7 +80,7 @@ pub fn reset_dialog_box(
         let (potential_dialog_box, children) = dialog_box_query.get_mut(*dialog_box).unwrap();
         match potential_dialog_box {
             None => {
-                // info!("DEBUG: no DialogBox in the UpperScroll/ButtonChoice");
+                // debug!("no DialogBox in the UpperScroll/ButtonChoice");
                 commands.entity(*dialog_box).insert(DialogBox::new(
                     event_text.clone(),
                     DIALOG_BOX_UPDATE_DELTA_S,

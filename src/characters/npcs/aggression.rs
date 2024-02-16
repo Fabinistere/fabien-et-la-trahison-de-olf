@@ -91,7 +91,7 @@ pub fn activate_pursuit_urge(
     } in ev_engage_pursuit.iter()
     {
         let (npc, children, name) = npc_query.get(*npc_entity).unwrap();
-        info!("activate pursuit urge to {}", name);
+        info!(target: "npcs_behaviors", "activate pursuit urge to {}", name);
 
         commands.entity(npc).insert(Chaser::new(*target_entity));
 

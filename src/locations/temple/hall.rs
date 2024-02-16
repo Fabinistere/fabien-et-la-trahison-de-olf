@@ -5,7 +5,7 @@ use std::time::Duration;
 use crate::{
     animations::{
         functions::ease_in_sine,
-        sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
+        sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation, SpriteSheetIndex},
         Fade, FadeType,
     },
     characters::player::PlayerHitbox,
@@ -480,8 +480,10 @@ pub fn setup_hall(
                             ..default()
                         },
                         SpriteSheetAnimation {
-                            start_index: 0,
-                            end_index: small_flame_texture_atlas.clone().len() - 1,
+                            index: SpriteSheetIndex::new(
+                                0,
+                                small_flame_texture_atlas.clone().len() - 1,
+                            ),
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },
@@ -529,8 +531,10 @@ pub fn setup_hall(
                                     ..default()
                                 },
                                 SpriteSheetAnimation {
-                                    start_index: 0,
-                                    end_index: small_flame_texture_atlas.clone().len() - 1,
+                                    index: SpriteSheetIndex::new(
+                                        0,
+                                        small_flame_texture_atlas.clone().len() - 1,
+                                    ),
                                     duration: AnimationDuration::Infinite,
                                     timer: Timer::new(
                                         Duration::from_millis(100),

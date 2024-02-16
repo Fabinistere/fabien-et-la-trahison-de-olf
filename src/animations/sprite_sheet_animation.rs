@@ -44,10 +44,24 @@ pub struct AnimationIndices(pub HashMap<CharacterState, (usize, usize, Character
 
 #[derive(Reflect, Component)]
 pub struct SpriteSheetAnimation {
-    pub start_index: usize,
-    pub end_index: usize,
+    pub index: SpriteSheetIndex,
     pub timer: Timer,
     pub duration: AnimationDuration,
+}
+
+#[derive(Reflect, Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct SpriteSheetIndex {
+    pub start_index: usize,
+    pub end_index: usize,
+}
+
+impl SpriteSheetIndex {
+    pub fn new(start_index: usize, end_index: usize) -> Self {
+        SpriteSheetIndex {
+            start_index,
+            end_index,
+        }
+    }
 }
 
 #[derive(Reflect, PartialEq, Eq, PartialOrd, Ord, Component)]
@@ -68,11 +82,11 @@ pub fn animate_sprite_sheet(
         animation.timer.tick(time.delta());
 
         if animation.timer.finished() {
-            if sprite.index >= animation.end_index {
+            if sprite.index >= animation.index.end_index {
                 if animation.duration == AnimationDuration::Once {
                     commands.entity(entity).remove::<SpriteSheetAnimation>();
                 } else {
-                    sprite.index = animation.start_index;
+                    sprite.index = animation.index.start_index;
                 }
             } else {
                 sprite.index += 1;
@@ -241,11 +255,11 @@ pub fn animate_ui_atlas(
         animation.timer.tick(time.delta());
 
         if animation.timer.finished() {
-            if atlas_image.index >= animation.end_index {
+            if atlas_image.index >= animation.index.end_index {
                 if animation.duration == AnimationDuration::Once {
                     commands.entity(entity).remove::<SpriteSheetAnimation>();
                 } else {
-                    atlas_image.index = animation.start_index;
+                    atlas_image.index = animation.index.start_index;
                     if smoke_query.get(entity).is_ok() {
                         commands.entity(entity).insert(TempoAnimation(Timer::new(
                             Duration::from_secs(rand::thread_rng().gen_range(6..=15)),

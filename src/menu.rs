@@ -1,7 +1,9 @@
 use std::time::Duration;
 
 use crate::{
-    animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
+    animations::sprite_sheet_animation::{
+        AnimationDuration, SpriteSheetAnimation, SpriteSheetIndex,
+    },
     in_menu, DialogId, Dialogs, GameState, Language,
 };
 use bevy::{input::keyboard::KeyboardInput, prelude::*, window::WindowResized};
@@ -226,6 +228,7 @@ fn adjust_art_height(
     {
         let mut style = query.single_mut();
         info!(
+            target: "misc",
             "window's width: {} * {} / window's height {} = {}",
             width,
             (9. / 16.),
@@ -306,8 +309,7 @@ fn setup_menu(
                         ..default()
                     },
                     SpriteSheetAnimation {
-                        start_index: 0,
-                        end_index: clouds_texture_atlas.len() - 1,
+                        index: SpriteSheetIndex::new(0, clouds_texture_atlas.len() - 1),
                         duration: AnimationDuration::Infinite,
                         timer: Timer::new(Duration::from_millis(150), TimerMode::Repeating),
                     },
@@ -329,8 +331,7 @@ fn setup_menu(
                             ..default()
                         },
                         SpriteSheetAnimation {
-                            start_index: 0,
-                            end_index: smoke_texture_atlas.len() - 1,
+                            index: SpriteSheetIndex::new(0, smoke_texture_atlas.len() - 1),
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },

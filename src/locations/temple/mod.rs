@@ -62,8 +62,7 @@ impl Plugin for TemplePlugin {
             )
             .add_systems(
                 PostUpdate,
-                (hall::props_interaction_event, hall::remove_balcony_cover)
-                    .distributive_run_if(in_hall),
+                (hall::props_interaction_event, hall::remove_balcony_cover).run_if(in_hall),
             )
             .add_systems(
                 PostUpdate,

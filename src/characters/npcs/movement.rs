@@ -284,7 +284,7 @@ pub fn npc_movement(
 
                     if target_location != npc_location {
                         ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
-                        info!("{} change zone. {:?}: chase canceled", npc_name, *target);
+                        info!(target: "npcs_behaviors", "{} change zone. {:?}: chase canceled", npc_name, *target);
                         (0., 0.)
                     } else {
                         let target_transform = pos_query.get(*target).unwrap();
@@ -423,7 +423,7 @@ pub fn chase_management(
                                                 // The npc has their target leaving their `PursuitRangeSensor`
                                                 ev_stop_chase
                                                     .send(StopChaseEvent { npc_entity: **npc });
-                                                info!(
+                                                info!(target: "npcs_behaviors",
                                                     "{} outran {}: chase canceled",
                                                     character_name, npc_name
                                                 );
@@ -480,7 +480,7 @@ pub fn chase_management(
                                                     npc_entity: **npc,
                                                     target_entity: **character,
                                                 });
-                                                info!(
+                                                info!(target: "npcs_behaviors",
                                                     "{} detected {}: chase initialized",
                                                     npc_name, character_name
                                                 );
@@ -509,6 +509,11 @@ pub fn chase_management(
                                         if chaser.target == **closed_character
                                             && collision_event.is_started()
                                         {
+                                            info!(target: "npcs_behaviors",
+                                                "Target Caught in 4K by {:?} {}",
+                                                character, npc_name
+                                            );
+
                                             // The npc entered the close sensor of their target
                                             chaser.close = true;
                                             ev_combat.send(CombatEvent {
@@ -517,10 +522,6 @@ pub fn chase_management(
                                             ev_stop_chase.send(StopChaseEvent {
                                                 npc_entity: **character,
                                             });
-                                            info!(
-                                                "Target Caught in 4K by {:?} {}",
-                                                character, npc_name
-                                            );
 
                                             // handle flee when pressing o or moving ? (timer on npc before rechase)
                                             // 'global' timer (on player)

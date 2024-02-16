@@ -26,7 +26,7 @@ use crate::{
         landmarks::{reserved_random_free_landmark, Landmark},
         temple::{Location, OverlappingEntity},
     },
-    ui::dialog_systems::{CurrentInterlocutor, DialogMap},
+    ui::dialog::dialog_systems::{CurrentInterlocutor, DialogMap},
     GameState, HUDState,
 };
 

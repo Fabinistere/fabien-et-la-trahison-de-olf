@@ -17,7 +17,7 @@ use crate::{
     controls::KeyBindings,
     hud_closed,
     locations::temple::Location,
-    ui::dialog_systems::DialogMap,
+    ui::dialog::dialog_systems::DialogMap,
     GameState, PlayerCamera,
 };
 

@@ -17,7 +17,9 @@ use std::time::Duration;
 use crate::{
     characters::player::Player,
     constants::ui::dialogs::*,
-    ui::dialog_scrolls::{ButtonChoice, MonologPanel, PlayerChoicePanel, Scroll, ScrollTimer},
+    ui::dialog::dialog_scrolls::{
+        ButtonChoice, MonologPanel, PlayerChoicePanel, Scroll, ScrollTimer,
+    },
     HUDState,
 };
 
@@ -44,25 +46,27 @@ pub fn load_textures(
     asset_server: Res<AssetServer>,
     // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    // let scroll_texture = asset_server.load("textures/hud/scroll_animation.png");
+    // let scroll_texture = asset_server.load("textures/UI/HUD/dialog/scroll_animation.png");
     // let scroll_atlas = TextureAtlas::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45);
 
     let mut scroll_animation_frames = vec![];
     for i in 0..SCROLL_ANIMATION_FRAMES_NUMBER {
-        scroll_animation_frames
-            .push(asset_server.load(&format!("textures/hud/scroll_animation/frame_{}.png", i)));
+        scroll_animation_frames.push(asset_server.load(&format!(
+            "textures/UI/HUD/dialog/scroll_animation/frame_{}.png",
+            i
+        )));
     }
 
     commands.insert_resource(DialogPanelResources {
         text_font: asset_server.load("fonts/dpcomic.ttf"),
-        appartements: asset_server.load("textures/hud/papier_paint.png"),
-        background: asset_server.load("textures/hud/dialog_background.png"),
+        appartements: asset_server.load("textures/UI/HUD/dialog/papier_paint.png"),
+        background: asset_server.load("textures/UI/HUD/dialog/dialog_background.png"),
         scroll_animation: scroll_animation_frames,
-        chandelier: asset_server.load("textures/hud/chandelier.png"),
-        _stained_glass_closed: asset_server.load("textures/hud/stained_glass_closed.png"),
-        stained_glass_opened: asset_server.load("textures/hud/stained_glass_opened.png"),
-        _stained_glass_bars: asset_server.load("textures/hud/stained_glass_bars.png"),
-        stained_glass_panels: asset_server.load("textures/hud/stained_glass_panels.png"),
+        chandelier: asset_server.load("textures/UI/HUD/dialog/chandelier.png"),
+        _stained_glass_closed: asset_server.load("textures/UI/HUD/dialog/stained_glass_closed.png"),
+        stained_glass_opened: asset_server.load("textures/UI/HUD/dialog/stained_glass_opened.png"),
+        _stained_glass_bars: asset_server.load("textures/UI/HUD/dialog/stained_glass_bars.png"),
+        stained_glass_panels: asset_server.load("textures/UI/HUD/dialog/stained_glass_panels.png"),
     });
 }
 
@@ -337,7 +341,7 @@ pub fn create_dialog_panel(
             // Player Scroll
 
             let player_scroll_img =
-                asset_server.load("textures/hud/HUD_1px_parchemin_MC_ouvert.png");
+                asset_server.load("textures/UI/HUD/dialog/HUD_1px_parchemin_MC_ouvert.png");
 
             parent
                 .spawn((
@@ -385,7 +389,7 @@ pub fn create_dialog_panel(
                                         left: Val::Px(BUTTON_LEFT_VAL),
                                         ..default()
                                     },
-                                    background_color: NORMAL_BUTTON.into(),
+                                    background_color: TRANSPARENT_BUTTON.into(),
                                     visibility: Visibility::Hidden,
                                     ..default()
                                 },

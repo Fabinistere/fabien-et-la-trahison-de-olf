@@ -4,7 +4,7 @@ use bevy_rapier2d::prelude::*;
 use crate::{
     animations::{
         functions::{ease_in_sine, ease_out_sine},
-        sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
+        sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation, SpriteSheetIndex},
         Fade, FadeType,
     },
     characters::player::Player,
@@ -344,8 +344,10 @@ pub fn setup_secret_room(
                             ..default()
                         },
                         SpriteSheetAnimation {
-                            start_index: 0,
-                            end_index: flower_panel_texture_atlas[count].clone().len() - 1,
+                            index: SpriteSheetIndex::new(
+                                0,
+                                flower_panel_texture_atlas[count].clone().len() - 1,
+                            ),
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },
@@ -389,8 +391,7 @@ pub fn setup_secret_room(
                     ..default()
                 },
                 SpriteSheetAnimation {
-                    start_index: 0,
-                    end_index: wall_pot_texture_atlas.len() - 1,
+                    index: SpriteSheetIndex::new(0, wall_pot_texture_atlas.len() - 1),
                     duration: AnimationDuration::Infinite,
                     timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                 },

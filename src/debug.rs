@@ -1,5 +1,14 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::{StateInspectorPlugin, WorldInspectorPlugin};
+use log4rs::{
+    append::{
+        console::{ConsoleAppender, Target},
+        file::FileAppender,
+    },
+    config::{Appender, Config, Root},
+    encode::pattern::PatternEncoder,
+    filter::threshold::ThresholdFilter,
+};
 
 use crate::{
     animations::sprite_sheet_animation::{
@@ -19,6 +28,44 @@ pub struct DebugPlugin;
 
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
+        // log4rs::init_file("data/logging_config.yaml", Default::default()).unwrap();
+
+        // trace!("detailed tracing info");
+        // debug!("debug info");
+        // info!("relevant general info");
+        // warn!("warning this program doesn't do much");
+        // error!("error message here");
+
+        // let level = log::LevelFilter::Info;
+        // let file_path = "/home/olf/Code/fabien-et-la-trahison-de-olf/log/all.log";
+        // // Build a stderr logger.
+        // let stderr = ConsoleAppender::builder().target(Target::Stderr).build();
+        // // Logging to log file.
+        // let logfile = FileAppender::builder()
+        //     // Pattern: https://docs.rs/log4rs/*/log4rs/encode/pattern/index.html
+        //     .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        //     .build(file_path)
+        //     .unwrap();
+
+        // // Log Trace level output to file where trace is the default level
+        // // and the programmatically specified level to stderr.
+        // let config = Config::builder()
+        //     .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        //     .appender(
+        //         Appender::builder()
+        //             .filter(Box::new(ThresholdFilter::new(level)))
+        //             .build("stderr", Box::new(stderr)),
+        //     )
+        //     .build(
+        //         Root::builder()
+        //             .appender("logfile")
+        //             .appender("stderr")
+        //             .build(log::LevelFilter::Trace),
+        //     )
+        //     .unwrap();
+
+        // let _handle = log4rs::init_config(config).unwrap();
+
         if cfg!(debug_assertions) {
             app.add_plugins((WorldInspectorPlugin::new(),))
                 .register_type::<GameState>()

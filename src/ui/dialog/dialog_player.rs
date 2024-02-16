@@ -6,7 +6,7 @@ use bevy::{
 };
 use yml_dialog::Content;
 
-use crate::ui::{
+use crate::ui::dialog::{
     dialog_scrolls::{ButtonChoice, Monolog},
     dialog_systems::{ChangeStateEvent, CurrentInterlocutor, DialogMap},
 };

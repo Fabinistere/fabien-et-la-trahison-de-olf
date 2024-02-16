@@ -48,7 +48,8 @@ rand = "0.8.5"
 console_error_panic_hook = "0.1"
 # until a clear release, we're tracking `main`
 bevy-inspector-egui = { version = "0.18", git = "https://github.com/jakobhellermann/bevy-inspector-egui", rev = "a181bdf5c5c621d524d63ee89e22570e01e1b162" }
-# log = "0.4.17"
+log = "0.4.17"
+log4rs = { version = "1", features = ["file_appender"] }
 
 [profile.dev.package."*"]
 opt-level = 3
