@@ -47,15 +47,8 @@ pub struct CombatPlugin;
 
 impl Plugin for CombatPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SpawnCombatFoesEvent>()
-            .add_event::<CombatEvent>()
-            .add_systems(
-                Update,
-                (
-                    spawn_party_members.before(CombatState::Initiation),
-                    enter_combat.in_set(CombatState::Initiation),
-                ),
-            )
+        app.add_event::<CombatEvent>()
+            .add_systems(Update, enter_combat.in_set(CombatState::Initiation))
             .add_systems(
                 OnExit(HUDState::CombatWall),
                 exit_combat
@@ -189,7 +182,8 @@ impl FairPlayTimer {
 /// Happens when:
 ///   - npc::movement::pursue
 ///     - target is reach
-/// Read in
+///
+/// Read in:
 ///   - ui::dialog_panel::create_dialog_panel_on_combat_event
 ///     - open combat ui
 ///   - combat::mod::freeze_in_combat
@@ -197,20 +191,6 @@ impl FairPlayTimer {
 #[derive(Event)]
 pub struct CombatEvent {
     pub entity: Entity,
-}
-
-/// Happens when:
-///   - combat::mod::combat
-///     - A aggressive npc encountered the player's group
-///
-/// Read in:
-///   - combat::mod::spawn_party_members
-///     - Spawn every foes hidden behind the initial
-///       aggressive npc
-#[derive(Event)]
-pub struct SpawnCombatFoesEvent {
-    pub leader: Entity,
-    pub group_size: usize,
 }
 
 /* -------------------------------------------------------------------------- */
@@ -267,38 +247,28 @@ pub fn enter_combat(
     mut commands: Commands,
 
     mut ev_combat_enter: EventReader<CombatEvent>,
-    mut ev_spawn_fabicurion: EventWriter<SpawnCombatFoesEvent>,
 
     mut player_query: Query<Entity, (With<Player>, Without<NPC>)>,
     mut player_companie: Query<Entity, (With<NPC>, With<Recruted>)>,
     mut foes_query: Query<(Entity, Option<&GroupSize>), (With<NPC>, Without<Recruted>)>,
 ) {
     for CombatEvent { entity } in ev_combat_enter.iter() {
-        info!("Combat Event");
+        debug!("Combat Event");
         let player = player_query.single_mut();
 
         commands.entity(player).insert(InCombat);
 
         for member in player_companie.iter_mut() {
             commands.entity(member).insert(InCombat);
-
-            // TODO: (CANCELED) - display / spawn them in the ui
         }
 
         let (foe, potential_group_size) = foes_query.get_mut(*entity).unwrap();
 
         commands.entity(foe).insert(InCombat);
 
-        if let Some(GroupSize(size)) = potential_group_size {
-            ev_spawn_fabicurion.send(SpawnCombatFoesEvent {
-                leader: foe,
-                group_size: *size,
-            });
-        }
-
         // display / spawn them in the ui
-        // or
-        // spawn them in the temple during combat (PREFERED)
+
+        // open the Combat UI
     }
 }
 
@@ -310,17 +280,6 @@ pub fn freeze_in_combat(mut characters_query: Query<(Entity, &mut Velocity), Wit
     for (_character, mut rb_vel) in characters_query.iter_mut() {
         rb_vel.linvel.x = 0.;
         rb_vel.linvel.y = 0.;
-    }
-}
-
-/// Event Handler of SpawnCombatFoesEvent
-pub fn spawn_party_members(
-    // mut commands: Commands,
-    mut ev_spawn_party_members: EventReader<SpawnCombatFoesEvent>,
-) {
-    for _ev in ev_spawn_party_members.iter() {
-        // ev.group_size
-        // TODO: Spawn Party Member
     }
 }
 
