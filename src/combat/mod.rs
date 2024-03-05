@@ -28,60 +28,473 @@
 //!
 //!     - Reward-s (gift or loot)
 //!   - Combat Evasion (quit)
-//!
 
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::Velocity;
-use std::time::Duration;
+use std::{cmp::Ordering, time::Duration};
 
-use crate::{
-    characters::{
-        npcs::{NPCSystems, NPC},
-        player::Player,
-    },
-    constants::character::npcs::movement::EVASION_TIMER,
-    HUDState,
+use crate::{characters::player::Player, constants::combat::BASE_ACTION_COUNT, ui, HUDState};
+use self::{
+    alterations::Alteration, skills::{Skill, TargetOption, SkillExecutionQueue}, stats::{StatBundle, Hp},
+    stuff::{Equipements, JobsMasteries, Job},
 };
 
-pub struct CombatPlugin;
-
-impl Plugin for CombatPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_event::<CombatEvent>()
-            .add_systems(Update, enter_combat.in_set(CombatState::Initiation))
-            .add_systems(
-                OnExit(HUDState::CombatWall),
-                exit_combat
-                    .in_set(CombatState::Evasion)
-                    .before(CombatState::Observation),
-            )
-            .add_systems(
-                FixedUpdate,
-                (
-                    freeze_in_combat.after(CombatState::Evasion),
-                    fair_play_wait.after(NPCSystems::StopChase),
-                ),
-            );
-    }
-}
+pub mod alteration_list;
+pub mod alterations;
+pub mod item_list;
+pub mod phases;
+pub mod skill_list;
+pub mod skills;
+pub mod stats;
+pub mod stuff;
+pub mod tactical_position;
+pub mod weapons_list;
 
 /// Just help to create a ordered system in the app builder
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-enum CombatState {
-    Initiation,
-    Observation,
-    // ManageStuff,
-    // SelectionSkills,
-    // SelectionTarget,
-    // RollInitiative,
-    // ExecuteSkills,
+///
+/// REFACTOR: Turn `Res<CombatState>` into States
+#[derive(Default, SystemSet, PartialEq, Eq, Hash, Clone, Debug, Reflect, Resource)]
+pub enum CombatState {
+    /// TOTEST: URGENT - connect transitions
+    #[default]
+    NonCombat,
+    /// REFACTOR: Useless atm
+    Initialisation,
+    AlterationsExecution,
+    SelectionCaster,
+    /// There is one (ally or enemy) selected, and a CS focused
+    SelectionSkill,
+    /// There is at least one action in the history
+    /// The one selected is the exact same one from SelectionSkill
+    SelectionTarget,
+    /// `Strategic AI Assessment`,
+    /// `Intelligent Combat Decision`,
+    /// `Algorithmic Battle Planning`,
+    /// `NPC Tactical Evaluation`,
+    /// `Automated Decision-Making`.
+    AIStrategy,
+    RollInitiative,
+    /// prepare the full vector of Skill to execute
+    PreExecuteSkills,
+    /// FX Phase (SkillsAnimation) too
+    ExecuteSkills,
+
+    BrowseEnemySheet,
+    Logs,
 
     // ShowExecution,
     Evasion,
 }
 
+impl CombatState {
+    pub fn new_turn() -> Self {
+        CombatState::AlterationsExecution
+    }
+}
+
+pub struct CombatPlugin;
+
+impl Plugin for CombatPlugin {
+    #[rustfmt::skip]
+    fn build(&self, app: &mut App) {
+        app
+            .insert_resource(CombatState::default())
+            
+            .insert_resource(SkillExecutionQueue::default())
+            .init_resource::<CombatResources>()
+            .init_resource::<JobsMasteries>()
+            
+            .add_event::<self::CombatEvent>()
+            .add_event::<phases::TransitionPhaseEvent>()
+            .add_event::<skills::ExecuteSkillEvent>()
+            .add_event::<tactical_position::UpdateCharacterPositionEvent>()
+            
+            .configure_set(
+                Update,
+                CombatState::Initialisation
+                    .run_if(in_initialisation_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::AlterationsExecution
+                    .run_if(in_alteration_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::SelectionCaster
+                    .run_if(in_caster_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::SelectionSkill
+                    .run_if(in_skill_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::SelectionTarget
+                    .run_if(in_target_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::AIStrategy
+                    .run_if(in_ai_strategy_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::RollInitiative
+                    .run_if(in_initiative_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::PreExecuteSkills
+                    .run_if(in_pre_executive_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::ExecuteSkills
+                    .run_if(in_executive_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::BrowseEnemySheet
+                    .run_if(in_browsing_enemy_sheet_phase)
+            )
+            .configure_set(
+                Update,
+                CombatState::Evasion
+                    .run_if(in_evasive_phase)
+            )
+
+            .add_systems(Startup, stuff::spawn_stuff)
+            .add_systems(OnEnter(HUDState::CombatWall), update_number_of_fighters.before(ui::combat::combat_panel::combat_wall_setup))
+
+            .add_systems(
+                Update,
+                (
+                    phases::phase_transition,
+                    update_number_of_fighters,
+                )
+            )
+            .add_systems(
+                Update, 
+                phases::execute_alteration
+                    .in_set(CombatState::AlterationsExecution)
+            )
+            .add_systems(
+                Update, 
+                phases::roll_initiative
+                    .in_set(CombatState::RollInitiative)
+            )
+            .add_systems(
+                Update,
+                (
+                    phases::execution_phase,
+                )
+                    .in_set(CombatState::PreExecuteSkills)
+            )
+            .add_systems(
+                Update,
+                (
+                    skills::execute_skill,
+                )
+                    .in_set(CombatState::ExecuteSkills)
+            )
+            ;
+    }
+}
+
 /* -------------------------------------------------------------------------- */
-/*                                 Components                                 */
+/*                           -- Combat Components --                          */
+/* -------------------------------------------------------------------------- */
+
+#[derive(Bundle)]
+pub struct CombatBundle {
+    pub karma: Karma,
+    pub team: Team,
+    pub job: Job,
+    pub alterations: CurrentAlterations,
+    pub skills: Skills,
+    pub equipements: Equipements,
+    pub action_count: ActionCount,
+    pub tactical_position: TacticalPosition,
+
+    pub stats: StatBundle,
+}
+
+impl Default for CombatBundle {
+    fn default() -> Self {
+        CombatBundle {
+            karma: Karma(0),
+            team: Team(None),
+            job: Job::default(),
+            alterations: CurrentAlterations::default(),
+            skills: Skills(Vec::new()),
+            equipements: Equipements { weapon: None, armor: None },
+            action_count: ActionCount::default(),
+            tactical_position: TacticalPosition::default(),
+            stats: StatBundle::default()
+        }
+    }
+}
+
+#[derive(Component, Default)]
+pub struct Karma(pub i32);
+
+#[derive(Component, Reflect)]
+pub struct ActionCount {
+    pub current: usize,
+    /// Number of action given each new turn
+    pub base: usize,
+}
+
+impl ActionCount {
+    pub fn new(base: usize) -> Self {
+        ActionCount { current: base, base }
+    }
+}
+
+impl Default for ActionCount {
+    fn default() -> Self {
+        ActionCount { current: BASE_ACTION_COUNT, base: BASE_ACTION_COUNT }
+    }
+}
+
+/// The team an entity is assigned to.
+/// 
+/// `None` being Neutral
+/// 
+/// # Note
+/// 
+/// REFACTOR: Just an enum...
+/// Listing all possible teams (cause its fixed)
+/// IDEA: Or An reputation meter for each ? struct annex
+#[derive(Component, Copy, Clone, PartialEq, Eq, Deref, DerefMut)]
+pub struct Team(pub Option<i32>);
+
+/// Ongoing alterations, Debuff or Buff
+/// 
+/// DOC: The "Current" was added to Differenciate with the simple "Alteration" - new name ?
+#[derive(Default, Component, Deref, DerefMut)]
+pub struct CurrentAlterations(Vec<Alteration>);
+
+
+/// Marker: Child of a fighter, has as child all the alteration's icon of the fighter
+/// 
+/// Can be removed
+#[derive(Component)]
+pub struct AllAlterationStatuses;
+
+/// Alterations are also put into an entity which is fighter's child (+ its icon)
+#[derive(Component)]
+pub struct AlterationStatus;
+
+/// Basic/Natural skills own by the entity  
+#[derive(Component, Deref, DerefMut)]
+pub struct Skills(pub Vec<Skill>);
+
+/// Contains the fighter's id.
+/// Used to Select a unit using the character sheet in the combat HUD.
+#[derive(Component, Reflect, Default, Clone, Copy, Deref)]
+pub struct InCombat(pub usize);
+
+#[derive(Clone, Copy, Component)]
+pub struct Leader;
+
+/// The player can recruted some friendly npc
+/// Can be called, TeamPlayer
+#[derive(Component)]
+pub struct Recruted;
+
+/* -------------------------------------------------------------------------- */
+/*                         -- Position in the Group --                        */
+/* -------------------------------------------------------------------------- */
+
+#[derive(Default, Reflect, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub enum TacticalPlace {
+    #[default]
+    Left,
+    Middle,
+    Right,
+}
+
+#[derive(Component, Reflect, PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub enum TacticalPosition {
+    FrontLine(TacticalPlace),
+    MiddleLine(TacticalPlace),
+    BackLine(TacticalPlace),
+}
+
+impl Default for TacticalPosition {
+    fn default() -> Self {
+        TacticalPosition::FrontLine(TacticalPlace::default())
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/*                         -- Combat Core Operation --                        */
+/* -------------------------------------------------------------------------- */
+
+#[derive(Resource, Reflect, Debug)]
+pub struct CombatResources {
+    pub history: Vec<Action>,
+    pub number_of_fighters: GlobalFighterStats,
+    pub number_of_turn: usize,
+}
+
+impl FromWorld for CombatResources {
+    fn from_world(
+        world: &mut World,
+    ) -> Self {
+        // We do include notInCombat allies to be able to see all MiniCharSheet while notInCombat
+        let mut allies_query = world.query_filtered::<Entity, With<Recruted>>();
+        let allies = allies_query.iter(world).collect::<Vec<Entity>>();
+
+        let mut enemies_query = world.query_filtered::<Entity, (Without<Recruted>, With<InCombat>)>();
+        let enemies = enemies_query.iter(world).collect::<Vec<Entity>>();
+
+        CombatResources {
+            history: Vec::new(),
+            // `allies.len() + 1` to include the player
+            number_of_fighters: GlobalFighterStats::new(allies.len() + 1, enemies.len()),
+            number_of_turn: 0
+        }
+    }
+}
+
+/// TODO: Count down knockout people
+#[derive(Default, Reflect, Debug, Clone)]
+pub struct GlobalFighterStats {
+    /// (alive, knockout)
+    pub ally: FightersCount,
+    /// (alive, knockout)
+    pub enemy: FightersCount,
+}
+
+impl GlobalFighterStats {
+    pub fn new(number_of_allies: usize, number_of_enemies: usize) -> Self {
+        GlobalFighterStats {
+            ally: FightersCount::new(number_of_allies),
+            enemy: FightersCount::new(number_of_enemies),
+        }
+    }
+}
+
+/// Default = { alive: 0, total: 0 }
+#[derive(Default, Reflect, Debug, Clone)]
+pub struct FightersCount{
+    pub alive: usize, 
+    pub total: usize
+}
+
+impl FightersCount {
+    pub fn new(total: usize) -> Self {
+        FightersCount {
+            alive: total,
+            total,
+        }
+    }
+}
+
+#[derive(Reflect, Debug, Clone)]
+pub struct Action {
+    pub caster: Entity,
+    pub skill: Skill,
+    /// Optional only to allow selecting skill before the target
+    pub targets: Option<Vec<Entity>>,
+    /// From caster + skill calculus
+    ///
+    /// Default: -1
+    pub initiative: i32,
+}
+
+// impl fmt::Display for Action {
+//     fn fmt(&self, f: &mut fmt::Formatter, unit_query: Query<Entity, &Name>) -> fmt::Result {
+//         match self {
+//             Action {caster, skill, target} => {
+//                 match unit_query.get(caster) {
+//                     (_, catser_name) => {
+
+//                     }
+//                 }
+//                 write!(f, "initialisation")
+//             }
+//         }
+//     }
+// }
+
+impl Action {
+    pub fn new(caster: Entity, skill: Skill, targets: Option<Vec<Entity>>) -> Action {
+        Action {
+            caster,
+            skill,
+            targets,
+            initiative: -1,
+        }
+    }
+
+    /// Verify if the action has the good number of target depending its skill
+    /// 
+    /// # Note
+    ///
+    /// is finished/complete/full
+    pub fn is_correct(&self, number_of_fighters: GlobalFighterStats) -> bool {
+        match self.skill.target_option {
+            TargetOption::All => {
+                match &self.targets {
+                    Some(targets) => targets.len() == (number_of_fighters.enemy.alive + number_of_fighters.ally.alive),
+                    None => false
+                }
+            }
+            TargetOption::AllEnemy => {
+                match &self.targets {
+                    Some(targets) => targets.len() == number_of_fighters.enemy.alive,
+                    None => false
+                }
+            }
+            TargetOption::AllAlly => {
+                match &self.targets {
+                    Some(targets) => targets.len() == number_of_fighters.ally.alive,
+                    None => false
+                }
+            }
+            TargetOption::AllyButSelf(number) | TargetOption::Ally(number) | TargetOption::Enemy(number) => {
+                match &self.targets {
+                    Some(targets) => targets.len() == number,
+                    None => false
+                }
+            }
+            TargetOption::OneSelf => {
+                match &self.targets {
+                    Some(targets) => targets.len() == 1,
+                    None => false
+                }
+            }
+        }
+    }
+}
+
+impl Ord for Action {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.initiative).cmp(&(other.initiative))
+    }
+}
+
+impl PartialOrd for Action {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Action {
+    /// compare with just the initiative
+    fn eq(&self, other: &Self) -> bool {
+        (self.initiative) == (other.initiative)
+    }
+}
+
+impl Eq for Action {}
+
+/* -------------------------------------------------------------------------- */
+/*                                   Basic                                    */
 /* -------------------------------------------------------------------------- */
 
 /// The reputation an entity got from one another team
@@ -115,15 +528,6 @@ impl Reputation {
     }
 }
 
-#[derive(Component)]
-pub struct Karma(pub i32);
-
-#[derive(Component)]
-pub struct InCombat;
-
-#[derive(Clone, Copy, Component)]
-pub struct Leader;
-
 /// One aggressive npc can hide 5 others.
 /// This number exclude the 'leader'/representant of the grp
 ///
@@ -151,11 +555,6 @@ impl GroupSize {
     }
 }
 
-/// The player can recruted some friendly npc
-/// Can be called, TeamPlayer
-#[derive(Copy, Clone, PartialEq, Eq, Component)]
-pub struct Recruted;
-
 #[derive(Component)]
 pub struct FairPlayTimer {
     /// (non-repeating timer)
@@ -179,139 +578,114 @@ impl FairPlayTimer {
 /*                                   Events                                   */
 /* -------------------------------------------------------------------------- */
 
+/// # Conditions
+///
 /// Happens when:
-///   - npc::movement::pursue
+///   - characters::npcs::movement::chase_management
 ///     - target is reach
 ///
 /// Read in:
-///   - ui::dialog_panel::create_dialog_panel_on_combat_event
+///   - ui::dialog_panel::create_combat_panel_on_combat_event
 ///     - open combat ui
-///   - combat::mod::freeze_in_combat
-///     - freeze all entities involved in the starting combat
 #[derive(Event)]
 pub struct CombatEvent {
-    pub entity: Entity,
+    pub attacker: Option<Entity>,
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                   Systems                                  */
+/*                               Systems Update                               */
 /* -------------------------------------------------------------------------- */
 
-/// Decrement the fair play Timer
-/// while doing other things (don't **exclude** entity With<FairPlayTimer>)
-/// remove the FairPlayTimer if the entity is in the player's team
-pub fn fair_play_wait(
-    mut commands: Commands,
+/// If there is any Hp change in the frame, update the number of fighter alive
+pub fn update_number_of_fighters(
+    mut combat_panel: ResMut<CombatResources>,
 
-    time: Res<Time>,
-    mut npc_query: Query<
-        (
-            Entity,
-            &mut FairPlayTimer,
-            &mut Velocity,
-            &Reputation,
-            &Name,
-        ),
-        (
-            With<NPC>,
-            // Without<InCombat>
-        ),
-    >,
+    // REFACTOR: Change these triggers to send an event in another system to update this one
+    // Triggers
+    created_units_query: Query<Entity, Added<InCombat>>,
+    updated_units_query: Query<Entity, (Changed<Hp>, With<InCombat>)>,
+
+    player_query : Query<&Hp, With<Player>>,
+    ally_units_query: Query<&Hp, (With<Recruted>, Without<Player>, With<InCombat>)>,
+    enemy_units_query: Query<&Hp, (Without<Recruted>, Without<Player>, With<InCombat>)>,
 ) {
-    for (npc, mut fair_play_timer, mut _rb_vel, reputation, name) in npc_query.iter_mut() {
-        fair_play_timer.timer.tick(time.delta());
+    if !updated_units_query.is_empty() || !created_units_query.is_empty() {
+        // info!("Update Combat Global Stats");
+        
+        let player_hp = player_query.single();
 
-        // not required to control velocity because it is managed elsewhere
+        combat_panel.number_of_fighters.ally = FightersCount::default();
+        combat_panel.number_of_fighters.enemy = FightersCount::default();
 
-        // REFACTOR: compare NPC's team with Player's Team instead of a global Player Team CST
-        // query player to get his TEAM (it's the player who switch team not all npc)
-        if fair_play_timer.timer.finished() || reputation.is_in_supreme_god_team() {
-            info!("{:?}, {} can now aggro", npc, name);
-
-            commands.entity(npc).remove::<FairPlayTimer>();
+        // see the discord thread about [Fabien's Death](https://discord.com/channels/692439766485958767/990369916785930300/1114261607825019031)
+        if player_hp.current > 0 {
+            combat_panel.number_of_fighters.ally.alive += 1;
+        } else {
+            warn!("Player is Dead");
+        }
+        combat_panel.number_of_fighters.ally.total += 1;
+        
+        for npc_hp in ally_units_query.iter() {
+            if npc_hp.current > 0 {
+                combat_panel.number_of_fighters.ally.alive += 1;
+            }
+            combat_panel.number_of_fighters.ally.total += 1;
+        }
+        for npc_hp in enemy_units_query.iter() {
+            if npc_hp.current > 0 {
+                combat_panel.number_of_fighters.enemy.alive += 1;
+            }
+            combat_panel.number_of_fighters.enemy.total += 1;
         }
     }
 }
 
-/// Emulate the Combat phase
-///
-///   - Talk
-///   - Fight
-///
-/// Freeze all entity involved
-///
-///   - Player
-///     - all companie members (recruted)
-///   - Foe who caught player
-pub fn enter_combat(
-    mut commands: Commands,
+/* -------------------------------------------------------------------------- */
+/*                             -- Run Criteria --                             */
+/* -------------------------------------------------------------------------- */
 
-    mut ev_combat_enter: EventReader<CombatEvent>,
+// REFACTOR: Change CombatState to be GlobalState (in the world)
 
-    mut player_query: Query<Entity, (With<Player>, Without<NPC>)>,
-    mut player_companie: Query<Entity, (With<NPC>, With<Recruted>)>,
-    mut foes_query: Query<(Entity, Option<&GroupSize>), (With<NPC>, Without<Recruted>)>,
-) {
-    for CombatEvent { entity } in ev_combat_enter.iter() {
-        debug!("Combat Event");
-        let player = player_query.single_mut();
-
-        commands.entity(player).insert(InCombat);
-
-        for member in player_companie.iter_mut() {
-            commands.entity(member).insert(InCombat);
-        }
-
-        let (foe, potential_group_size) = foes_query.get_mut(*entity).unwrap();
-
-        commands.entity(foe).insert(InCombat);
-
-        // display / spawn them in the ui
-
-        // open the Combat UI
-    }
+pub fn in_initialisation_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::Initialisation
 }
 
-/// For each entity in combat, freeze their movement
-pub fn freeze_in_combat(mut characters_query: Query<(Entity, &mut Velocity), With<InCombat>>) {
-    // TOTEST: QUESTION: Maybe be not for the member of the company
-    // to let them reach the player
-
-    for (_character, mut rb_vel) in characters_query.iter_mut() {
-        rb_vel.linvel.x = 0.;
-        rb_vel.linvel.y = 0.;
-    }
+pub fn in_alteration_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::AlterationsExecution
 }
 
-/// Occurs `OnExit(HUDState::CombatWall)`
-///
-/// apply to all npc involved in a interaction the IdleBehavior
-pub fn exit_combat(
-    mut commands: Commands,
+pub fn in_caster_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::SelectionCaster
+}
 
-    allies_query: Query<
-        (Entity, &Name),
-        (
-            Or<(With<Player>, (With<NPC>, With<Recruted>))>,
-            With<InCombat>,
-        ),
-    >,
+pub fn in_skill_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::SelectionSkill
+}
 
-    foes_query: Query<(Entity, &Name), (With<NPC>, With<InCombat>, Without<Recruted>)>,
-) {
-    info!("DEBUG: Combat Exit");
+pub fn in_target_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::SelectionTarget
+}
 
-    for (allie, _name) in allies_query.iter() {
-        commands.entity(allie).remove::<InCombat>();
-    }
+pub fn in_ai_strategy_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::AIStrategy
+}
 
-    // foes AND being an enemy
-    // With InCombat and Without Recruted mean that these entities are enemies.
-    for (foes, _name) in foes_query.iter() {
-        commands
-            .entity(foes)
-            .insert(FairPlayTimer::new(EVASION_TIMER));
+pub fn in_initiative_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::RollInitiative
+}
 
-        commands.entity(foes).remove::<InCombat>();
-    }
+pub fn in_pre_executive_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::PreExecuteSkills
+}
+
+pub fn in_executive_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::ExecuteSkills
+}
+
+pub fn in_browsing_enemy_sheet_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::BrowseEnemySheet
+}
+
+pub fn in_evasive_phase(combat_state: Res<CombatState>) -> bool {
+    *combat_state == CombatState::Evasion
 }

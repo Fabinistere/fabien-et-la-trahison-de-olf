@@ -35,13 +35,15 @@ pub enum GameState {
     Playing,
 }
 
+/// DOC: explain the transition for State
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, Reflect, States)]
 pub enum HUDState {
     #[default]
     Closed,
-    // /// is also the Team's Inventory
+    /// is also the Team's Inventory
     CombatWall,
-    // LogCave,
+    /// Accessible from the CombatWall
+    LogCave,
     DialogWall,
     OptionsWall,
 }

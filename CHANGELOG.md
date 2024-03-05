@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Combat Update - v0.5.0 - 2024-03-05
+
+### Imported from our [turn-based strategy prototype](https://link-please.net)
+
+You can read the `CHANGELOG.md` of the Turn-Based Strategy repo in [[Turn-based Strategy/CHANGELOG]].
+
+- CombatWall
+  - The `CombatState` is linked to the possible interaction
+    - When the `HUDState::CombatWall` opens we switch to `CombatState::SelectionCaster`
+  - Characters' Sheet
+    - The minis on the CombatWall are already spawned but the number of allies (given by the resource `Res<CombatResources>`)
+- `FabiensInfos` using `PersonalInfos`
+  - link entity names to a `PersonalInfos` (`title` and `sprite_path`)
+
+### Added
+
+- Combat System
+  - add the default `CombatState::NonCombat`
+
+### Changed
+
+- rename constants
+  - `DIALOG_PANEL_ANIMATION_TIME_MS` to `HUD_PANEL_ANIMATION_TIME_MS`
+  - `DIALOG_PANEL_ANIMATION_OFFSET` to `HUD_PANEL_ANIMATION_OFFSET`
+- move up the despawn hud panels (after their animation is ended) to the `ui::mod.rs`.
+
 ## NPCs Update - [v0.4.0](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0) - 2023-09-24
 
 [![v0.4.0](https://img.shields.io/badge/v0.4.0-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)

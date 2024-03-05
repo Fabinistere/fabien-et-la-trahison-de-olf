@@ -1,4 +1,4 @@
-use bevy::{prelude::*, winit::WinitSettings};
+use bevy::prelude::*;
 
 use crate::HUDState;
 
@@ -13,10 +13,7 @@ pub struct UiDialogPlugin;
 impl Plugin for UiDialogPlugin {
     // #[rustfmt::skip]
     fn build(&self, app: &mut App) {
-        app
-            // OPTIMIZE: Only run the app when there is user input. This will significantly reduce CPU/GPU use.
-            .insert_resource(WinitSettings::game())
-            .insert_resource(dialog_systems::DialogMap::default())
+        app.insert_resource(dialog_systems::DialogMap::default())
             .insert_resource(dialog_systems::CurrentInterlocutor::default())
             .insert_resource(dialog_systems::ActiveWorldEvents::default())
             .insert_resource(dialog_scrolls::Monolog::default())
@@ -28,13 +25,7 @@ impl Plugin for UiDialogPlugin {
             // .add_event::<dialog_system::TriggerEvent>()
             .add_systems(Startup, dialog_panel::load_textures)
             // OPTIMIZE: System Ordering
-            .add_systems(
-                Update,
-                (
-                    dialog_panel::create_dialog_panel_on_key_press,
-                    dialog_panel::despawn_dialog_panel,
-                ),
-            )
+            .add_systems(Update, dialog_panel::create_dialog_panel_on_key_press)
             .add_systems(
                 OnEnter(HUDState::DialogWall),
                 dialog_panel::create_dialog_panel,

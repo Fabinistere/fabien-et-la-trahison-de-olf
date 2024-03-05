@@ -1,4 +1,5 @@
 pub mod character;
+pub mod combat;
 pub mod locations;
 pub mod title_screen;
 pub mod ui;

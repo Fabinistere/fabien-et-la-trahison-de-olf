@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use crate::{
     characters::player::Player,
-    constants::ui::dialogs::*,
+    constants::ui::{dialogs::*, *},
     ui::dialog::dialog_scrolls::{
         ButtonChoice, MonologPanel, PlayerChoicePanel, Scroll, ScrollTimer,
     },
@@ -74,7 +74,7 @@ pub fn load_textures(
 ///
 /// TODO: feature - exit the personal thought or any tab when being touch by aggro
 ///
-/// FIXME: PB Spamming the ui key 'o'; ?throws an error
+/// FIXME: inactive - PB Spamming the ui key 'o'; ?throws an error
 pub fn create_dialog_panel_on_key_press(
     keyboard_input: Res<Input<KeyCode>>,
     query: Query<(Entity, &Animator<Style>, &Style), With<DialogPanel>>,
@@ -98,6 +98,7 @@ pub fn create_dialog_panel_on_key_press(
     }
 }
 
+/// The Panel will despawn at the end of the animation
 pub fn close_dialog_panel(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Animator<Style>, &Style), With<DialogPanel>>,
@@ -106,7 +107,7 @@ pub fn close_dialog_panel(
     if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
         let dialog_panel_tween = Tween::new(
             EaseFunction::QuadraticIn,
-            Duration::from_millis(DIALOG_PANEL_ANIMATION_TIME_MS),
+            Duration::from_millis(HUD_PANEL_ANIMATION_TIME_MS),
             UiPositionLens {
                 start: UiRect {
                     left: style.left,
@@ -117,28 +118,18 @@ pub fn close_dialog_panel(
                 end: UiRect {
                     left: Val::Auto,
                     top: Val::Px(0.),
-                    right: Val::Px(DIALOG_PANEL_ANIMATION_OFFSET),
+                    right: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
                     bottom: Val::Px(0.),
                 },
             },
         )
         .with_completed_event(0);
 
+        // Replace any animator with the new one created
         commands
             .entity(entity)
             .remove::<Animator<Style>>()
             .insert(Animator::new(dialog_panel_tween));
-    }
-}
-
-pub fn despawn_dialog_panel(
-    mut commands: Commands,
-    mut completed_event: EventReader<TweenCompleted>,
-) {
-    for TweenCompleted { entity, user_data } in completed_event.iter() {
-        if *user_data == 0 {
-            commands.entity(*entity).despawn_recursive();
-        }
     }
 }
 
@@ -153,12 +144,12 @@ pub fn create_dialog_panel(
 
     let dialog_panel_tween = Tween::new(
         EaseFunction::QuadraticOut,
-        Duration::from_millis(DIALOG_PANEL_ANIMATION_TIME_MS),
+        Duration::from_millis(HUD_PANEL_ANIMATION_TIME_MS),
         UiPositionLens {
             start: UiRect {
                 left: Val::Auto,
                 top: Val::Px(0.),
-                right: Val::Px(DIALOG_PANEL_ANIMATION_OFFSET),
+                right: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
                 bottom: Val::Px(0.),
             },
             end: UiRect {
@@ -200,7 +191,7 @@ pub fn create_dialog_panel(
                     justify_content: JustifyContent::Center,
                     position_type: PositionType::Relative,
                     top: Val::Px(0.),
-                    right: Val::Px(DIALOG_PANEL_ANIMATION_OFFSET),
+                    right: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
                     bottom: Val::Px(0.),
                     margin: UiRect {
                         left: Val::Auto,
@@ -215,9 +206,9 @@ pub fn create_dialog_panel(
                 },
                 ..ImageBundle::default()
             },
-            DialogPanel,
+            Name::new("Dialog Wall"),
             Animator::new(dialog_panel_tween),
-            Name::new("UI Wall"),
+            DialogPanel,
         ))
         .with_children(|parent| {
             let child_sprite_style = Style {
@@ -338,7 +329,9 @@ pub fn create_dialog_panel(
             //         ..ImageBundle::default()
             //     });
 
-            // Player Scroll
+            /* -------------------------------------------------------------------------- */
+            /*                                Player Scroll                               */
+            /* -------------------------------------------------------------------------- */
 
             let player_scroll_img =
                 asset_server.load("textures/UI/HUD/dialog/HUD_1px_parchemin_MC_ouvert.png");
