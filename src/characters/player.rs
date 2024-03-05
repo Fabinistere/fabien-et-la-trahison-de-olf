@@ -12,7 +12,7 @@ use crate::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
     },
-    combat::{Leader, Reputation},
+    combat::{InCombat, Leader, Reputation},
     constants::character::{player::*, *},
     controls::KeyBindings,
     hud_closed,
@@ -47,6 +47,10 @@ pub struct PlayerInteractionSensor;
 #[derive(Component)]
 pub struct PlayerCloseSensor;
 
+/// Handle the combat situation (freeze the player).
+///
+/// # Note
+///
 /// FIXME: Freeze the player when in dialog (trigger for ex when interacting while running)
 fn player_movement(
     key_bindings: Res<KeyBindings>,
@@ -61,10 +65,18 @@ fn player_movement(
         ),
         With<Player>,
     >,
+    in_combat_query: Query<Entity, With<InCombat>>,
 ) {
-    if let Ok((_player, speed, mut rb_vel, mut texture_atlas_sprite, mut player_state)) =
+    if let Ok((player, speed, mut rb_vel, mut texture_atlas_sprite, mut player_state)) =
         player_query.get_single_mut()
     {
+        if in_combat_query.get(player).is_ok() {
+            // Bypass player input, animation, direction
+            rb_vel.linvel.x = 0.;
+            rb_vel.linvel.y = 0.;
+            return;
+        }
+
         let up = keyboard_input.any_pressed(key_bindings.up());
         let down = keyboard_input.any_pressed(key_bindings.down());
         let left = keyboard_input.any_pressed(key_bindings.left());

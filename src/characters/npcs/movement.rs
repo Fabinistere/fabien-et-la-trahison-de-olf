@@ -22,7 +22,7 @@ use crate::{
         CharacterHitbox,
     },
     collisions::CollisionEventExt,
-    combat::{CombatEvent, FairPlayTimer, Reputation},
+    combat::{CombatEvent, FairPlayTimer, InCombat, Reputation},
     constants::character::CHAR_HITBOX_Y_OFFSET,
     locations::{
         landmarks::{reserved_random_free_landmark, Direction, Landmark, LandmarkStatus},
@@ -225,6 +225,7 @@ pub fn animation(
 
 // TODO: feature - use ColliderType::Sensor to delimiter zone
 
+/// Handle in_combat situation too
 pub fn npc_movement(
     mut npc_query: Query<
         (
@@ -238,6 +239,7 @@ pub fn npc_movement(
         ),
         Without<RestTime>,
     >,
+    in_combat_query: Query<Entity, With<InCombat>>,
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
     pos_query: Query<&GlobalTransform>,
 
@@ -247,6 +249,12 @@ pub fn npc_movement(
     for (npc, mut behavior, potential_chaser, transform, speed, mut rb_vel, npc_name) in
         &mut npc_query
     {
+        if in_combat_query.get(npc).is_ok() {
+            rb_vel.linvel.x = 0.;
+            rb_vel.linvel.y = 0.;
+            return;
+        }
+
         let (vel_x, vel_y) = match potential_chaser {
             None => match *behavior {
                 NPCBehavior::Camping => (0., 0.),
@@ -517,7 +525,7 @@ pub fn chase_management(
                                             // The npc entered the close sensor of their target
                                             chaser.close = true;
                                             ev_combat.send(CombatEvent {
-                                                entity: **character,
+                                                attacker: Some(**character),
                                             });
                                             ev_stop_chase.send(StopChaseEvent {
                                                 npc_entity: **character,

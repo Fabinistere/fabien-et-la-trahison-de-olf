@@ -242,6 +242,7 @@ pub fn location_event(
     }
 }
 
+/// REFACTOR: Just disable Temple collider when we enter the SecreteRoom
 fn control_wall_collider(
     mut commands: Commands,
     player_location_query: Query<&Location, (Changed<Location>, With<Player>)>,

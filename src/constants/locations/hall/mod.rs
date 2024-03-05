@@ -44,7 +44,7 @@ pub const TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED: f32 = 0.25;
 pub const TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED: f32 = 0.3;
 
 pub const STATUE_X: f32 = 59.;
-pub const STATUE_Y: f32 = -101.;
+pub const STATUE_Y: f32 = -100.;
 pub const STATUE_POSITION: (f32, f32, f32) = (
     STATUE_X * TILE_SIZE,
     STATUE_Y * TILE_SIZE,

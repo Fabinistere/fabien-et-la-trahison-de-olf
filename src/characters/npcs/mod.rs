@@ -17,7 +17,7 @@ use crate::{
     characters::{movement::MovementBundle, npcs::movement::NPCBehavior, CharacterHitbox},
     combat::Reputation,
     constants::{
-        character::{npcs::*, player::PLAYER_SPAWN, *},
+        character::{npcs::*, *},
         interactions::INTERACT_BUTTON_SCALE,
     },
     hud_opened,
@@ -191,7 +191,7 @@ fn spawn_characters(
         (
             "Hugo".to_string(),
             HEALER_V2_LINE,
-            PLAYER_SPAWN,
+            HUGO_SPAWN_POSITION,
             Reputation::new(100, 0),
             NPCBehavior::Camping,
             Location::SecretRoom,

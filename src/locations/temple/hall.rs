@@ -118,10 +118,6 @@ pub fn remove_balcony_cover(
 /*                                    Setup                                   */
 /* -------------------------------------------------------------------------- */
 
-/// FIXME: When in Temple you could slip a lttle bit under the hall asset
-/// 2 solutions:
-/// - Move sensors (carefull with interaction)
-/// - cut the Hall floor and put it in the Temple Floor which will always be under
 pub fn setup_hall(
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
