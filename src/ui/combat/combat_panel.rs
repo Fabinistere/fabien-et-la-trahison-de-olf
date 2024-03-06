@@ -299,8 +299,6 @@ pub fn combat_wall_setup(
 
     mut character_sheet_elements: ResMut<CharacterSheetElements>,
 ) {
-    // TODO: Add animator tweens to combat panel
-    // TODO: Hide Panels on the right side (and add anim)
     /* -------------------------------------------------------------------------- */
     /*                                 UI Elements                                */
     /* -------------------------------------------------------------------------- */
@@ -314,7 +312,7 @@ pub fn combat_wall_setup(
 
     let name = commands
         .spawn((
-            TextBundle::from_section(format!("Name"), get_text_style(&asset_server, 40.))
+            TextBundle::from_section("Name", get_text_style(&asset_server, 40.))
                 .with_style(TEXT_STYLE),
             Label,
             Name::new("Name"),
@@ -324,7 +322,7 @@ pub fn combat_wall_setup(
 
     let title = commands
         .spawn((
-            TextBundle::from_section(format!("Fabien"), get_text_style(&asset_server, 20.))
+            TextBundle::from_section("Fabien", get_text_style(&asset_server, 20.))
                 .with_style(TEXT_STYLE),
             Label,
             Name::new("Title"),
@@ -334,7 +332,7 @@ pub fn combat_wall_setup(
 
     let job = commands
         .spawn((
-            TextBundle::from_section(format!("Chill"), get_text_style(&asset_server, 20.))
+            TextBundle::from_section("Chill", get_text_style(&asset_server, 20.))
                 .with_style(TEXT_STYLE),
             Label,
             Name::new("Job"),
@@ -344,11 +342,8 @@ pub fn combat_wall_setup(
 
     let health = commands
         .spawn((
-            TextBundle::from_section(
-                format!("Health: ???/???"),
-                get_text_style(&asset_server, 20.),
-            )
-            .with_style(TEXT_STYLE),
+            TextBundle::from_section("Health: ???/???", get_text_style(&asset_server, 20.))
+                .with_style(TEXT_STYLE),
             Label,
             Name::new("Health"),
             Hp::default(),
@@ -357,7 +352,7 @@ pub fn combat_wall_setup(
 
     let mana = commands
         .spawn((
-            TextBundle::from_section(format!("Mana: ???/???"), get_text_style(&asset_server, 20.))
+            TextBundle::from_section("Mana: ???/???", get_text_style(&asset_server, 20.))
                 .with_style(TEXT_STYLE),
             Label,
             Name::new("Mana"),
@@ -367,7 +362,7 @@ pub fn combat_wall_setup(
 
     let shield = commands
         .spawn((
-            TextBundle::from_section(format!("Shield: ???"), get_text_style(&asset_server, 20.))
+            TextBundle::from_section("Shield: ???", get_text_style(&asset_server, 20.))
                 .with_style(TEXT_STYLE),
             Label,
             Name::new("Shield"),
@@ -377,11 +372,8 @@ pub fn combat_wall_setup(
 
     let initiative = commands
         .spawn((
-            TextBundle::from_section(
-                format!("Initiative: ???"),
-                get_text_style(&asset_server, 20.),
-            )
-            .with_style(TEXT_STYLE),
+            TextBundle::from_section("Initiative: ???", get_text_style(&asset_server, 20.))
+                .with_style(TEXT_STYLE),
             Label,
             Name::new("Initiative"),
             Initiative::default(),
@@ -390,7 +382,7 @@ pub fn combat_wall_setup(
 
     let attack = commands
         .spawn((
-            TextBundle::from_section(format!("Attack: ???"), get_text_style(&asset_server, 20.))
+            TextBundle::from_section("Attack: ???", get_text_style(&asset_server, 20.))
                 .with_style(TEXT_STYLE),
             Label,
             Name::new("Attack"),
@@ -400,11 +392,8 @@ pub fn combat_wall_setup(
 
     let attack_spe = commands
         .spawn((
-            TextBundle::from_section(
-                format!("AttackSpe: ???"),
-                get_text_style(&asset_server, 20.),
-            )
-            .with_style(TEXT_STYLE),
+            TextBundle::from_section("AttackSpe: ???", get_text_style(&asset_server, 20.))
+                .with_style(TEXT_STYLE),
             Label,
             Name::new("AttackSpe"),
             AttackSpe::default(),
@@ -413,7 +402,7 @@ pub fn combat_wall_setup(
 
     let defense = commands
         .spawn((
-            TextBundle::from_section(format!("Defense: ???"), get_text_style(&asset_server, 20.))
+            TextBundle::from_section("Defense: ???", get_text_style(&asset_server, 20.))
                 .with_style(TEXT_STYLE),
             Label,
             Name::new("Defense"),
@@ -423,11 +412,8 @@ pub fn combat_wall_setup(
 
     let defense_spe = commands
         .spawn((
-            TextBundle::from_section(
-                format!("DefenseSpe: ???"),
-                get_text_style(&asset_server, 20.),
-            )
-            .with_style(TEXT_STYLE),
+            TextBundle::from_section("DefenseSpe: ???", get_text_style(&asset_server, 20.))
+                .with_style(TEXT_STYLE),
             Label,
             Name::new("DefenseSpe"),
             DefenseSpe::default(),
@@ -1238,7 +1224,7 @@ pub fn global_ui_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             // ----- DEBUG: Basic Stats -----
                             parent.spawn((
                                 TextBundle::from_section(
-                                    format!("Target hp: ???"),
+                                    "Target hp: ???",
                                     get_text_style(&asset_server, 20.),
                                 )
                                 .with_style(TEXT_STYLE),
@@ -1250,7 +1236,7 @@ pub fn global_ui_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
                             parent.spawn((
                                 TextBundle::from_section(
-                                    format!("Target mp: ???"),
+                                    "Target mp: ???",
                                     get_text_style(&asset_server, 20.),
                                 )
                                 .with_style(TEXT_STYLE),
@@ -1262,7 +1248,7 @@ pub fn global_ui_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
                             parent.spawn((
                                 TextBundle::from_section(
-                                    format!("Combat Phase: ???"),
+                                    "Combat Phase: ???",
                                     get_text_style(&asset_server, 20.),
                                 )
                                 .with_style(Style {

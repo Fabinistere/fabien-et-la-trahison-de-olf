@@ -4,7 +4,7 @@ use crate::{
     characters::FabiensInfos,
     combat::{
         // tactical_position,
-        CombatResources, CombatState
+        CombatState
     },
     HUDState,
 };
@@ -27,6 +27,7 @@ enum UiLabel {
     ///
     Display,
 }
+
 pub struct UiCombatPlugin;
 
 impl Plugin for UiCombatPlugin {
@@ -39,7 +40,6 @@ impl Plugin for UiCombatPlugin {
     #[rustfmt::skip]
     fn build(&self, app: &mut App) {
         app
-
             .insert_resource(ActionsLogs(String::from("---------------\nActions Logs:")))
             .insert_resource(ActionHistory(String::from("---------------\nCurrent Turn Actions:")))
             .insert_resource(LastTurnActionHistory(String::from("---------------\nLast Turn Actions:")))

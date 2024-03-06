@@ -237,7 +237,7 @@ pub fn update_targeted_unit(
     }
 }
 
-/// TODO: Update Alterations' icons on characters
+/// TODO: already done? - Update Alterations' icons on characters
 ///
 /// Changed for duration / Added and RemovalDetection for just anim
 pub fn update_alterations_status(
@@ -257,7 +257,7 @@ pub fn update_alterations_status(
             for (i, alteration) in alterations.iter().enumerate() {
                 parent.spawn((
                     SpriteBundle {
-                        texture: asset_server.load(alteration.clone().path_icon),
+                        texture: asset_server.load(alteration.path_icon.clone()),
                         sprite: Sprite {
                             // anchor: bevy::sprite::Anchor::TopCenter,
                             custom_size: Some(Vec2::splat(SIZE_ALTERATION_ICON)),
@@ -271,7 +271,7 @@ pub fn update_alterations_status(
                         )),
                         ..default()
                     },
-                    Name::new(alteration.clone().name),
+                    Name::new(alteration.name.clone()),
                     AlterationStatus,
                 ));
             }
