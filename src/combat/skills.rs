@@ -50,7 +50,8 @@ pub enum TargetOption {
     /// The skill affects one by one target
     AllEnemy,
     All,
-    // IDEA: Any(usize) ?
+    // IDEA: Any(usize)?
+    // IDEA: Random(usize), RandomEnemy(usize), RandomAlly(usize)?
 }
 
 /// Endure every stats to the target

@@ -12,12 +12,20 @@ use crate::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
     },
-    combat::{CombatBundle, InCombat, Leader, Reputation},
+    combat::{
+        skills::Skill,
+        stuff::{Equipements, Job, WeaponBundle},
+        AllAlterationStatuses, CombatBundle, InCombat, Karma, Leader, Reputation, Skills,
+        TacticalPlace, TacticalPosition,
+    },
     constants::character::{player::*, *},
     controls::KeyBindings,
     hud_closed,
     locations::temple::Location,
-    ui::dialog::dialog_systems::DialogMap,
+    ui::{
+        combat::player_interaction::{Clickable, Hoverable},
+        dialog::dialog_systems::DialogMap,
+    },
     GameState, PlayerCamera,
 };
 
@@ -162,6 +170,16 @@ fn spawn_player(
     animation_indices.insert(CharacterState::Run, PLAYER_RUN_FRAMES);
 
     /* -------------------------------------------------------------------------- */
+    /*                                Combat Stuff                                */
+    /* -------------------------------------------------------------------------- */
+
+    // TODO: feat - Equip Stuff from Inventory (+ spawn this weapon in the team's inventory)
+    // TODO: feat - Team's Inventory
+
+    let bass = commands.spawn(WeaponBundle::bass()).id();
+    // let smallmouth_bass = commands.spawn(WeaponBundle::smallmouth_bass()).id();
+
+    /* -------------------------------------------------------------------------- */
     /*                                  Textures                                  */
     /* -------------------------------------------------------------------------- */
 
@@ -181,10 +199,23 @@ fn spawn_player(
             Location::default(),
             // -- Combat --
             Leader,
+            // TODO: config - import Combat stats from a config_file
             CombatBundle {
                 reputation: Reputation::new(100, 0),
+                karma: Karma(200),
+                skills: Skills(vec![Skill::bam(), Skill::pass()]),
+                equipements: Equipements {
+                    weapon: Some(bass),
+                    armor: None,
+                },
+                job: Job::Musician,
+                // action_count: ActionCount::new(20),
+                tactical_position: TacticalPosition::MiddleLine(TacticalPlace::Middle),
                 ..default()
             },
+            // -- UI Related Components --
+            Hoverable,
+            Clickable,
             // -- Animation --
             MovementBundle {
                 animation_indices,
@@ -197,6 +228,14 @@ fn spawn_player(
             LockedAxes::ROTATION_LOCKED,
         ))
         .with_children(|parent| {
+            // Contains all current alterations with their icons
+            parent.spawn((
+                TransformBundle::default(),
+                VisibilityBundle::default(),
+                AllAlterationStatuses,
+                Name::new("Alterations Status"),
+            ));
+
             parent.spawn((
                 Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
                 Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),

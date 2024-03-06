@@ -214,4 +214,32 @@ impl Skill {
             ..Default::default()
         }
     }
+
+    /* -------------------------------------------------------------------------- */
+    /*                               Randoms' Skills                              */
+    /* -------------------------------------------------------------------------- */
+
+    pub fn flee() -> Self {
+        Skill {
+            skill_type: SkillType::Flee,
+            target_option: TargetOption::OneSelf,
+            initiative: 100, // 50,
+            description: String::from("Flee from the fight"),
+            name: String::from("Flee"),
+            ..Default::default()
+        }
+    }
+
+    pub fn stare() -> Self {
+        Skill {
+            skill_type: SkillType::Debuff,
+            // TODO: Content - `TargetOption::Random(1)` ou `Any(1)`
+            target_option: TargetOption::Enemy(1),
+            initiative: 50,
+            alterations: vec![Alteration::honte()],
+            description: String::from("Stare someone"),
+            name: String::from("Stare"),
+            ..Default::default()
+        }
+    }
 }

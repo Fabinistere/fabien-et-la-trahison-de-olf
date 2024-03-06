@@ -15,7 +15,10 @@ use crate::{
         CharacterSpriteSheet, GlobalAnimationIndices,
     },
     characters::{movement::MovementBundle, npcs::movement::NPCBehavior, CharacterHitbox},
-    combat::Reputation,
+    combat::{
+        skills::Skill, stuff::Job, AllAlterationStatuses, CombatBundle, Karma, Reputation, Skills,
+        TacticalPlace, TacticalPosition,
+    },
     constants::{
         character::{npcs::*, *},
         interactions::INTERACT_BUTTON_SCALE,
@@ -26,7 +29,10 @@ use crate::{
         landmarks::{reserved_random_free_landmark, Landmark},
         temple::{Location, OverlappingEntity},
     },
-    ui::dialog::dialog_systems::{CurrentInterlocutor, DialogMap},
+    ui::{
+        combat::player_interaction::{Clickable, Hoverable},
+        dialog::dialog_systems::{CurrentInterlocutor, DialogMap},
+    },
     GameState, HUDState,
 };
 
@@ -183,25 +189,39 @@ fn spawn_characters(
             "Supreme God".to_string(),
             SUPREME_GOD_LINE,
             SUPREME_GOD_SPAWN_POSITION,
-            Reputation::new(100, 0),
             NPCBehavior::Camping,
             Location::Temple,
             supreme_god_dialog_path,
+            // -- Combat -- // TODO: Content - Supreme God
+            Reputation::new(100, 0),
+            Karma(70),
+            Skills(vec![
+                Skill::bam(),
+                Skill::gifle(),
+                Skill::diffamation(),
+                Skill::pass(),
+            ]),
+            Job::Healer,
+            TacticalPosition::FrontLine(TacticalPlace::Left),
         ),
         (
             "Hugo".to_string(),
             HEALER_V2_LINE,
             HUGO_SPAWN_POSITION,
-            Reputation::new(100, 0),
             NPCBehavior::Camping,
             Location::SecretRoom,
             hugo_dialog_path,
+            // -- Combat --
+            Reputation::new(100, 0),
+            Karma(100),
+            Skills(vec![Skill::bam(), Skill::implosion(), Skill::pass()]),
+            Job::default(),
+            TacticalPosition::FrontLine(TacticalPlace::Middle),
         ),
         (
             "Vampire".to_string(),
             VAMPIRE_LINE,
             VAMPIRE_SPAWN_POSITION,
-            Reputation::new(100, 0),
             NPCBehavior::LandmarkSeeking(
                 // match if there is none
                 reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
@@ -210,6 +230,17 @@ fn spawn_characters(
             ),
             Location::Temple,
             fabien_dialog_path,
+            // -- Combat --
+            Reputation::new(100, 0),
+            Karma(100),
+            Skills(vec![
+                Skill::bam(),
+                Skill::gifle(),
+                Skill::diffamation(),
+                Skill::pass(),
+            ]),
+            Job::Musician,
+            TacticalPosition::FrontLine(TacticalPlace::Left),
         ),
     ];
     for i in 0..5 {
@@ -217,7 +248,6 @@ fn spawn_characters(
             format!("Fabien {}", i),
             FABIEN_LOYAL_LINE,
             FABIEN_SPAWN_POSITION,
-            Reputation::default(),
             NPCBehavior::LandmarkSeeking(
                 // match if there is none
                 reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
@@ -226,11 +256,28 @@ fn spawn_characters(
             ),
             Location::Temple,
             fabien_dialog_path,
+            // -- Combat --
+            Reputation::default(),
+            Karma::default(),
+            Skills(vec![Skill::pass(), Skill::flee(), Skill::stare()]),
+            Job::default(),
+            TacticalPosition::default(),
         ));
     }
 
-    for (name, spritesheet_line, spawn_position, reputation, behavior, location, dialog_path) in
-        npcs_infos
+    for (
+        name,
+        spritesheet_line,
+        spawn_position,
+        behavior,
+        location,
+        dialog_path,
+        reputation,
+        karma,
+        skills,
+        job,
+        tactical_position,
+    ) in npcs_infos
     {
         let mut npc_animation_indices = AnimationIndices(HashMap::new());
         npc_animation_indices.insert(
@@ -266,12 +313,31 @@ fn spawn_characters(
                 location,
                 // -- Social --
                 interactible,
-                reputation,
+                // -- Combat --
+                CombatBundle {
+                    reputation,
+                    karma,
+                    skills,
+                    job,
+                    tactical_position,
+                    ..default()
+                },
+                // -- UI Related Components --
+                Hoverable,
+                Clickable,
                 // -- Hitbox --
                 RigidBody::Dynamic,
                 LockedAxes::ROTATION_LOCKED,
             ))
             .with_children(|parent| {
+                // Contains all current alterations with their icons
+                parent.spawn((
+                    TransformBundle::default(),
+                    VisibilityBundle::default(),
+                    AllAlterationStatuses,
+                    Name::new("Alterations Status"),
+                ));
+
                 parent.spawn((
                     Collider::ball(15.),
                     Transform::IDENTITY,
@@ -372,7 +438,6 @@ fn spawn_vilains(
         "Olf",
         OLF_LINE,
         OLF_SPAWN_POSITION,
-        Reputation::new(0, 100),
         NPCBehavior::LandmarkSeeking(
             // match if there is none
             reserved_random_free_landmark(&mut landmark_sensor_query, Location::SecretRoom)
@@ -380,9 +445,27 @@ fn spawn_vilains(
             Location::SecretRoom,
         ),
         olf_dialog_path,
+        // -- Combat --
+        Reputation::new(0, 100),
+        Karma(-100),
+        Skills(vec![Skill::implosion(), Skill::bam(), Skill::pass()]),
+        Job::default(),
+        TacticalPosition::FrontLine(TacticalPlace::Middle),
     )];
 
-    for (name, spritesheet_line, spawn_position, reputation, behavior, dialog_path) in npcs_infos {
+    for (
+        name,
+        spritesheet_line,
+        spawn_position,
+        behavior,
+        dialog_path,
+        reputation,
+        karma,
+        skills,
+        job,
+        tactical_position,
+    ) in npcs_infos
+    {
         let mut npc_animation_indices = AnimationIndices(HashMap::new());
         npc_animation_indices.insert(
             CharacterState::Run,
@@ -417,13 +500,32 @@ fn spawn_vilains(
                 Location::SecretRoom,
                 // -- Social --
                 interactible,
-                reputation,
                 TargetSeeker(TargetType::Player),
+                // -- Combat --
+                CombatBundle {
+                    reputation,
+                    karma,
+                    skills,
+                    job,
+                    tactical_position,
+                    ..default()
+                },
+                // -- UI Related Components --
+                Hoverable,
+                Clickable,
                 // -- Hitbox --
                 RigidBody::Dynamic,
                 LockedAxes::ROTATION_LOCKED,
             ))
             .with_children(|parent| {
+                // Contains all current alterations with their icons
+                parent.spawn((
+                    TransformBundle::default(),
+                    VisibilityBundle::default(),
+                    AllAlterationStatuses,
+                    Name::new("Alterations Status"),
+                ));
+
                 parent.spawn((
                     Collider::ball(15.),
                     Transform::IDENTITY,

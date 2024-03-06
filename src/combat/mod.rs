@@ -215,6 +215,7 @@ pub struct CombatBundle {
     pub skills: Skills,
     pub equipements: Equipements,
     pub action_count: ActionCount,
+    /// NOTE: Maybe an `Option<TacticalPosition>` to compute it later
     pub tactical_position: TacticalPosition,
 
     pub stats: StatBundle,
