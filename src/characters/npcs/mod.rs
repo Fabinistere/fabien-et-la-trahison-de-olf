@@ -217,7 +217,7 @@ fn spawn_characters(
             format!("Fabien {}", i),
             FABIEN_LOYAL_LINE,
             FABIEN_SPAWN_POSITION,
-            Reputation::new(0, 0),
+            Reputation::default(),
             NPCBehavior::LandmarkSeeking(
                 // match if there is none
                 reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)

@@ -1,5 +1,5 @@
 #![allow(clippy::type_complexity)]
-// #![feature(trivial_bounds)]
+#![feature(trivial_bounds)]
 // // ^^--- allow reflect on Vec<T>
 
 pub mod animations;
@@ -33,6 +33,39 @@ pub enum GameState {
     #[default]
     Menu,
     Playing,
+}
+
+/// We might want to do something like that but
+/// it will created so much dualistic situation with `HUDState`
+///
+/// ```rust
+/// pub enum PlayingState {
+///     NonPlaying,
+///     WalkSimulator,
+///     Combat,
+///     /// The state we need to distinguish with `PlayingState::Combat`
+///     CombatPrep,
+///     Dialog,
+/// }
+/// ```
+///
+/// # Notes
+///
+/// We still don't want to create another state of `HUDState`,
+/// as not much chnage (just selectionSkill can't click skill anymore in `Preparation`).
+/// And especially the  physical Wall is the same.
+///
+/// Creating new `CombatState`, as `ObserveSkill`, is still problematic
+/// because we cannot distinguish in `SelectionCaster` in which state we are.
+/// A simple `Resource`/`States` might be the solution to check at macro where we need.
+///
+/// NOTE: it can be a `Resource`
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
+pub enum CombatWallStage {
+    #[default]
+    Closed,
+    Preparation,
+    InCombat,
 }
 
 /// DOC: explain the transition for State

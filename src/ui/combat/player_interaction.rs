@@ -20,7 +20,7 @@ use crate::{
         combat_panel::{ActionDisplayer, SkillDisplayer},
         combat_system::{Selected, Targeted},
     },
-    HUDState,
+    CombatWallStage, HUDState,
 };
 
 use super::{combat_panel::MiniCharacterSheet, combat_system::UpdateUnitSelectedEvent};
@@ -220,6 +220,7 @@ pub fn select_unit_by_mouse(
 pub fn select_skill(
     mut combat_resources: ResMut<CombatResources>,
     combat_state: Res<CombatState>,
+    combat_wall_state: Res<State<CombatWallStage>>,
 
     mut interaction_query: Query<
         (&Interaction, &Skill, &mut BackgroundColor, &Children),
@@ -248,7 +249,12 @@ pub fn select_skill(
         let (caster, _caster_name, action_count) = unit_selected_query.single();
 
         match *interaction {
+            // In the `CombatWallStage::Preparation`, you can't select skill
             Interaction::Pressed => {
+                if combat_wall_state.get() == &CombatWallStage::Preparation {
+                    return;
+                }
+
                 // <=
                 if action_count.current == 0 {
                     text.sections[0].value = String::from("0ac Left");

@@ -15,7 +15,7 @@ use crate::{
     HUDState,
 };
 
-use super::{skills::SkillToExecute, Team};
+use super::{skills::SkillToExecute, Reputation};
 
 /* -------------------------------------------------------------------------- */
 /*                    ----- Transitions Between Phase -----                   */
@@ -44,7 +44,7 @@ pub fn phase_transition(
 
     mut selected_units_query: Query<Entity, (With<Selected>, With<InCombat>)>,
     targeted_unit_query: Query<(Entity, &Name), With<Targeted>>,
-    mut combat_unit_query: Query<(Entity, &mut ActionCount, &Hp, &Team), With<InCombat>>,
+    mut combat_unit_query: Query<(Entity, &mut ActionCount, &Hp, &Reputation), With<InCombat>>,
 
     mut actions_logs: ResMut<ActionsLogs>,
     action_history: Res<ActionHistory>,
@@ -106,7 +106,7 @@ pub fn phase_transition(
                     // ------ Targets ------
 
                     let caster_team = combat_unit_query
-                        .get_component::<Team>(last_action.caster)
+                        .get_component::<Reputation>(last_action.caster)
                         .unwrap();
 
                     match last_action.skill.target_option {
@@ -116,7 +116,7 @@ pub fn phase_transition(
                         TargetOption::AllAlly => {
                             let mut targets: Vec<Entity> = Vec::new();
                             for (entity, _, hp, team) in combat_unit_query.iter() {
-                                if hp.current > 0 && team == caster_team {
+                                if hp.current > 0 && team.in_the_same_team(caster_team) {
                                     targets.push(entity);
                                 }
                             }
@@ -125,7 +125,7 @@ pub fn phase_transition(
                         TargetOption::AllEnemy => {
                             let mut targets: Vec<Entity> = Vec::new();
                             for (entity, _, hp, team) in combat_unit_query.iter() {
-                                if hp.current > 0 && team != caster_team {
+                                if hp.current > 0 && !team.in_the_same_team(caster_team) {
                                     targets.push(entity);
                                 }
                             }

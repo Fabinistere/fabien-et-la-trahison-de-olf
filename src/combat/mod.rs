@@ -209,7 +209,7 @@ impl Plugin for CombatPlugin {
 #[derive(Bundle)]
 pub struct CombatBundle {
     pub karma: Karma,
-    pub team: Team,
+    pub reputation: Reputation,
     pub job: Job,
     pub alterations: CurrentAlterations,
     pub skills: Skills,
@@ -224,7 +224,7 @@ impl Default for CombatBundle {
     fn default() -> Self {
         CombatBundle {
             karma: Karma(0),
-            team: Team(None),
+            reputation: Reputation::default(),
             job: Job::default(),
             alterations: CurrentAlterations::default(),
             skills: Skills(Vec::new()),
@@ -257,18 +257,6 @@ impl Default for ActionCount {
         ActionCount { current: BASE_ACTION_COUNT, base: BASE_ACTION_COUNT }
     }
 }
-
-/// The team an entity is assigned to.
-/// 
-/// `None` being Neutral
-/// 
-/// # Note
-/// 
-/// REFACTOR: Just an enum...
-/// Listing all possible teams (cause its fixed)
-/// IDEA: Or An reputation meter for each ? struct annex
-#[derive(Component, Copy, Clone, PartialEq, Eq, Deref, DerefMut)]
-pub struct Team(pub Option<i32>);
 
 /// Ongoing alterations, Debuff or Buff
 /// 
@@ -344,8 +332,7 @@ impl FromWorld for CombatResources {
     fn from_world(
         world: &mut World,
     ) -> Self {
-        // We do include notInCombat allies to be able to see all MiniCharSheet while notInCombat
-        let mut allies_query = world.query_filtered::<Entity, With<Recruted>>();
+        let mut allies_query = world.query_filtered::<Entity, (With<Recruted>, With<InCombat>)>();
         let allies = allies_query.iter(world).collect::<Vec<Entity>>();
 
         let mut enemies_query = world.query_filtered::<Entity, (Without<Recruted>, With<InCombat>)>();
@@ -525,6 +512,11 @@ impl Reputation {
     pub fn in_the_same_team(&self, other: &Reputation) -> bool {
         (self.is_in_supreme_god_team() && other.is_in_supreme_god_team())
             || (self.is_in_olf_team() && other.is_in_olf_team())
+    }
+}
+impl Default for Reputation {
+    fn default() -> Self {
+        Reputation::new(50, 30)
     }
 }
 

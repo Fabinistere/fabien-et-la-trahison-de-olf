@@ -9,14 +9,15 @@ use bevy_tweening::{lens::UiPositionLens, Animator, EaseFunction, Tween};
 use std::time::Duration;
 
 use crate::{
+    characters::player::Player,
     combat::{
         skills::Skill,
         stats::{Attack, AttackSpe, Defense, DefenseSpe, Hp, Initiative, Mana, Shield},
         stuff::Job,
-        CombatEvent, CombatResources, CombatState,
+        CombatEvent, CombatResources, CombatState, InCombat, Recruted,
     },
     constants::{
-        combat::FIRST_ENEMY_ID,
+        combat::{FIRST_ALLY_ID, FIRST_ENEMY_ID},
         ui::{style::*, *},
     },
     ui::{
@@ -26,7 +27,7 @@ use crate::{
         },
         dialog::dialog_systems::CurrentInterlocutor,
     },
-    HUDState,
+    CombatWallStage, HUDState,
 };
 
 use super::log_cave::CombatLogResources;
@@ -203,25 +204,53 @@ pub fn create_combat_panel_on_key_press(
 }
 
 /// Handle the CombatEvent to open (not close) the combat wall.
+///
+/// # Notes
+///
+/// REFACTOR: We might want to just switch `CombatWallStage` and create a system which change auto
+/// the `HUDState`. At the moment, it's just here that we change `CombatWallStage`.
 pub fn create_combat_panel_on_combat_event(
     mut combat_events: EventReader<CombatEvent>,
     combat_wall_query: Query<(Entity, &Animator<Style>, &Style), With<CombatWall>>,
+
+    mut commands: Commands,
+    allies_query: Query<Entity, Or<(With<Player>, With<Recruted>)>>,
 
     mut current_interlocutor: ResMut<CurrentInterlocutor>,
 
     mut combat_state: ResMut<CombatState>,
     mut next_game_state: ResMut<NextState<HUDState>>,
+    current_combat_wall_state: Res<State<CombatWallStage>>,
+    mut next_combat_wall_state: ResMut<NextState<CombatWallStage>>,
 ) {
     for CombatEvent { attacker } in combat_events.iter() {
         if let Ok((_entity, animator, _style)) = combat_wall_query.get_single() {
-            // TODO: URGENT - AND not in Combat yet
-            if attacker.is_none() && animator.tweenable().progress() >= 1. {
+            // We can only close the `CombatWall` if we were in `CombatWallStage::Preparation`
+            if attacker.is_none()
+                && current_combat_wall_state.get() != &CombatWallStage::InCombat
+                && animator.tweenable().progress() >= 1.
+            {
                 next_game_state.set(HUDState::Closed);
+                next_combat_wall_state.set(CombatWallStage::Closed);
             }
+            // FIXME: MustHave - We can avoid getting attack by entering the
+            // `CombatWallStage::Preparation`
         } else {
             *combat_state = CombatState::SelectionCaster;
             current_interlocutor.interlocutor = None;
             next_game_state.set(HUDState::CombatWall);
+
+            match attacker {
+                None => next_combat_wall_state.set(CombatWallStage::Preparation),
+                Some(enemy) => {
+                    next_combat_wall_state.set(CombatWallStage::InCombat);
+                    // TODO: MustHave - Spawn Enemy's company
+                    commands.entity(*enemy).insert(InCombat(FIRST_ENEMY_ID));
+                }
+            }
+            for (i, ally) in allies_query.iter().enumerate() {
+                commands.entity(ally).insert(InCombat(FIRST_ALLY_ID + i));
+            }
         }
     }
 }

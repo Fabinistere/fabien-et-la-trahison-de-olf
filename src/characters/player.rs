@@ -12,7 +12,7 @@ use crate::{
         movement::{MovementBundle, Speed},
         CharacterHitbox,
     },
-    combat::{InCombat, Leader, Reputation},
+    combat::{CombatBundle, InCombat, Leader, Reputation},
     constants::character::{player::*, *},
     controls::KeyBindings,
     hud_closed,
@@ -179,9 +179,12 @@ fn spawn_player(
             Name::new("Player"),
             Player,
             Location::default(),
-            // -- Social --
-            Reputation::new(100, 0),
+            // -- Combat --
             Leader,
+            CombatBundle {
+                reputation: Reputation::new(100, 0),
+                ..default()
+            },
             // -- Animation --
             MovementBundle {
                 animation_indices,

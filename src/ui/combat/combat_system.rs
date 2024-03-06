@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     combat::{
         phases::TransitionPhaseEvent, skills::TargetOption, AlterationStatus, CombatResources,
-        CombatState, CurrentAlterations, InCombat, Team,
+        CombatState, CurrentAlterations, InCombat, Reputation,
     },
     constants::combat::{alteration::SIZE_ALTERATION_ICON, MAX_PARTY},
     ui::combat::{combat_panel::CombatStateDisplayer, player_interaction::Clicked},
@@ -142,8 +142,8 @@ pub fn update_targeted_unit(
 
     mut event_query: EventReader<UpdateUnitTargetedEvent>,
 
-    unit_selected_query: Query<(Entity, &Team), With<Selected>>,
-    combat_units_query: Query<(Entity, &Name, &Team), With<InCombat>>,
+    unit_selected_query: Query<(Entity, &Reputation), With<Selected>>,
+    combat_units_query: Query<(Entity, &Name, &Reputation), With<InCombat>>,
 
     mut transition_phase_event: EventWriter<TransitionPhaseEvent>,
 ) {
@@ -158,21 +158,21 @@ pub fn update_targeted_unit(
                 match last_action.skill.target_option {
                     TargetOption::Ally(_) => {
                         let (_, caster_team) = unit_selected_query.single();
-                        if target_team != caster_team {
+                        if !target_team.in_the_same_team(caster_team) {
                             info!("The target is not an ally");
                             continue;
                         }
                     }
                     TargetOption::Enemy(_) => {
                         let (_, caster_team) = unit_selected_query.single();
-                        if target_team == caster_team {
+                        if target_team.in_the_same_team(caster_team) {
                             info!("The target is not an enemy");
                             continue;
                         }
                     }
                     TargetOption::AllyButSelf(_) => {
                         let (caster, caster_team) = unit_selected_query.single();
-                        if target_team != caster_team || character == caster {
+                        if !target_team.in_the_same_team(caster_team) || character == caster {
                             info!("The target is not an ally or is the caster");
                             continue;
                         }
