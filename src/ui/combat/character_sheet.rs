@@ -366,7 +366,7 @@ pub fn skill_visibility(
                     //     *job, mastery_tier, *weapon_type
                     // );
 
-                    if None == mastery_tier {
+                    if mastery_tier.is_none() {
                         warn!("Job {:?} is not associated with {:?}", *job, *weapon_type);
                     }
 

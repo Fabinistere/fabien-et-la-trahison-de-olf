@@ -185,13 +185,10 @@ pub fn select_unit_by_mouse(
                     && transform.translation.y - half_height < world_position.y
                     && transform.translation.y + half_height > world_position.y
                 {
-                    match game_state.get() {
-                        HUDState::LogCave => {
-                            info!("Transi LogCave -> CombatWall");
-                            next_state.set(HUDState::CombatWall);
-                            // return;
-                        }
-                        _ => {}
+                    if game_state.get() == &HUDState::LogCave {
+                        info!("Transi LogCave -> CombatWall");
+                        next_state.set(HUDState::CombatWall);
+                        // return;
                     }
 
                     // info!("{} clicked", _name);
@@ -238,7 +235,7 @@ pub fn select_skill(
         let mut text = text_query.get_mut(children[0]).unwrap();
 
         // XXX: Tempo the command which give a Selected after cancel_input a selfcast skill in SelectionCaster
-        if let Err(_) = unit_selected_query.get_single() {
+        if unit_selected_query.get_single().is_err() {
             warn!("No Selected in SelectionSkill");
             continue;
         }
@@ -265,7 +262,7 @@ pub fn select_skill(
                 // BUG: XXX: Weird "Bug" Event/HUDState related handle
                 // Prevent the Trigger of the "double press"
                 if let Some(last_action) = combat_resources.history.last() {
-                    if last_action.skill == skill.clone() && last_action.targets == None {
+                    if last_action.skill == skill.clone() && last_action.targets.is_none() {
                         // warn!("Same Skill Selected Event handled twice");
                         continue;
                     }
@@ -301,7 +298,7 @@ pub fn select_skill(
                     // info!("new action");
                 }
 
-                let display = skill.name.replace("a", "o").replace("A", "O");
+                let display = skill.name.replace('a', "o").replace('A', "O");
                 text.sections[0].value = display;
 
                 info!("Skill {} selected", skill.name);
@@ -405,13 +402,10 @@ pub fn cancel_last_input(
     mut transition_phase_event: EventWriter<TransitionPhaseEvent>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Escape) {
-        match game_state.get() {
-            HUDState::LogCave => {
-                info!("Transi LogCave -> CombatWall");
-                next_state.set(HUDState::CombatWall);
-                return;
-            }
-            _ => {}
+        if game_state.get() == &HUDState::LogCave {
+            info!("Transi LogCave -> CombatWall");
+            next_state.set(HUDState::CombatWall);
+            return;
         }
 
         let current_phase = combat_state.clone();
@@ -468,7 +462,7 @@ pub fn cancel_last_input(
                             Some(ref mut targets) => {
                                 let old_target = targets.pop().unwrap();
                                 commands.entity(old_target).remove::<Targeted>();
-                                if targets.len() == 0 {
+                                if targets.is_empty() {
                                     last_action.targets = None;
                                 }
 
@@ -643,7 +637,7 @@ pub fn browse_character_sheet(
     mut select_event: EventWriter<UpdateUnitSelectedEvent>,
 ) {
     // XXX: Tempo the phase transi after cancel_input in SelectionSkill/BrowseEnemySheet
-    if let Err(_) = selected_unit_query.get_single() {
+    if selected_unit_query.get_single().is_err() {
         warn!("No Selected in {:?}", combat_phase);
         return;
     }

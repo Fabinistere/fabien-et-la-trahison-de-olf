@@ -73,7 +73,7 @@ pub fn phase_transition(
 
                 // - Select Skill in SelectionSkill
                 // - Changing Skill while being in SelectionTarget
-                if last_action.targets == None {
+                if last_action.targets.is_none() {
                     // remove from previous entity the targeted component
                     for (targeted, _) in targeted_unit_query.iter() {
                         commands.entity(targeted).remove::<Targeted>();
@@ -187,7 +187,7 @@ pub fn phase_transition(
             (_, CombatState::AIStrategy) => {
                 // TODO: Warning if there is still action left
                 // XXX: this is a safeguard preventing from double click the `end_of_turn` (wasn't a pb back there)
-                if combat_resources.history.len() == 0 {
+                if combat_resources.history.is_empty() {
                     info!("End of Turn - Refused (no action)");
                     continue;
                 }
@@ -243,21 +243,18 @@ pub fn phase_transition(
             _ => {}
         }
 
-        match hud_state.get() {
-            HUDState::CombatWall => {
-                // TODO: CouldHave - Dynamic Input: AutoSwitch Selection to avoid repetitive inpleasant task ("go to next caster")
-                let mut character_sheet_visibility = character_sheet_query
-                    .get_mut(character_sheet_elements.character_sheet.unwrap())
-                    .unwrap();
-                *character_sheet_visibility = if next_phase == &CombatState::SelectionCaster {
-                    Visibility::Hidden
-                } else if combat_state.clone() == CombatState::SelectionCaster {
-                    Visibility::Inherited
-                } else {
-                    *character_sheet_visibility
-                };
-            }
-            _ => {}
+        if hud_state.get() == &HUDState::CombatWall {
+            // TODO: CouldHave - Dynamic Input: AutoSwitch Selection to avoid repetitive inpleasant task ("go to next caster")
+            let mut character_sheet_visibility = character_sheet_query
+                .get_mut(character_sheet_elements.character_sheet.unwrap())
+                .unwrap();
+            *character_sheet_visibility = if next_phase == &CombatState::SelectionCaster {
+                Visibility::Hidden
+            } else if combat_state.clone() == CombatState::SelectionCaster {
+                Visibility::Inherited
+            } else {
+                *character_sheet_visibility
+            };
         }
 
         // info!(
@@ -378,7 +375,7 @@ pub fn roll_initiative(
     for action in combat_resources.history.iter_mut() {
         let caster = action.caster;
         // REFACTOR: how the initiative is calculated
-        let skill_init = action.skill.initiative.clone();
+        let skill_init = action.skill.initiative;
 
         match combat_units_query.get(caster) {
             Err(e) => warn!("Invalid Caster are in the History: {}", e),
@@ -387,11 +384,8 @@ pub fn roll_initiative(
 
                 // ---- Alterations Rules ----
                 for alteration in alterations.iter() {
-                    match alteration.action {
-                        AlterationAction::StatsFlat => {
-                            current_init += alteration.initiative;
-                        }
-                        _ => {}
+                    if alteration.action == AlterationAction::StatsFlat {
+                        current_init += alteration.initiative;
                     }
                 }
                 // ---- Calculus ----

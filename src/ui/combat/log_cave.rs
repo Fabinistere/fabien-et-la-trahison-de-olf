@@ -74,22 +74,18 @@ pub fn cave_ladder(
     mut next_state: ResMut<NextState<HUDState>>,
     ladder_query: Query<&Interaction, (Changed<Interaction>, With<Ladder>)>,
 ) {
-    if let Ok(interaction) = ladder_query.get_single() {
-        match interaction {
-            // TOTEST: `.clone()` needed ?
-            Interaction::Pressed => match game_state.get() {
-                HUDState::CombatWall => {
-                    next_state.set(HUDState::LogCave);
-                }
-                HUDState::LogCave => {
-                    next_state.set(HUDState::CombatWall);
-                }
-                _ => {}
-            },
-            // TODO: Visual - Hover = outline (see README todos)
+    if let Ok(Interaction::Pressed) = ladder_query.get_single() {
+        match game_state.get() {
+            HUDState::CombatWall => {
+                next_state.set(HUDState::LogCave);
+            }
+            HUDState::LogCave => {
+                next_state.set(HUDState::CombatWall);
+            }
             _ => {}
         }
     }
+    // TODO: Visual - Hover = outline (see README todos)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -228,7 +224,7 @@ pub fn setup(
 
                                 parent.spawn((
                                     TextBundle::from_section(
-                                        format!("---------------\nCurrent Turn Actions:"),
+                                        "---------------\nCurrent Turn Actions:",
                                         get_text_style(&asset_server, 20.),
                                     )
                                     .with_style(Style {
@@ -251,7 +247,7 @@ pub fn setup(
 
                                 parent.spawn((
                                     TextBundle::from_section(
-                                        format!("---------------\nLast Actions:"),
+                                        "---------------\nLast Actions:",
                                         get_text_style(&asset_server, 20.),
                                     )
                                     .with_style(Style {
@@ -274,7 +270,7 @@ pub fn setup(
 
                                 parent.spawn((
                                     TextBundle::from_section(
-                                        format!("---------------\nActions Logs:"),
+                                        "---------------\nActions Logs:",
                                         get_text_style(&asset_server, 20.),
                                     )
                                     .with_style(Style {
@@ -297,7 +293,7 @@ pub fn setup(
 
                                 parent.spawn((
                                     TextBundle::from_section(
-                                        format!("---------------"),
+                                        "---------------",
                                         get_text_style(&asset_server, 20.),
                                     )
                                     .with_style(Style {

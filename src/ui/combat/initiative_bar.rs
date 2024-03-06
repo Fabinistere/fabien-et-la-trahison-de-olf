@@ -33,7 +33,7 @@ pub fn action_visibility(
             // let mut action_sprite = action_sprite_query.get_mut(action_children[1]).unwrap();
             let mut action_image = action_image_query.get_mut(action_children[1]).unwrap();
 
-            let old_visibility = visibility.clone();
+            let old_visibility = *visibility;
 
             let mut text = text_query.get_mut(action_children[0]).unwrap();
 

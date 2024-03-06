@@ -1,4 +1,4 @@
-#![allow(clippy::type_complexity)]
+#![allow(clippy::type_complexity, clippy::too_many_arguments)]
 #![feature(trivial_bounds)]
 // // ^^--- allow reflect on Vec<T>
 
@@ -134,6 +134,7 @@ fn main() {
         ))
         .add_state::<GameState>()
         .add_state::<HUDState>()
+        .add_state::<CombatWallStage>()
         .add_systems(Startup, (game_setup, music))
         .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 

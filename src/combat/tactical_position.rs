@@ -39,10 +39,9 @@ pub fn detect_window_tactical_pos_change(
         info!("Window Resized");
         update_char_pos_event.send(UpdateCharacterPositionEvent);
     }
-    for _ in characters_query.iter() {
+    if characters_query.iter().next().is_some() {
         info!("Tactical Pos Change");
         update_char_pos_event.send(UpdateCharacterPositionEvent);
-        break;
     }
 }
 

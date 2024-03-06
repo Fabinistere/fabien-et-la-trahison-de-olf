@@ -204,22 +204,25 @@ pub fn update_targeted_unit(
                                 // Only work if we can target muiltiple times one entity
                                 // or if the number of available target is < number asked
                                 // TODO: can target less if = the max possible
-                                if targets.len() < number {
-                                    targets.push(character);
-                                    if targets.len() == number {
+
+                                match targets.len().cmp(&number) {
+                                    std::cmp::Ordering::Less => targets.push(character),
+                                    std::cmp::Ordering::Equal => {
+                                        targets.push(character);
                                         transition_phase_event
                                             .send(TransitionPhaseEvent(CombatState::default()));
                                     }
-                                } else if targets.len() > number {
-                                    warn!(
-                                        "Error! The number of target is exceeded {}/{:?}",
-                                        targets.len(),
-                                        last_action.skill.target_option
-                                    );
-                                    while targets.len() > number {
-                                        commands
-                                            .entity(targets.pop().unwrap())
-                                            .remove::<Targeted>();
+                                    std::cmp::Ordering::Greater => {
+                                        warn!(
+                                            "Error! The number of target is exceeded {}/{:?}",
+                                            targets.len(),
+                                            last_action.skill.target_option
+                                        );
+                                        while targets.len() > number {
+                                            commands
+                                                .entity(targets.pop().unwrap())
+                                                .remove::<Targeted>();
+                                        }
                                     }
                                 }
                             }
@@ -252,6 +255,7 @@ pub fn update_alterations_status(
     for (alterations, transform, children, _name) in changed_alterations_query.iter() {
         // info!("{} has some alterations change", _name);
         // "Reset" all alt_displayer
+        // REFACTOR: We should verify it is the `AllAlterationStatuses`
         commands.entity(children[0]).despawn_descendants();
         commands.entity(children[0]).with_children(|parent| {
             for (i, alteration) in alterations.iter().enumerate() {
