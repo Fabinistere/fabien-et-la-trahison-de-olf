@@ -12,6 +12,9 @@ use crate::{
 
 use super::combat_panel::Portrait;
 
+#[derive(Component)]
+pub struct InitiativeBar;
+
 /// Disables empty action,
 /// (invisible == disable).
 /// And update the text on the Button and the sprite of it.
@@ -80,5 +83,3 @@ pub fn action_visibility(
         }
     }
 }
-
-// TODO: Interaction with action in the Initiative Bar

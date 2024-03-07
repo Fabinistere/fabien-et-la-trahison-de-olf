@@ -12,12 +12,10 @@ use bevy::{
 use bevy_tweening::{lens::UiPositionLens, Animator, EaseFunction, Tween};
 
 use crate::{
-    constants::ui::{
-        style::*, HUD_PANEL_ANIMATION_OFFSET, HUD_PANEL_ANIMATION_TIME_MS, HUD_WALL_WIDTH,
-    },
-    ui::combat::{
-        combat_panel::{CombatScene, Ladder},
-        player_interaction::ScrollingList,
+    constants::ui::{style::*, HUD_PANEL_ANIMATION_OFFSET, HUD_PANEL_ANIMATION_TIME_MS},
+    ui::{
+        combat::{combat_panel::Ladder, player_interaction::ScrollingList},
+        HUDWallsSection,
     },
     HUDState,
 };
@@ -97,7 +95,7 @@ pub fn cave_ladder(
 /// Here It should always be `HUDState::CombatWall`.
 pub fn cleanup(
     mut commands: Commands,
-    mut log_cave_query: Query<(Entity, &mut Animator<Style>, &Style), With<HUDLog>>,
+    log_cave_query: Query<(Entity, &Style), (With<HUDLog>, With<Animator<Style>>)>,
 ) {
     let end_position = UiRect {
         left: Val::Px(0.),
@@ -106,7 +104,7 @@ pub fn cleanup(
         bottom: Val::Auto,
     };
 
-    if let Ok((entity, mut _animator, style)) = log_cave_query.get_single_mut() {
+    if let Ok((log_cave, style)) = log_cave_query.get_single() {
         let log_cave_tween = Tween::new(
             EaseFunction::QuadraticIn,
             Duration::from_millis(HUD_PANEL_ANIMATION_TIME_MS),
@@ -123,7 +121,7 @@ pub fn cleanup(
         .with_completed_event(0);
 
         commands
-            .entity(entity)
+            .entity(log_cave)
             .remove::<Animator<Style>>()
             .insert(Animator::new(log_cave_tween));
     }
@@ -141,10 +139,29 @@ pub fn setup(
     asset_server: Res<AssetServer>,
 
     combat_log_resources: Res<CombatLogResources>,
-    ui_scene_query: Query<Entity, With<CombatScene>>,
+    hud_walls_section_query: Query<Entity, With<HUDWallsSection>>,
 ) {
-    let ui_scene = ui_scene_query.single();
-    commands.entity(ui_scene).with_children(|parent| {
+    let log_cave_tween = Tween::new(
+        EaseFunction::QuadraticOut,
+        Duration::from_millis(HUD_PANEL_ANIMATION_TIME_MS),
+        UiPositionLens {
+            start: UiRect {
+                left: Val::Px(0.),
+                right: Val::Px(0.),
+                top: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
+                bottom: Val::Auto,
+            },
+            end: UiRect {
+                left: Val::Px(0.),
+                right: Val::Px(0.),
+                top: Val::Px(0.),
+                bottom: Val::Auto,
+            },
+        },
+    );
+
+    let hud_walls_section = hud_walls_section_query.single();
+    commands.entity(hud_walls_section).with_children(|parent| {
         /* -------------------------------------------------------------------------- */
         /*                                  LOG Cave                                  */
         /* -------------------------------------------------------------------------- */
@@ -154,7 +171,19 @@ pub fn setup(
                 ImageBundle {
                     image: combat_log_resources.base_log_cave.clone().into(),
                     style: Style {
-                        width: Val::Percent(HUD_WALL_WIDTH),
+                        display: Display::Flex,
+                        position_type: PositionType::Relative,
+                        top: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
+                        bottom: Val::Auto,
+                        margin: UiRect {
+                            left: Val::Auto,
+                            right: Val::Px(0.),
+                            top: Val::Px(0.),
+                            bottom: Val::Px(0.),
+                        },
+                        width: Val::Auto,
+                        height: Val::Percent(100.),
+                        aspect_ratio: Some(284. / 400.),
                         flex_direction: FlexDirection::Column,
                         ..default()
                     },
@@ -162,6 +191,7 @@ pub fn setup(
                 },
                 Name::new("HUD Log"),
                 HUDLog,
+                Animator::new(log_cave_tween),
             ))
             .with_children(|parent| {
                 // TODO: Scroll the logWall and ladder - (The ladder breaks the log scrolling)

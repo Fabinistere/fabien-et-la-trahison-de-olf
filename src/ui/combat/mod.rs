@@ -59,7 +59,7 @@ impl Plugin for UiCombatPlugin {
             .add_systems(
                 Update,
                 (
-                    // REFACTOR: move create_dialog_panel_on_key_press to player_interaction
+                    // REFACTOR: ? - move create_dialog_panel_on_key_press to player_interaction
                     combat_panel::create_combat_panel_on_key_press,
                     combat_panel::create_combat_panel_on_combat_event,
                     player_interaction::mouse_scroll,
@@ -74,10 +74,7 @@ impl Plugin for UiCombatPlugin {
             /* -------------------------------------------------------------------------- */
 
             // .add_systems(Startup, combat_panel::global_ui_setup)
-            .add_systems(OnEnter(HUDState::CombatWall), (
-                combat_panel::global_ui_setup,
-                combat_panel::combat_wall_setup
-            ))
+            .add_systems(OnEnter(HUDState::CombatWall), combat_panel::combat_wall_setup)
             .add_systems(OnExit(HUDState::CombatWall), combat_panel::cleanup)
             
             .add_systems(

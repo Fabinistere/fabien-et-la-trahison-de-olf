@@ -1,10 +1,4 @@
-use bevy::{
-    a11y::{
-        accesskit::{NodeBuilder, Role},
-        AccessibilityNode,
-    },
-    prelude::*,
-};
+use bevy::prelude::*;
 use bevy_tweening::{lens::UiPositionLens, Animator, EaseFunction, Tween};
 use std::time::Duration;
 
@@ -20,17 +14,11 @@ use crate::{
         combat::{FIRST_ALLY_ID, FIRST_ENEMY_ID},
         ui::{style::*, *},
     },
-    ui::{
-        combat::{
-            combat_system::{HpMeter, MpMeter},
-            player_interaction::{EndOfTurnButton, ScrollingList},
-        },
-        dialog::dialog_systems::CurrentInterlocutor,
-    },
+    ui::{dialog::dialog_systems::CurrentInterlocutor, HUDWallsSection},
     CombatWallStage, HUDState,
 };
 
-use super::log_cave::CombatLogResources;
+use super::{initiative_bar::InitiativeBar, log_cave::CombatLogResources};
 
 /* -------------------------------------------------------------------------- */
 /*                                UI Resources                                */
@@ -96,10 +84,6 @@ impl FromWorld for CharacterSheetAssetsResources {
 /* -------------------------------------------------------------------------- */
 /*                                UI Components                               */
 /* -------------------------------------------------------------------------- */
-
-/// Contains the FightingHall, the InitiativeBar and the CombatWall
-#[derive(Component)]
-pub struct CombatScene;
 
 #[derive(Component)]
 pub struct Ladder;
@@ -210,10 +194,12 @@ pub fn create_combat_panel_on_key_press(
 /// REFACTOR: We might want to just switch `CombatWallStage` and create a system which change auto
 /// the `HUDState`. At the moment, it's just here that we change `CombatWallStage`.
 pub fn create_combat_panel_on_combat_event(
+    mut commands: Commands,
+
     mut combat_events: EventReader<CombatEvent>,
     combat_wall_query: Query<(Entity, &Animator<Style>, &Style), With<CombatWall>>,
+    mut initiative_bar_query: Query<&mut Visibility, With<InitiativeBar>>,
 
-    mut commands: Commands,
     allies_query: Query<Entity, Or<(With<Player>, With<Recruted>)>>,
 
     mut current_interlocutor: ResMut<CurrentInterlocutor>,
@@ -240,6 +226,9 @@ pub fn create_combat_panel_on_combat_event(
             current_interlocutor.interlocutor = None;
             next_game_state.set(HUDState::CombatWall);
 
+            let mut init_bar_visibility = initiative_bar_query.single_mut();
+            *init_bar_visibility = Visibility::Inherited;
+
             match attacker {
                 None => next_combat_wall_state.set(CombatWallStage::Preparation),
                 Some(enemy) => {
@@ -262,13 +251,18 @@ pub fn create_combat_panel_on_combat_event(
 /// The Wall will despawn at the end of the animation in [[ui::mod]].
 pub fn cleanup(
     mut commands: Commands,
-    mut combat_wall_query: Query<(Entity, &mut Animator<Style>, &Style), With<CombatWall>>,
+    combat_wall_query: Query<(Entity, &Style), (With<CombatWall>, With<Animator<Style>>)>,
+    mut initiative_bar_query: Query<&mut Visibility, With<InitiativeBar>>,
 
+    in_combat_query: Query<Entity, With<InCombat>>,
     hud_state: Res<State<HUDState>>,
-    combat_scene_query: Query<Entity, With<CombatScene>>,
 ) {
-    if let Ok(combat_scene) = combat_scene_query.get_single() {
-        commands.entity(combat_scene).despawn_recursive();
+    if hud_state.get() != &HUDState::LogCave {
+        let mut init_bar_visibility = initiative_bar_query.single_mut();
+        *init_bar_visibility = Visibility::Hidden;
+        for fighter in &in_combat_query {
+            commands.entity(fighter).remove::<InCombat>();
+        }
     }
 
     // The current State where `cleanup()` is called is the upcoming transition state
@@ -288,7 +282,7 @@ pub fn cleanup(
         }
     };
 
-    if let Ok((entity, mut _animator, style)) = combat_wall_query.get_single_mut() {
+    if let Ok((entity, style)) = combat_wall_query.get_single() {
         let combat_panel_tween = Tween::new(
             EaseFunction::QuadraticIn,
             Duration::from_millis(HUD_PANEL_ANIMATION_TIME_MS),
@@ -321,6 +315,7 @@ pub fn combat_wall_setup(
     asset_server: Res<AssetServer>,
 
     combat_resources: Res<CombatResources>,
+    hud_walls_section_query: Query<Entity, With<HUDWallsSection>>,
 
     character_sheet_resources: Res<CharacterSheetAssetsResources>,
     combat_wall_resources: Res<CombatWallResources>,
@@ -937,451 +932,236 @@ pub fn combat_wall_setup(
         },
     );
 
-    /* -------------------------------------------------------------------------- */
-    /*                                  HUD Wall                                  */
-    /* -------------------------------------------------------------------------- */
-    commands
-        .spawn((
-            ImageBundle {
-                image: combat_wall_resources.base_combat_wall.clone().into(),
-                style: Style {
-                    // display: Display::Flex,
-                    // align_items: AlignItems::Center,
-                    // justify_content: JustifyContent::Center,
-                    // position_type: PositionType::Relative,
-                    top: Val::Px(0.),
-                    right: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
-                    bottom: Val::Px(0.),
-                    margin: UiRect {
-                        left: Val::Auto,
-                        right: Val::Px(0.),
+    let hud_walls_section = hud_walls_section_query.single();
+    commands.entity(hud_walls_section).with_children(|parent| {
+        /* -------------------------------------------------------------------------- */
+        /*                                  HUD Wall                                  */
+        /* -------------------------------------------------------------------------- */
+        parent
+            .spawn((
+                ImageBundle {
+                    image: combat_wall_resources.base_combat_wall.clone().into(),
+                    style: Style {
+                        display: Display::Flex,
+                        position_type: PositionType::Relative,
                         top: Val::Px(0.),
+                        right: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
                         bottom: Val::Px(0.),
-                    },
-                    // width: Val::Auto,
-                    height: Val::Percent(100.),
-                    aspect_ratio: Some(284. / 400.),
+                        margin: UiRect {
+                            left: Val::Auto,
+                            right: Val::Px(0.),
+                            top: Val::Px(0.),
+                            bottom: Val::Px(0.),
+                        },
+                        width: Val::Auto,
+                        height: Val::Percent(100.),
+                        aspect_ratio: Some(284. / 400.),
+                        // -- Children --
 
-                    // ----------------
-                    width: Val::Percent(HUD_WALL_WIDTH),
-                    flex_direction: FlexDirection::Column,
+                        // align_items: AlignItems::Center,
+                        // justify_content: JustifyContent::Center,
+                        flex_direction: FlexDirection::Column,
+                        ..default()
+                    },
                     ..default()
                 },
-                ..default()
-            },
-            Name::new("Combat Wall"),
-            Animator::new(combat_panel_tween),
-            CombatWall,
-        ))
-        .with_children(|parent| {
-            /* First Side of the HUD Wall
-             * - Each Allied CharacterSheet (SubPanels) (Fixed Image)
-             *   - First Sub-Panel
-             *     - Headers: Sprite, Name, Title, Job
-             *     - Stats, Weapon Equiped
-             *     - Skill Menu²
-             * - TODO: "Bestiary" (Book of Enemy's characterSheet)
-             * - TODO: Logs
-             * - TODO: Team's Inventory
-             * - IDEA: If we block access to a certain number of members - Show empty sheets (with no text) to represent free space
-             */
+                Name::new("Combat Wall"),
+                Animator::new(combat_panel_tween),
+                CombatWall,
+            ))
+            .with_children(|parent| {
+                /* First Side of the HUD Wall
+                 * - Each Allied CharacterSheet (SubPanels) (Fixed Image)
+                 *   - First Sub-Panel
+                 *     - Headers: Sprite, Name, Title, Job
+                 *     - Stats, Weapon Equiped
+                 *     - Skill Menu²
+                 * - TODO: "Bestiary" (Book of Enemy's characterSheet)
+                 * - TODO: Logs
+                 * - TODO: Team's Inventory
+                 * - IDEA: If we block access to a certain number of members - Show empty sheets (with no text) to represent free space
+                 */
 
-            parent
-                .spawn((
-                    NodeBundle {
-                        // background_color: Color::DARK_GRAY.into(),
-                        style: Style {
-                            flex_shrink: 0.,
-                            flex_direction: FlexDirection::Column,
-                            height: Val::Percent(100.),
-
-                            ..default()
-                        },
-                        ..default()
-                    },
-                    Name::new("Interactive items"),
-                ))
-                .with_children(|parent| {
-                    // REFACTOR: put the custom size directly on the sprite (gap yes but no pos on the "root")
-                    parent
-                        .spawn((
-                            NodeBundle {
-                                // background_color: Color::GRAY.into(),
-                                style: ALLIES_SHEET_STYLE,
-                                ..default()
-                            },
-                            Name::new("Allies' Scroll"),
-                        ))
-                        .with_children(|parent| {
-                            parent
-                                .spawn((
-                                    NodeBundle {
-                                        style: ROW_SHEETS_STYLE,
-                                        ..default()
-                                    },
-                                    Name::new("First Row of Scrolls"),
-                                ))
-                                .with_children(|parent| {
-                                    for i in 0..3 {
-                                        parent.spawn((
-                                            ImageBundle {
-                                                image: combat_wall_resources.allies_scroll[i]
-                                                    .clone()
-                                                    .into(),
-                                                visibility: if i < combat_resources
-                                                    .number_of_fighters
-                                                    .ally
-                                                    .total
-                                                {
-                                                    Visibility::Inherited
-                                                } else {
-                                                    Visibility::Hidden
-                                                },
-                                                style: MINI_CHARACTER_SHEET_STYLE,
-                                                ..default()
-                                            },
-                                            Name::new(format!("Ally's Scroll {}", i)),
-                                            Interaction::default(),
-                                            MiniCharacterSheet(i),
-                                        ));
-                                    }
-                                });
-
-                            parent
-                                .spawn((
-                                    NodeBundle {
-                                        style: ROW_SHEETS_STYLE,
-                                        ..default()
-                                    },
-                                    Name::new("Second Row of Scrolls"),
-                                ))
-                                .with_children(|parent| {
-                                    for i in 3..6 {
-                                        parent.spawn((
-                                            ImageBundle {
-                                                image: combat_wall_resources.allies_scroll[i]
-                                                    .clone()
-                                                    .into(),
-                                                visibility: if i < combat_resources
-                                                    .number_of_fighters
-                                                    .ally
-                                                    .total
-                                                {
-                                                    Visibility::Inherited
-                                                } else {
-                                                    Visibility::Hidden
-                                                },
-                                                style: MINI_CHARACTER_SHEET_STYLE,
-                                                ..default()
-                                            },
-                                            Name::new(format!("Ally's Scroll {}", i)),
-                                            Interaction::default(),
-                                            MiniCharacterSheet(i),
-                                        ));
-                                    }
-                                });
-                        });
-
-                    parent.spawn((
-                        ImageBundle {
-                            image: combat_wall_resources.pack_of_scroll.clone().into(),
+                parent
+                    .spawn((
+                        NodeBundle {
+                            // background_color: Color::DARK_GRAY.into(),
                             style: Style {
                                 flex_shrink: 0.,
-                                width: Val::Percent(17.),
-                                left: Val::Percent(54.),
-                                top: Val::Percent(26.6),
+                                flex_direction: FlexDirection::Column,
+                                height: Val::Percent(100.),
+
                                 ..default()
                             },
                             ..default()
                         },
-                        // DOC: Pack of scrolls = "Bestiary"
-                        Name::new("Scrolls Pack"),
-                        Interaction::default(),
-                        // points to the first enemy
-                        MiniCharacterSheet(FIRST_ENEMY_ID),
-                    ));
-
-                    // TODO: Hide it behind the altar
-                    parent.spawn((
-                        ImageBundle {
-                            image: combat_log_resources.ladder.clone().into(),
-                            style: Style {
-                                flex_shrink: 0.,
-                                width: Val::Percent(32.),
-                                left: Val::Percent(9.7),
-                                top: Val::Percent(20.5),
-                                ..default()
-                            },
-                            ..default()
-                        },
-                        Name::new("Downwards Ladder"),
-                        Interaction::default(),
-                        Ladder,
-                    ));
-
-                    // parent
-                    //     .spawn((
-                    //         NodeBundle {
-                    //             background_color: Color::DARK_GRAY.into(),
-                    //             style: Style {
-                    //                 flex_shrink: 0.,
-                    //                 flex_direction: FlexDirection::Row,
-                    //                 //  height: Val::Percent(55.2),
-                    //                 ..default()
-                    //             },
-                    //             ..default()
-                    //         },
-                    //         Name::new("Lower Screen"),
-                    //     ))
-                    //     .with_children(|parent| {
-
-                    //         // parent
-                    //         //     .spawn((
-                    //         //         NodeBundle {
-                    //         //             style: Style {
-                    //         //                 width: Val::Percent(50.),
-                    //         //                 ..default()
-                    //         //             },
-                    //         //             ..default()
-                    //         //         },
-                    //         //         Name::new("Lower Left Screen"),
-                    //         //     ))
-                    //         //     .with_children(|parent| {
-                    //         //     });
-                    //         // parent
-                    //         //     .spawn((
-                    //         //         NodeBundle {
-                    //         //             style: Style {
-                    //         //                  width: Val::Percent(50.),
-                    //         //                 ..default()
-                    //         //             },
-                    //         //             ..default()
-                    //         //         },
-                    //         //         Name::new("Lower Right Screen"),
-                    //         //     ))
-                    //         //     .with_children(|parent| {
-                    //         //     });
-                    //     });
-                });
-
-            // TODO: Spawn the ladder at the left box of the pack of scroll
-        })
-        .push_children(&[character_sheet]);
-}
-
-/// REFACTOR: Upgrade UiImage to spritesheet UI when [Available](https://github.com/bevyengine/bevy/pull/5070)
-pub fn global_ui_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    /* -------------------------------------------------------------------------- */
-    /*                                  UI Scene                                  */
-    /* -------------------------------------------------------------------------- */
-    commands
-        .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.),
-                    justify_content: JustifyContent::SpaceBetween,
-                    flex_direction: FlexDirection::Row,
-                    ..default()
-                },
-                ..default()
-            },
-            Name::new("Combat Scene"),
-            CombatScene,
-        ))
-        .with_children(|parent| {
-            /* -------------------------------------------------------------------------- */
-            /*                                Fighting Hall                               */
-            /*                             Where the npcs are                             */
-            /* -------------------------------------------------------------------------- */
-            parent
-                .spawn((
-                    NodeBundle {
-                        style: Style {
-                            width: Val::Percent(FIGHTING_HALL_WIDTH),
-                            flex_direction: FlexDirection::Column,
-                            ..default()
-                        },
-                        background_color: Color::rgba(0., 0., 0., 0.).into(),
-                        ..default()
-                    },
-                    Name::new("Fighting Hall"),
-                ))
-                .with_children(|parent| {
-                    // END OF YOUR TURN
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: Style {
-                                    width: Val::Px(200.0),
-                                    height: Val::Px(65.0),
-                                    margin: UiRect::all(Val::Auto),
-                                    top: Val::Percent(5.),
-                                    justify_content: JustifyContent::Center,
-                                    align_items: AlignItems::Center,
+                        Name::new("Interactive items"),
+                    ))
+                    .with_children(|parent| {
+                        // REFACTOR: put the custom size directly on the sprite (gap yes but no pos on the "root")
+                        parent
+                            .spawn((
+                                NodeBundle {
+                                    // background_color: Color::GRAY.into(),
+                                    style: ALLIES_SHEET_STYLE,
                                     ..default()
                                 },
-                                background_color: NORMAL_BUTTON.into(),
-                                ..default()
-                            },
-                            Name::new("EndTurn Button"),
-                            EndOfTurnButton,
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle::from_section(
-                                "End of Turn",
-                                get_text_style(&asset_server, 40.),
-                            ));
-                        });
-
-                    // Stats - Caster / Target
-                    parent
-                        .spawn((
-                            NodeBundle {
-                                style: Style {
-                                    top: Val::Percent(5.),
-                                    flex_direction: FlexDirection::Column,
-                                    flex_grow: 1.0,
-                                    ..default()
-                                },
-                                ..default()
-                            },
-                            Name::new("Stats"),
-                        ))
-                        .with_children(|parent| {
-                            // List items
-
-                            // ----- DEBUG: Basic Stats -----
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    "Target hp: ???",
-                                    get_text_style(&asset_server, 20.),
-                                )
-                                .with_style(TEXT_STYLE),
-                                Label,
-                                HpMeter,
-                                TargetMeter,
-                                Name::new("Target Hp"),
-                            ));
-
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    "Target mp: ???",
-                                    get_text_style(&asset_server, 20.),
-                                )
-                                .with_style(TEXT_STYLE),
-                                Label,
-                                MpMeter,
-                                TargetMeter,
-                                Name::new("Target Mp"),
-                            ));
-
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    "Combat Phase: ???",
-                                    get_text_style(&asset_server, 20.),
-                                )
-                                .with_style(Style {
-                                    flex_shrink: 0.,
-                                    width: Val::Px(0.),
-                                    height: Val::Px(20.),
-                                    margin: UiRect {
-                                        left: Val::Auto,
-                                        right: Val::Auto,
-                                        ..default()
-                                    },
-                                    ..default()
-                                }),
-                                CombatStateDisplayer,
-                                Name::new("Combat Phase"),
-                                // -- UI --
-                                // Because this is a distinct label widget and
-                                // not button/list item text, this is necessary
-                                // for accessibility to treat the text accordingly.
-                                Label,
-                            ));
-                        });
-                });
-
-            /* -------------------------------------------------------------------------- */
-            /*                            Initiative Bar Order                            */
-            /* -------------------------------------------------------------------------- */
-            parent
-                .spawn((
-                    NodeBundle {
-                        style: Style {
-                            width: Val::Percent(INITIATIVE_BAR_WIDTH),
-                            ..default()
-                        },
-                        background_color: Color::OLIVE.into(),
-                        ..default()
-                    },
-                    Name::new("Initiative Vertical Bar"),
-                ))
-                .with_children(|parent| {
-                    parent
-                        .spawn((
-                            NodeBundle {
-                                style: LIST_HIDDEN_OVERFLOW_STYLE,
-                                ..default()
-                            },
-                            Name::new("List of Actions"),
-                        ))
-                        .with_children(|parent| {
-                            parent
-                                .spawn((
-                                    NodeBundle {
-                                        style: MOVING_PANEL_STYLE,
-                                        ..default()
-                                    },
-                                    Name::new("Moving Panel"),
-                                    // -- UI --
-                                    ScrollingList::default(),
-                                    AccessibilityNode(NodeBuilder::new(Role::List)),
-                                ))
-                                .with_children(|parent| {
-                                    // 36 max actions (12entities playing thrice)
-
-                                    for action_count in 0..36 {
-                                        // each Button contains, as child, text and its sprite (caster's head)
-                                        parent
-                                            .spawn((
-                                                ButtonBundle {
-                                                    style: ACTION_BUTTON_STYLE,
-                                                    background_color: NORMAL_BUTTON.into(),
-                                                    visibility: Visibility::Hidden,
+                                Name::new("Allies' Scroll"),
+                            ))
+                            .with_children(|parent| {
+                                parent
+                                    .spawn((
+                                        NodeBundle {
+                                            style: ROW_SHEETS_STYLE,
+                                            ..default()
+                                        },
+                                        Name::new("First Row of Scrolls"),
+                                    ))
+                                    .with_children(|parent| {
+                                        for i in 0..3 {
+                                            parent.spawn((
+                                                ImageBundle {
+                                                    image: combat_wall_resources.allies_scroll[i]
+                                                        .clone()
+                                                        .into(),
+                                                    visibility: if i < combat_resources
+                                                        .number_of_fighters
+                                                        .ally
+                                                        .total
+                                                    {
+                                                        Visibility::Inherited
+                                                    } else {
+                                                        Visibility::Hidden
+                                                    },
+                                                    style: MINI_CHARACTER_SHEET_STYLE,
                                                     ..default()
                                                 },
-                                                Name::new(format!("Action {}", action_count)),
-                                                // or put the action in it - space but better time comp
-                                                ActionDisplayer(action_count),
-                                                // -- UI --
-                                                AccessibilityNode(NodeBuilder::new(Role::ListItem)),
-                                            ))
-                                            .with_children(|parent| {
-                                                parent.spawn(TextBundle::from_section(
-                                                    format!("Action {}", action_count),
-                                                    get_text_style(&asset_server, 20.),
-                                                ));
+                                                Name::new(format!("Ally's Scroll {}", i)),
+                                                Interaction::default(),
+                                                MiniCharacterSheet(i),
+                                            ));
+                                        }
+                                    });
 
-                                                parent.spawn((
-                                                    ImageBundle {
-                                                        image: UiImage {
-                                                            flip_x: true,
-                                                            ..default()
-                                                        },
-                                                        ..default()
+                                parent
+                                    .spawn((
+                                        NodeBundle {
+                                            style: ROW_SHEETS_STYLE,
+                                            ..default()
+                                        },
+                                        Name::new("Second Row of Scrolls"),
+                                    ))
+                                    .with_children(|parent| {
+                                        for i in 3..6 {
+                                            parent.spawn((
+                                                ImageBundle {
+                                                    image: combat_wall_resources.allies_scroll[i]
+                                                        .clone()
+                                                        .into(),
+                                                    visibility: if i < combat_resources
+                                                        .number_of_fighters
+                                                        .ally
+                                                        .total
+                                                    {
+                                                        Visibility::Inherited
+                                                    } else {
+                                                        Visibility::Hidden
                                                     },
-                                                    Name::new(format!("Sprite {}", action_count)),
-                                                ));
-                                            });
-                                    }
-                                });
-                        });
-                });
+                                                    style: MINI_CHARACTER_SHEET_STYLE,
+                                                    ..default()
+                                                },
+                                                Name::new(format!("Ally's Scroll {}", i)),
+                                                Interaction::default(),
+                                                MiniCharacterSheet(i),
+                                            ));
+                                        }
+                                    });
+                            });
 
-            /* -------------------------------------------------------------------------- */
-            /*                                  HUD Wall                                  */
-            /*                  Will Spawn inEnter(GameState::CombatWall)                 */
-            /* -------------------------------------------------------------------------- */
-        });
+                        parent.spawn((
+                            ImageBundle {
+                                image: combat_wall_resources.pack_of_scroll.clone().into(),
+                                style: Style {
+                                    flex_shrink: 0.,
+                                    width: Val::Percent(17.),
+                                    left: Val::Percent(54.),
+                                    top: Val::Percent(26.6),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            // DOC: Pack of scrolls = "Bestiary"
+                            Name::new("Scrolls Pack"),
+                            Interaction::default(),
+                            // points to the first enemy
+                            MiniCharacterSheet(FIRST_ENEMY_ID),
+                        ));
+
+                        // TODO: Hide it behind the altar
+                        parent.spawn((
+                            ImageBundle {
+                                image: combat_log_resources.ladder.clone().into(),
+                                style: Style {
+                                    flex_shrink: 0.,
+                                    width: Val::Percent(32.),
+                                    left: Val::Percent(9.7),
+                                    top: Val::Percent(20.5),
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            Name::new("Downwards Ladder"),
+                            Interaction::default(),
+                            Ladder,
+                        ));
+
+                        // parent
+                        //     .spawn((
+                        //         NodeBundle {
+                        //             background_color: Color::DARK_GRAY.into(),
+                        //             style: Style {
+                        //                 flex_shrink: 0.,
+                        //                 flex_direction: FlexDirection::Row,
+                        //                 //  height: Val::Percent(55.2),
+                        //                 ..default()
+                        //             },
+                        //             ..default()
+                        //         },
+                        //         Name::new("Lower Screen"),
+                        //     ))
+                        //     .with_children(|parent| {
+
+                        //         // parent
+                        //         //     .spawn((
+                        //         //         NodeBundle {
+                        //         //             style: Style {
+                        //         //                 width: Val::Percent(50.),
+                        //         //                 ..default()
+                        //         //             },
+                        //         //             ..default()
+                        //         //         },
+                        //         //         Name::new("Lower Left Screen"),
+                        //         //     ))
+                        //         //     .with_children(|parent| {
+                        //         //     });
+                        //         // parent
+                        //         //     .spawn((
+                        //         //         NodeBundle {
+                        //         //             style: Style {
+                        //         //                  width: Val::Percent(50.),
+                        //         //                 ..default()
+                        //         //             },
+                        //         //             ..default()
+                        //         //         },
+                        //         //         Name::new("Lower Right Screen"),
+                        //         //     ))
+                        //         //     .with_children(|parent| {
+                        //         //     });
+                        //     });
+                    });
+
+                // TODO: Spawn the ladder at the left box of the pack of scroll
+            })
+            .push_children(&[character_sheet]);
+    });
 }

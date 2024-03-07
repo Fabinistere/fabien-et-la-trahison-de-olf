@@ -1,9 +1,9 @@
 use bevy::render::color::Color;
 
 pub const DRAGGED_ENTITY_Z: f32 = 100.0;
-pub const FIGHTING_HALL_WIDTH: f32 = 56.;
+pub const FIGHTING_HALL_WIDTH: f32 = 100. - (INITIATIVE_BAR_WIDTH + HUD_WALL_WIDTH);
 pub const INITIATIVE_BAR_WIDTH: f32 = 8.;
-pub const HUD_WALL_WIDTH: f32 = 100. - (FIGHTING_HALL_WIDTH + INITIATIVE_BAR_WIDTH);
+pub const HUD_WALL_WIDTH: f32 = 40.;
 
 pub const HUD_PANEL_ANIMATION_TIME_MS: u64 = 500;
 pub const HUD_PANEL_ANIMATION_OFFSET: f32 = -1000.;

@@ -17,8 +17,11 @@ use std::time::Duration;
 use crate::{
     characters::player::Player,
     constants::ui::{dialogs::*, *},
-    ui::dialog::dialog_scrolls::{
-        ButtonChoice, MonologPanel, PlayerChoicePanel, Scroll, ScrollTimer,
+    ui::{
+        dialog::dialog_scrolls::{
+            ButtonChoice, MonologPanel, PlayerChoicePanel, Scroll, ScrollTimer,
+        },
+        HUDWallsSection,
     },
     HUDState,
 };
@@ -101,10 +104,10 @@ pub fn create_dialog_panel_on_key_press(
 /// The Panel will despawn at the end of the animation
 pub fn close_dialog_panel(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Animator<Style>, &Style), With<DialogPanel>>,
+    query: Query<(Entity, &Style), (With<DialogPanel>, With<Animator<Style>>)>,
 ) {
     // info!("close dialog event");
-    if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
+    if let Ok((entity, style)) = query.get_single() {
         let dialog_panel_tween = Tween::new(
             EaseFunction::QuadraticIn,
             Duration::from_millis(HUD_PANEL_ANIMATION_TIME_MS),
@@ -135,10 +138,13 @@ pub fn close_dialog_panel(
 
 pub fn create_dialog_panel(
     mut commands: Commands,
-    mut _meshes: ResMut<Assets<Mesh>>,
-    _texture_atlases: Res<Assets<TextureAtlas>>,
+
+    // mut _meshes: ResMut<Assets<Mesh>>,
+    // _texture_atlases: Res<Assets<TextureAtlas>>,
     dialog_panel_resources: Res<DialogPanelResources>,
     asset_server: Res<AssetServer>,
+
+    hud_walls_section_query: Query<Entity, With<HUDWallsSection>>,
 ) {
     // info!("open dialog event");
 
@@ -176,91 +182,93 @@ pub fn create_dialog_panel(
         },
     );
 
-    commands
-        .spawn((
-            // We spawn the paper wall background.
-            // To hide the windows' panels when reaching
-            // the top of the window.
-            // Because the main Wall Background is above these panels.
-            ImageBundle {
-                image: dialog_panel_resources.appartements.clone().into(),
-                style: Style {
-                    display: Display::Flex,
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    position_type: PositionType::Relative,
-                    top: Val::Px(0.),
-                    right: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
-                    bottom: Val::Px(0.),
-                    margin: UiRect {
-                        left: Val::Auto,
-                        right: Val::Px(0.),
+    let hud_walls_section = hud_walls_section_query.single();
+    commands.entity(hud_walls_section).with_children(|parent| {
+        parent
+            .spawn((
+                // We spawn the paper wall background.
+                // To hide the windows' panels when reaching
+                // the top of the window.
+                // Because the main Wall Background is above these panels.
+                ImageBundle {
+                    image: dialog_panel_resources.appartements.clone().into(),
+                    style: Style {
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        position_type: PositionType::Relative,
                         top: Val::Px(0.),
+                        right: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
                         bottom: Val::Px(0.),
+                        margin: UiRect {
+                            left: Val::Auto,
+                            right: Val::Px(0.),
+                            top: Val::Px(0.),
+                            bottom: Val::Px(0.),
+                        },
+                        width: Val::Auto,
+                        height: Val::Percent(100.),
+                        aspect_ratio: Some(284. / 400.),
+                        ..default()
                     },
-                    width: Val::Auto,
+                    ..ImageBundle::default()
+                },
+                Name::new("Dialog Wall"),
+                Animator::new(dialog_panel_tween),
+                DialogPanel,
+            ))
+            .with_children(|parent| {
+                let child_sprite_style = Style {
+                    position_type: PositionType::Absolute,
+                    width: Val::Percent(100.),
                     height: Val::Percent(100.),
-                    aspect_ratio: Some(284. / 400.),
                     ..Style::default()
-                },
-                ..ImageBundle::default()
-            },
-            Name::new("Dialog Wall"),
-            Animator::new(dialog_panel_tween),
-            DialogPanel,
-        ))
-        .with_children(|parent| {
-            let child_sprite_style = Style {
-                position_type: PositionType::Absolute,
-                width: Val::Percent(100.),
-                height: Val::Percent(100.),
-                ..Style::default()
-            };
+                };
 
-            // panels under the wall to prevent them from sticking out of the window after being lifted.
-            parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.stained_glass_panels.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
-                },
-                Animator::new(panels_tween),
-                Name::new("Stained Glass Panel"),
-            ));
+                // panels under the wall to prevent them from sticking out of the window after being lifted.
+                parent.spawn((
+                    ImageBundle {
+                        image: dialog_panel_resources.stained_glass_panels.clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    },
+                    Animator::new(panels_tween),
+                    Name::new("Stained Glass Panel"),
+                ));
 
-            parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.background.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
-                },
-                Name::new("Wall Background"),
-            ));
+                parent.spawn((
+                    ImageBundle {
+                        image: dialog_panel_resources.background.clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    },
+                    Name::new("Wall Background"),
+                ));
 
-            parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.stained_glass_opened.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
-                },
-                Name::new("Stained Glass Static"),
-            ));
+                parent.spawn((
+                    ImageBundle {
+                        image: dialog_panel_resources.stained_glass_opened.clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    },
+                    Name::new("Stained Glass Static"),
+                ));
 
-            parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.chandelier.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
-                },
-                Name::new("Light"),
-            ));
+                parent.spawn((
+                    ImageBundle {
+                        image: dialog_panel_resources.chandelier.clone().into(),
+                        style: child_sprite_style.clone(),
+                        ..ImageBundle::default()
+                    },
+                    Name::new("Light"),
+                ));
 
-            /* -------------------------------------------------------------------------- */
-            /*                                Upper Scroll                                */
-            /* -------------------------------------------------------------------------- */
+                /* -------------------------------------------------------------------------- */
+                /*                                Upper Scroll                                */
+                /* -------------------------------------------------------------------------- */
 
-            parent
+                parent
                 .spawn((
                     ImageBundle {
                         // REFACTOR: Replace by a spritesheet
@@ -317,100 +325,101 @@ pub fn create_dialog_panel(
                 // .insert(DialogBox::new(dialog[0].clone(), DIALOG_BOX_UPDATE_DELTA_S))
                 ;
 
-            // parent
-            //     .spawn(ImageBundle {
-            //         image: texture_atlases
-            //             .get(dialog_panel_resources.scroll_animation.clone())
-            //             .unwrap()
-            //             .texture
-            //             .clone_weak()
-            //             .into(),
-            //         style: child_sprite_style.clone(),
-            //         ..ImageBundle::default()
-            //     });
+                // parent
+                //     .spawn(ImageBundle {
+                //         image: texture_atlases
+                //             .get(dialog_panel_resources.scroll_animation.clone())
+                //             .unwrap()
+                //             .texture
+                //             .clone_weak()
+                //             .into(),
+                //         style: child_sprite_style.clone(),
+                //         ..ImageBundle::default()
+                //     });
 
-            /* -------------------------------------------------------------------------- */
-            /*                                Player Scroll                               */
-            /* -------------------------------------------------------------------------- */
+                /* -------------------------------------------------------------------------- */
+                /*                                Player Scroll                               */
+                /* -------------------------------------------------------------------------- */
 
-            let player_scroll_img =
-                asset_server.load("textures/UI/HUD/dialog/HUD_1px_parchemin_MC_ouvert.png");
+                let player_scroll_img =
+                    asset_server.load("textures/UI/HUD/dialog/HUD_1px_parchemin_MC_ouvert.png");
 
-            parent
-                .spawn((
-                    ImageBundle {
-                        image: player_scroll_img.clone().into(),
-                        style: Style {
-                            // REFACTOR: Player Choice Panel's Style
-                            position_type: PositionType::Absolute,
-                            width: Val::Percent(100.),
-                            height: Val::Percent(100.),
-                            display: Display::Flex,
-                            flex_direction: FlexDirection::Column,
-                            align_items: AlignItems::FlexStart,
-                            justify_content: JustifyContent::FlexEnd,
+                parent
+                    .spawn((
+                        ImageBundle {
+                            image: player_scroll_img.clone().into(),
+                            style: Style {
+                                // REFACTOR: Player Choice Panel's Style
+                                position_type: PositionType::Absolute,
+                                width: Val::Percent(100.),
+                                height: Val::Percent(100.),
+                                display: Display::Flex,
+                                flex_direction: FlexDirection::Column,
+                                align_items: AlignItems::FlexStart,
+                                justify_content: JustifyContent::FlexEnd,
+                                ..default()
+                            },
                             ..default()
                         },
-                        ..default()
-                    },
-                    Scroll {
-                        current_frame: 0,
-                        reverse: false,
-                    },
-                    PlayerChoicePanel,
-                    ScrollTimer(Timer::from_seconds(
-                        SCROLL_ANIMATION_DELTA_S,
-                        TimerMode::Once,
-                    )),
-                    Name::new("Player Scroll"),
-                ))
-                .with_children(|parent| {
-                    // TODO: feature - 3 ButtonChoice is enough, to have much reuse theses three in another page
+                        Scroll {
+                            current_frame: 0,
+                            reverse: false,
+                        },
+                        PlayerChoicePanel,
+                        ScrollTimer(Timer::from_seconds(
+                            SCROLL_ANIMATION_DELTA_S,
+                            TimerMode::Once,
+                        )),
+                        Name::new("Player Scroll"),
+                    ))
+                    .with_children(|parent| {
+                        // TODO: feature - 3 ButtonChoice is enough, to have much reuse theses three in another page
 
-                    for i in 0..3 {
-                        parent
-                            .spawn((
-                                ButtonBundle {
-                                    style: Style {
-                                        // TODO: custom size ? (text dependent)
-                                        width: Val::Px(300.),
-                                        height: Val::Px(30.),
-                                        margin: UiRect::all(Val::Auto),
-                                        top: Val::Px(
-                                            FIRST_BUTTON_TOP_VAL - BUTTON_SPACING * i as f32,
-                                        ),
-                                        left: Val::Px(BUTTON_LEFT_VAL),
-                                        ..default()
-                                    },
-                                    background_color: TRANSPARENT_BUTTON.into(),
-                                    visibility: Visibility::Hidden,
-                                    ..default()
-                                },
-                                Name::new(format!("Choice n°{i}")),
-                                ButtonChoice::new(i),
-                            ))
-                            .with_children(|parent| {
-                                parent.spawn(TextBundle {
-                                    text: Text::from_section(
-                                        "",
-                                        TextStyle {
-                                            font: dialog_panel_resources.text_font.clone(),
-                                            // TODO: Find the correct value for the choice font size
-                                            font_size: 25.,
-                                            color: Color::BLACK,
+                        for i in 0..3 {
+                            parent
+                                .spawn((
+                                    ButtonBundle {
+                                        style: Style {
+                                            // TODO: custom size ? (text dependent)
+                                            width: Val::Px(300.),
+                                            height: Val::Px(30.),
+                                            margin: UiRect::all(Val::Auto),
+                                            top: Val::Px(
+                                                FIRST_BUTTON_TOP_VAL - BUTTON_SPACING * i as f32,
+                                            ),
+                                            left: Val::Px(BUTTON_LEFT_VAL),
+                                            ..default()
                                         },
-                                    )
-                                    .with_alignment(TextAlignment::Left),
-                                    style: Style {
-                                        flex_wrap: FlexWrap::Wrap,
-                                        max_width: Val::Px(300.),
-                                        max_height: Val::Percent(100.),
+                                        background_color: TRANSPARENT_BUTTON.into(),
+                                        visibility: Visibility::Hidden,
                                         ..default()
                                     },
-                                    ..default()
+                                    Name::new(format!("Choice n°{i}")),
+                                    ButtonChoice::new(i),
+                                ))
+                                .with_children(|parent| {
+                                    parent.spawn(TextBundle {
+                                        text: Text::from_section(
+                                            "",
+                                            TextStyle {
+                                                font: dialog_panel_resources.text_font.clone(),
+                                                // TODO: Find the correct value for the choice font size
+                                                font_size: 25.,
+                                                color: Color::BLACK,
+                                            },
+                                        )
+                                        .with_alignment(TextAlignment::Left),
+                                        style: Style {
+                                            flex_wrap: FlexWrap::Wrap,
+                                            max_width: Val::Px(300.),
+                                            max_height: Val::Percent(100.),
+                                            ..default()
+                                        },
+                                        ..default()
+                                    });
                                 });
-                            });
-                    }
-                });
-        });
+                        }
+                    });
+            });
+    });
 }
