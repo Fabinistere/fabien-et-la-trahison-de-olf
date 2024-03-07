@@ -17,6 +17,7 @@ use crate::{
         combat_panel::{SkillBar, SkillDisplayer, TargetMeter},
         combat_system::{HpMeter, MpMeter, Selected, Targeted},
     },
+    CombatWallStage,
 };
 
 use super::combat_panel::{CharacterSheetElements, Portrait, WeaponDisplayer};
@@ -453,39 +454,64 @@ pub fn skill_visibility(
 
 /// Updates the color of the skill,
 /// whenever the Selected entity changed or their ActionCount change
+///
+/// # Notes
+///
+/// OPTIMIZE: not optimum but more readable
 pub fn skill_color(
     mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor),
+        (
+            Entity,
+            &Interaction,
+            &Skill,
+            &mut BackgroundColor,
+            &Children,
+        ),
         (With<Interaction>, With<Button>, With<SkillDisplayer>),
     >,
+    interaction_changed_query: Query<Changed<Interaction>>,
+    mut text_query: Query<&mut Text>,
 
-    changed_selected_query: Query<
-        (Entity, &Name, &ActionCount),
-        (With<Selected>, Or<(Added<Selected>, Changed<ActionCount>)>),
-    >,
+    unit_selected_query: Query<(Entity, &ActionCount), With<Selected>>,
+    changed_selected_query: Query<Or<(Added<Selected>, Changed<ActionCount>)>>,
+
+    combat_wall_state: Res<State<CombatWallStage>>,
 ) {
-    if let Ok((_, _, action_count)) = changed_selected_query.get_single() {
-        for (interaction, mut color) in &mut interaction_query {
+    if let Ok((action, action_count)) = unit_selected_query.get_single() {
+        let is_selection_or_action_changed = changed_selected_query.get(action).is_ok();
+        for (_, interaction, skill, mut color, children) in
+            interaction_query.iter_mut().filter(|(button, _, _, _, _)| {
+                is_selection_or_action_changed || interaction_changed_query.get(*button).is_ok()
+            })
+        {
+            let mut text = text_query.get_mut(children[0]).unwrap();
             match *interaction {
-                Interaction::Pressed => {
-                    *color = if action_count.current == 0 {
-                        INACTIVE_BUTTON.into()
-                    } else {
-                        PRESSED_BUTTON.into()
-                    };
-                }
-                Interaction::Hovered => {
-                    *color = if action_count.current == 0 {
-                        INACTIVE_HOVERED_BUTTON.into()
-                    } else {
-                        HOVERED_BUTTON.into()
-                    };
-                }
                 Interaction::None => {
+                    text.sections[0].value = skill.name.clone();
                     *color = if action_count.current == 0 {
                         INACTIVE_BUTTON.into()
                     } else {
                         NORMAL_BUTTON.into()
+                    };
+                }
+                Interaction::Pressed => {
+                    // WARNING: skill_color - In the `CombatWallStage::Preparation`, you can't select skill
+                    (text.sections[0].value, *color) = if action_count.current == 0
+                        && combat_wall_state.get() != &CombatWallStage::Preparation
+                    {
+                        (String::from("0ac Left"), INACTIVE_BUTTON.into())
+                    } else {
+                        let skill_nome_chonged = skill.name.replace('a', "o").replace('A', "O");
+                        (skill_nome_chonged, PRESSED_BUTTON.into())
+                    };
+                }
+                Interaction::Hovered => {
+                    // TODO: feature - Hover Skill - Preview possible Target
+                    text.sections[0].value = skill.name.clone();
+                    *color = if action_count.current == 0 {
+                        INACTIVE_HOVERED_BUTTON.into()
+                    } else {
+                        HOVERED_BUTTON.into()
                     };
                 }
             }

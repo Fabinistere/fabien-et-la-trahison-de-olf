@@ -93,12 +93,12 @@ pub fn cave_ladder(
 /* -------------------------------------------------------------------------- */
 
 /// The Fighting Hall and Initiative Bar are preserved
+/// The current State where `cleanup()` is called is the upcoming transition state
+/// Here It should always be `HUDState::CombatWall`.
 pub fn cleanup(
     mut commands: Commands,
     mut log_cave_query: Query<(Entity, &mut Animator<Style>, &Style), With<HUDLog>>,
 ) {
-    // The current State where `cleanup()` is called is the upcoming transition state
-    // Here It should always be `HUDState::CombatWall`.
     let end_position = UiRect {
         left: Val::Px(0.),
         top: Val::Px(HUD_PANEL_ANIMATION_OFFSET),

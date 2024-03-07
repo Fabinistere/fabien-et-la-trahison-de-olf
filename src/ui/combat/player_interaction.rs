@@ -206,11 +206,11 @@ pub fn select_unit_by_mouse(
     }
 }
 
-/// Action for each Interaction of the skill button
+/// Combat logic (no display) a skill button is clicked
 ///
 /// # Note
 ///
-/// - skill_color(): Skill color will update at caster/action_count change
+/// - `[[ui::combat::character_sheet::skill_color]]` handles the skill button color
 /// - TODO: couldhave - Skill dropped
 ///   - To a possible target: Confirm
 ///   - To something else: Cancel (or just back to skill clicked)
@@ -220,20 +220,19 @@ pub fn select_skill(
     combat_wall_state: Res<State<CombatWallStage>>,
 
     mut interaction_query: Query<
-        (&Interaction, &Skill, &mut BackgroundColor, &Children),
+        (&Interaction, &Skill),
         (Changed<Interaction>, With<Button>, With<SkillDisplayer>),
     >,
-
-    mut text_query: Query<&mut Text>,
 
     unit_selected_query: Query<(Entity, &Name, &ActionCount), With<Selected>>,
     mut transition_phase_event: EventWriter<TransitionPhaseEvent>,
 ) {
+    if combat_wall_state.get() == &CombatWallStage::Preparation {
+        return;
+    }
     // TOTEST: Why does this Query triggered in a phase transi ?
     // Maybe because since the spawn the change didn't get treated ?
-    for (interaction, skill, mut color, children) in &mut interaction_query {
-        let mut text = text_query.get_mut(children[0]).unwrap();
-
+    for (interaction, skill) in &mut interaction_query {
         // XXX: Tempo the command which give a Selected after cancel_input a selfcast skill in SelectionCaster
         if unit_selected_query.get_single().is_err() {
             warn!("No Selected in SelectionSkill");
@@ -245,83 +244,47 @@ pub fn select_skill(
         // so there is a selected unit.
         let (caster, _caster_name, action_count) = unit_selected_query.single();
 
-        match *interaction {
+        if interaction == &Interaction::Pressed && action_count.current != 0 {
             // In the `CombatWallStage::Preparation`, you can't select skill
-            Interaction::Pressed => {
-                if combat_wall_state.get() == &CombatWallStage::Preparation {
-                    return;
-                }
 
-                // <=
-                if action_count.current == 0 {
-                    text.sections[0].value = String::from("0ac Left");
-                    *color = INACTIVE_BUTTON.into();
+            // BUG: XXX: Weird "Bug" Event/HUDState related handle
+            // Prevent the Trigger of the "double press"
+            if let Some(last_action) = combat_resources.history.last() {
+                if last_action.skill == skill.clone() && last_action.targets.is_none() {
+                    // warn!("Same Skill Selected Event handled twice");
                     continue;
                 }
-
-                // BUG: XXX: Weird "Bug" Event/HUDState related handle
-                // Prevent the Trigger of the "double press"
-                if let Some(last_action) = combat_resources.history.last() {
-                    if last_action.skill == skill.clone() && last_action.targets.is_none() {
-                        // warn!("Same Skill Selected Event handled twice");
-                        continue;
-                    }
-                }
-
-                *color = PRESSED_BUTTON.into();
-
-                // Change last action saved to the new skill selected
-                if combat_state.clone() == CombatState::SelectionTarget {
-                    info!("Skill changed for {}", skill.name);
-                    // we already wrote the waiting skill in the actions history
-                    // cause we're in the TargetSelection phase
-
-                    let last_action = combat_resources.history.last_mut().unwrap();
-                    // FIXME: CLARIFICATION NEEDED - Select Bam/Swing instantly into select solo will create two action "solo"
-                    // caster stay the same
-                    last_action.skill = skill.clone();
-                    last_action.targets = None;
-
-                    // This transitionEvent will trigger all the verification about skill selected (selfcast, etc)
-                    transition_phase_event.send(TransitionPhaseEvent(CombatState::SelectionTarget));
-
-                    // info!("DEBUG: action = {} do {} to None", caster_name, skill.name);
-
-                    // info!("rewrite last action");
-                } else {
-                    transition_phase_event.send(TransitionPhaseEvent(CombatState::SelectionTarget));
-
-                    let action = Action::new(caster, skill.clone(), None);
-                    combat_resources.history.push(action);
-
-                    // info!("DEBUG: action = {} do {} to None", _caster_name, skill.name);
-                    // info!("new action");
-                }
-
-                let display = skill.name.replace('a', "o").replace('A', "O");
-                text.sections[0].value = display;
-
-                info!("Skill {} selected", skill.name);
             }
-            Interaction::Hovered => {
-                // TODO: feature - Hover Skill - Preview possible Target
 
-                text.sections[0].value = skill.name.clone();
-                *color = if action_count.current == 0 {
-                    INACTIVE_HOVERED_BUTTON.into()
-                } else {
-                    HOVERED_BUTTON.into()
-                };
-            }
-            Interaction::None => {
-                text.sections[0].value = skill.name.clone();
+            // Change last action saved to the new skill selected
+            if combat_state.clone() == CombatState::SelectionTarget {
+                info!("Skill changed for {}", skill.name);
+                // we already wrote the waiting skill in the actions history
+                // cause we're in the TargetSelection phase
 
-                *color = if action_count.current == 0 {
-                    INACTIVE_BUTTON.into()
-                } else {
-                    NORMAL_BUTTON.into()
-                };
+                let last_action = combat_resources.history.last_mut().unwrap();
+                // FIXME: CLARIFICATION NEEDED - Select Bam/Swing instantly into select solo will create two action "solo"
+                // caster stay the same
+                last_action.skill = skill.clone();
+                last_action.targets = None;
+
+                // This transitionEvent will trigger all the verification about skill selected (selfcast, etc)
+                transition_phase_event.send(TransitionPhaseEvent(CombatState::SelectionTarget));
+
+                // info!("DEBUG: action = {} do {} to None", caster_name, skill.name);
+
+                // info!("rewrite last action");
+            } else {
+                transition_phase_event.send(TransitionPhaseEvent(CombatState::SelectionTarget));
+
+                let action = Action::new(caster, skill.clone(), None);
+                combat_resources.history.push(action);
+
+                // info!("DEBUG: action = {} do {} to None", _caster_name, skill.name);
+                // info!("new action");
             }
+
+            info!("Skill {} selected", skill.name);
         }
     }
 }
