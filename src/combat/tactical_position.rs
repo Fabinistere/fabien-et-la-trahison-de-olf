@@ -8,7 +8,7 @@ use bevy::{
 };
 
 use crate::{
-    combat::{InCombat, Player, Recruted, TacticalPlace, TacticalPosition},
+    combat::{InCombat, Player, Recruited, TacticalPlace, TacticalPosition},
     constants::ui::{fighting_hall_position::*, FIGHTING_HALL_WIDTH},
 };
 
@@ -57,7 +57,7 @@ pub fn update_character_position(
     // query to get camera transform
     camera_q: Query<(&Camera, &GlobalTransform)>,
 
-    ally_query: Query<Or<(With<Recruted>, With<Player>)>>,
+    ally_query: Query<Or<(With<Recruited>, With<Player>)>>,
     mut characters_query: Query<(Entity, &mut Transform, &TacticalPosition, &Name), With<InCombat>>,
 ) {
     for _ in update_char_pos_event.iter() {
@@ -78,7 +78,7 @@ pub fn update_character_position(
         // info!("height: {}, y: {}", height, y);
 
         for (character, mut transform, tactical_position, _name) in characters_query.iter_mut() {
-            // if recruted or player == Ally
+            // if Recruited or player == Ally
             let (x_offset, y_offset) = if ally_query.contains(character) {
                 match tactical_position {
                     TacticalPosition::FrontLine(place) => match place {

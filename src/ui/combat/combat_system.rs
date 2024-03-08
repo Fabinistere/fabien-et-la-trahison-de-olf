@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::{
     combat::{
-        phases::TransitionPhaseEvent, skills::TargetOption, AlterationStatus, CombatResources,
-        CombatState, CurrentAlterations, InCombat, Reputation,
+        phases::TransitionPhaseEvent, skills::TargetOption, teamwork::Reputation, AlterationStatus,
+        CombatResources, CombatState, CurrentAlterations, InCombat,
     },
     constants::combat::{alteration::SIZE_ALTERATION_ICON, MAX_PARTY},
     ui::combat::{combat_panel::CombatStateDisplayer, player_interaction::Clicked},
@@ -119,7 +119,7 @@ pub fn update_selected_unit(
         commands.entity(*clicked).insert(Selected);
         // info!("{:?} is now selected", *clicked);
 
-        // REFACTOR: ? - test ID or test if Recruted or not
+        // REFACTOR: ? - test ID or test if Recruited or not
         let id = combat_units_query.get(*clicked).unwrap();
         if id.0 < MAX_PARTY {
             transition_phase_event.send(TransitionPhaseEvent(CombatState::SelectionSkill));

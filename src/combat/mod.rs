@@ -34,8 +34,8 @@ use std::{cmp::Ordering, time::Duration};
 
 use crate::{characters::player::Player, constants::combat::BASE_ACTION_COUNT, ui, HUDState};
 use self::{
-    alterations::Alteration, skills::{Skill, TargetOption, SkillExecutionQueue}, stats::{StatBundle, Hp},
-    stuff::{Equipements, JobsMasteries, Job},
+    alterations::Alteration, skills::{Skill, SkillExecutionQueue, TargetOption}, stats::{Hp, StatBundle},
+    stuff::{Equipements, Job, JobsMasteries}, teamwork::{Recruited, Reputation},
 };
 
 pub mod alteration_list;
@@ -47,6 +47,7 @@ pub mod skills;
 pub mod stats;
 pub mod stuff;
 pub mod tactical_position;
+pub mod teamwork;
 pub mod weapons_list;
 
 /// Just help to create a ordered system in the app builder
@@ -104,6 +105,7 @@ impl Plugin for CombatPlugin {
             .init_resource::<JobsMasteries>()
             
             .add_event::<self::CombatEvent>()
+            .add_event::<teamwork::RecruitmentEvent>()
             .add_event::<phases::TransitionPhaseEvent>()
             .add_event::<skills::ExecuteSkillEvent>()
             .add_event::<tactical_position::UpdateCharacterPositionEvent>()
@@ -172,6 +174,7 @@ impl Plugin for CombatPlugin {
                 (
                     phases::phase_transition,
                     update_number_of_fighters,
+                    teamwork::recruit_event_handler,
                 )
             )
             .add_systems(
@@ -205,6 +208,11 @@ impl Plugin for CombatPlugin {
 /* -------------------------------------------------------------------------- */
 /*                           -- Combat Components --                          */
 /* -------------------------------------------------------------------------- */
+
+/// Contains the fighter's id.
+/// Used to Select a unit using the character sheet in the combat HUD.
+#[derive(Component, Reflect, Default, Clone, Copy, Deref)]
+pub struct InCombat(pub usize);
 
 #[derive(Bundle)]
 pub struct CombatBundle {
@@ -265,7 +273,6 @@ impl Default for ActionCount {
 #[derive(Default, Component, Deref, DerefMut)]
 pub struct CurrentAlterations(Vec<Alteration>);
 
-
 /// Marker: Child of a fighter, has as child all the alteration's icon of the fighter
 /// 
 /// Can be removed
@@ -279,19 +286,6 @@ pub struct AlterationStatus;
 /// Basic/Natural skills own by the entity  
 #[derive(Component, Deref, DerefMut)]
 pub struct Skills(pub Vec<Skill>);
-
-/// Contains the fighter's id.
-/// Used to Select a unit using the character sheet in the combat HUD.
-#[derive(Component, Reflect, Default, Clone, Copy, Deref)]
-pub struct InCombat(pub usize);
-
-#[derive(Clone, Copy, Component)]
-pub struct Leader;
-
-/// The player can recruted some friendly npc
-/// Can be called, TeamPlayer
-#[derive(Component)]
-pub struct Recruted;
 
 /* -------------------------------------------------------------------------- */
 /*                         -- Position in the Group --                        */
@@ -333,10 +327,10 @@ impl FromWorld for CombatResources {
     fn from_world(
         world: &mut World,
     ) -> Self {
-        let mut allies_query = world.query_filtered::<Entity, (With<Recruted>, With<InCombat>)>();
+        let mut allies_query = world.query_filtered::<Entity, (With<Recruited>, With<InCombat>)>();
         let allies = allies_query.iter(world).collect::<Vec<Entity>>();
 
-        let mut enemies_query = world.query_filtered::<Entity, (Without<Recruted>, With<InCombat>)>();
+        let mut enemies_query = world.query_filtered::<Entity, (Without<Recruited>, With<InCombat>)>();
         let enemies = enemies_query.iter(world).collect::<Vec<Entity>>();
 
         CombatResources {
@@ -485,69 +479,6 @@ impl Eq for Action {}
 /*                                   Basic                                    */
 /* -------------------------------------------------------------------------- */
 
-/// The reputation an entity got from one another team
-#[derive(Copy, Clone, PartialEq, Eq, Component)]
-pub struct Reputation {
-    supreme_god: usize,
-    olf: usize,
-}
-
-impl Reputation {
-    pub fn new(supreme_god: usize, olf: usize) -> Self {
-        Reputation { supreme_god, olf }
-    }
-
-    pub fn is_in_supreme_god_team(&self) -> bool {
-        self.supreme_god > 50
-    }
-
-    pub fn is_in_olf_team(&self) -> bool {
-        self.olf > 50
-    }
-
-    pub fn is_neutral(&self) -> bool {
-        !self.is_in_supreme_god_team() && !self.is_in_olf_team()
-    }
-
-    /// Two neutral entity aren't in the "same" team
-    pub fn in_the_same_team(&self, other: &Reputation) -> bool {
-        (self.is_in_supreme_god_team() && other.is_in_supreme_god_team())
-            || (self.is_in_olf_team() && other.is_in_olf_team())
-    }
-}
-impl Default for Reputation {
-    fn default() -> Self {
-        Reputation::new(50, 30)
-    }
-}
-
-/// One aggressive npc can hide 5 others.
-/// This number exclude the 'leader'/representant of the grp
-///
-/// - Could Give info on the type of group ?
-///   - (All fabicurion or else)
-///
-/// Min = 0
-/// Max = 5
-///
-/// Examples :
-///
-/// - Fabicurion who represent a group of 3
-/// - Fabicurion who represent a group of 6
-#[derive(Copy, Clone, PartialEq, Eq, Component)]
-pub struct GroupSize(usize);
-
-impl GroupSize {
-    /// 0 < `size` < 5
-    pub fn new(size: usize) -> Self {
-        if size > 5 {
-            GroupSize(5)
-        } else {
-            GroupSize(size)
-        }
-    }
-}
-
 #[derive(Component)]
 pub struct FairPlayTimer {
     /// (non-repeating timer)
@@ -599,8 +530,8 @@ pub fn update_number_of_fighters(
     updated_units_query: Query<Entity, (Changed<Hp>, With<InCombat>)>,
 
     player_query : Query<&Hp, With<Player>>,
-    ally_units_query: Query<&Hp, (With<Recruted>, Without<Player>, With<InCombat>)>,
-    enemy_units_query: Query<&Hp, (Without<Recruted>, Without<Player>, With<InCombat>)>,
+    ally_units_query: Query<&Hp, (With<Recruited>, Without<Player>, With<InCombat>)>,
+    enemy_units_query: Query<&Hp, (Without<Recruited>, Without<Player>, With<InCombat>)>,
 ) {
     if !updated_units_query.is_empty() || !created_units_query.is_empty() {
         // info!("Update Combat Global Stats");

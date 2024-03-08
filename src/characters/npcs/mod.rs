@@ -16,8 +16,8 @@ use crate::{
     },
     characters::{movement::MovementBundle, npcs::movement::NPCBehavior, CharacterHitbox},
     combat::{
-        skills::Skill, stuff::Job, AllAlterationStatuses, CombatBundle, Karma, Reputation, Skills,
-        TacticalPlace, TacticalPosition,
+        skills::Skill, stuff::Job, teamwork::Reputation, AllAlterationStatuses, CombatBundle,
+        Karma, Skills, TacticalPlace, TacticalPosition,
     },
     constants::{
         character::{npcs::*, *},

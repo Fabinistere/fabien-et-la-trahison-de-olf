@@ -9,6 +9,7 @@ use yml_dialog::{Content, DialogNode};
 
 use crate::{
     characters::{npcs::movement::FollowEvent, player::Player},
+    combat::teamwork::RecruitmentEvent,
     HUDState,
 };
 
@@ -113,6 +114,7 @@ pub fn trigger_event_handler(
     interlocutor: Res<CurrentInterlocutor>,
     player_query: Query<Entity, With<Player>>,
     mut follow_event: EventWriter<FollowEvent>,
+    mut recruitment_event: EventWriter<RecruitmentEvent>,
 
     mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
@@ -127,6 +129,9 @@ pub fn trigger_event_handler(
                         npc: interlocutor.interlocutor.unwrap(),
                         target: player,
                     });
+                    recruitment_event.send(RecruitmentEvent {
+                        npc_recruited: interlocutor.interlocutor.unwrap(),
+                    })
                 }
                 Ok(WorldEvent::EndDialog) => next_game_state.set(HUDState::Closed),
                 Ok(event) => {

@@ -8,7 +8,8 @@ use crate::{
         skills::Skill,
         stats::{Attack, AttackSpe, Defense, DefenseSpe, Hp, Initiative, Mana, Shield},
         stuff::Job,
-        CombatEvent, CombatResources, CombatState, InCombat, Recruted,
+        teamwork::Recruited,
+        CombatEvent, CombatResources, CombatState, InCombat,
     },
     constants::{
         combat::{FIRST_ALLY_ID, FIRST_ENEMY_ID},
@@ -200,7 +201,7 @@ pub fn create_combat_panel_on_combat_event(
     combat_wall_query: Query<(Entity, &Animator<Style>, &Style), With<CombatWall>>,
     mut initiative_bar_query: Query<&mut Visibility, With<InitiativeBar>>,
 
-    allies_query: Query<Entity, Or<(With<Player>, With<Recruted>)>>,
+    allies_query: Query<Entity, Or<(With<Player>, With<Recruited>)>>,
 
     mut current_interlocutor: ResMut<CurrentInterlocutor>,
 

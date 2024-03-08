@@ -45,7 +45,7 @@ pub fn update_headers(
     mut portrait_query: Query<&mut UiImage, With<Portrait>>,
     mut text_query: Query<&mut Text>,
 ) {
-    // sort recruted by Recruted(usize) to keep the order straight
+    // sort Recruited by Recruited(usize) to keep the order straight
     for (job, name, _sprite) in newly_selected_unit_query.iter() {
         let mut portrait = portrait_query
             .get_mut(character_sheet.portrait.unwrap())

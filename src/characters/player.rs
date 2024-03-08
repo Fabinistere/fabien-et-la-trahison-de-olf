@@ -15,8 +15,9 @@ use crate::{
     combat::{
         skills::Skill,
         stuff::{Equipements, Job, WeaponBundle},
-        AllAlterationStatuses, CombatBundle, InCombat, Karma, Leader, Reputation, Skills,
-        TacticalPlace, TacticalPosition,
+        teamwork::{Leader, Reputation},
+        AllAlterationStatuses, CombatBundle, InCombat, Karma, Skills, TacticalPlace,
+        TacticalPosition,
     },
     constants::character::{player::*, *},
     controls::KeyBindings,

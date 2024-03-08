@@ -22,7 +22,7 @@ use crate::{
         CharacterHitbox,
     },
     collisions::CollisionEventExt,
-    combat::{CombatEvent, FairPlayTimer, InCombat, Reputation},
+    combat::{teamwork::Reputation, CombatEvent, FairPlayTimer, InCombat},
     constants::character::CHAR_HITBOX_Y_OFFSET,
     locations::{
         landmarks::{reserved_random_free_landmark, Direction, Landmark, LandmarkStatus},
@@ -96,6 +96,7 @@ pub struct FollowRangeSensor;
 /*                                   Events                                   */
 /* -------------------------------------------------------------------------- */
 
+/// DOC: Write Event Situation
 #[derive(Event)]
 pub struct FollowEvent {
     /// In many situation, could be the interlocutor
@@ -139,6 +140,7 @@ pub fn npc_behavior_change(
     }
 }
 
+/// TODO: Add `WorldEvent::RecruitNPC` to add `Recruited` and `FollowBehavior`
 pub fn follow_event(
     mut follow_event: EventReader<FollowEvent>,
     rapier_context: Res<RapierContext>,
@@ -170,6 +172,7 @@ pub fn follow_event(
         }
         *behavior = NPCBehavior::follow(
             *target,
+            // Just for the initiation (it's not mandatory that's they are in intersection)
             rapier_context.intersection_pair(npc_follow_range.unwrap(), target_hitbox.unwrap())
                 == Some(true),
         );

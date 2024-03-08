@@ -15,7 +15,7 @@ use crate::{
     HUDState,
 };
 
-use super::{skills::SkillToExecute, Reputation};
+use super::{skills::SkillToExecute, teamwork::Reputation};
 
 /* -------------------------------------------------------------------------- */
 /*                    ----- Transitions Between Phase -----                   */

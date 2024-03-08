@@ -10,7 +10,8 @@ use crate::{
     combat::{
         phases::TransitionPhaseEvent,
         skills::{Skill, TargetOption},
-        Action, ActionCount, CombatResources, CombatState, InCombat, Recruted,
+        teamwork::Recruited,
+        Action, ActionCount, CombatResources, CombatState, InCombat,
     },
     constants::{
         combat::{FIRST_ALLY_ID, FIRST_ENEMY_ID, MAX_PARTY},
@@ -591,10 +592,10 @@ pub fn browse_character_sheet(
     combat_phase: Res<CombatState>,
 
     selected_unit_query: Query<&InCombat, With<Selected>>,
-    unselected_ally_units_query: Query<(Entity, &InCombat), (With<Recruted>, Without<Selected>)>,
+    unselected_ally_units_query: Query<(Entity, &InCombat), (With<Recruited>, Without<Selected>)>,
     unselected_enemy_units_query: Query<
         (Entity, &InCombat),
-        (Without<Recruted>, Without<Selected>),
+        (Without<Recruited>, Without<Selected>),
     >,
 
     mut select_event: EventWriter<UpdateUnitSelectedEvent>,
