@@ -195,7 +195,7 @@ fn spawn_player(
                 },
                 ..default()
             },
-            Name::new("Player"),
+            Name::new("Morgan"),
             Player,
             Location::default(),
             // -- Combat --

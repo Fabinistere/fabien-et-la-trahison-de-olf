@@ -584,7 +584,7 @@ pub fn mini_character_sheet_interact(
     }
 }
 
-/// TODO: Browse among sheets (arrows), especially for Enemy Sheets
+/// BUG: Browsing (it works from `Player` to any, and `Recruited` to `Recruited` but not `Recruited` to `Player`)
 pub fn browse_character_sheet(
     keys: Res<Input<KeyCode>>,
     combat_resources: Res<CombatResources>,
@@ -609,6 +609,8 @@ pub fn browse_character_sheet(
     // TODO: CouldHave - UI Inputs - Hold press handle: `.pressed()`
     // IDEA: UI Inputs - The Pack Of Scrolls could keep the last enemy selected
     if keys.any_just_pressed([KeyCode::Left, KeyCode::Right]) {
+        info!("DEBUG: - browsing sheets");
+
         let selected_id = selected_unit_query.single();
         let next_id = if keys.just_pressed(KeyCode::Right) {
             if selected_id.0 == combat_resources.number_of_fighters.ally.total - 1 {

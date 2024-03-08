@@ -302,7 +302,7 @@ fn spawn_characters(
                     },
                     ..default()
                 },
-                Name::new(format!("NPC {}", name)),
+                Name::new(format!("{}", name)),
                 NPC,
                 // -- Movement --
                 behavior,
@@ -489,7 +489,7 @@ fn spawn_vilains(
                     },
                     ..default()
                 },
-                Name::new(format!("NPC {}", name)),
+                Name::new(format!("{}", name)),
                 NPC,
                 // -- Movement --
                 behavior,

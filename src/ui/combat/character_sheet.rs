@@ -65,7 +65,7 @@ pub fn update_headers(
         } else {
             warn!("{} Not Found/Associated in the FabienDataBase", name);
             title_text.sections[0].value = "Fabien".to_string();
-            portrait.texture = asset_server.load("textures/character/idle/idle_Fabien_Loyal.png");
+            portrait.texture = asset_server.load("textures/characters/idle/idle_Fabien_Loyal.png");
         };
         job_text.sections[0].value = format!("{:?}", job);
         fabien_name_text.sections[0].value = name.to_string();

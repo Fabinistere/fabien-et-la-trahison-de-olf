@@ -59,7 +59,7 @@ pub fn action_visibility(
                         "Action Sprite Asset Not Found/Associated With {}",
                         caster_name
                     );
-                    asset_server.load("textures/character/idle/idle_Fabien_Loyal.png")
+                    asset_server.load("textures/characters/idle/idle_Fabien_Loyal.png")
                 };
 
                 // --- Visibility ---
