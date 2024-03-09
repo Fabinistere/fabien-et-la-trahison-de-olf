@@ -7,6 +7,7 @@ use bevy::{
 };
 
 use crate::{
+    characters::player::Player,
     combat::{
         phases::TransitionPhaseEvent,
         skills::{Skill, TargetOption},
@@ -584,7 +585,6 @@ pub fn mini_character_sheet_interact(
     }
 }
 
-/// BUG: Browsing (it works from `Player` to any, and `Recruited` to `Recruited` but not `Recruited` to `Player`)
 pub fn browse_character_sheet(
     keys: Res<Input<KeyCode>>,
     combat_resources: Res<CombatResources>,
@@ -592,10 +592,13 @@ pub fn browse_character_sheet(
     combat_phase: Res<CombatState>,
 
     selected_unit_query: Query<&InCombat, With<Selected>>,
-    unselected_ally_units_query: Query<(Entity, &InCombat), (With<Recruited>, Without<Selected>)>,
+    unselected_ally_units_query: Query<
+        (Entity, &InCombat),
+        (Or<(With<Player>, With<Recruited>)>, Without<Selected>),
+    >,
     unselected_enemy_units_query: Query<
         (Entity, &InCombat),
-        (Without<Recruited>, Without<Selected>),
+        (Without<Player>, Without<Recruited>, Without<Selected>),
     >,
 
     mut select_event: EventWriter<UpdateUnitSelectedEvent>,
@@ -609,8 +612,6 @@ pub fn browse_character_sheet(
     // TODO: CouldHave - UI Inputs - Hold press handle: `.pressed()`
     // IDEA: UI Inputs - The Pack Of Scrolls could keep the last enemy selected
     if keys.any_just_pressed([KeyCode::Left, KeyCode::Right]) {
-        info!("DEBUG: - browsing sheets");
-
         let selected_id = selected_unit_query.single();
         let next_id = if keys.just_pressed(KeyCode::Right) {
             if selected_id.0 == combat_resources.number_of_fighters.ally.total - 1 {
