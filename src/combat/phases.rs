@@ -40,7 +40,8 @@ pub fn phase_transition(
     mut commands: Commands,
     hud_state: Res<State<HUDState>>,
     mut combat_resources: ResMut<CombatResources>,
-    mut combat_state: ResMut<CombatState>,
+    current_combat_state: Res<State<CombatState>>,
+    mut next_combat_state: ResMut<NextState<CombatState>>,
 
     mut selected_units_query: Query<Entity, (With<Selected>, With<InCombat>)>,
     targeted_unit_query: Query<(Entity, &Name), With<Targeted>>,
@@ -58,7 +59,7 @@ pub fn phase_transition(
 
         let default_state = CombatState::default();
 
-        match (combat_state.clone(), phase_requested) {
+        match (current_combat_state.get(), phase_requested) {
             (CombatState::SelectionCaster, CombatState::SelectionSkill) => {
                 // Might be a cancel action or just a caster being selected
             }
@@ -250,7 +251,7 @@ pub fn phase_transition(
                 .unwrap();
             *character_sheet_visibility = if next_phase == &CombatState::SelectionCaster {
                 Visibility::Hidden
-            } else if combat_state.clone() == CombatState::SelectionCaster {
+            } else if current_combat_state.get() == &CombatState::SelectionCaster {
                 Visibility::Inherited
             } else {
                 *character_sheet_visibility
@@ -263,7 +264,7 @@ pub fn phase_transition(
         //     next_phase.clone(),
         //     phase_requested.clone(),
         // );
-        *combat_state = next_phase.clone();
+        next_combat_state.set(next_phase.clone());
     }
 }
 

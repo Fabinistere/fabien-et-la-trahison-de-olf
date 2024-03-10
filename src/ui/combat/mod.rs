@@ -31,7 +31,7 @@ enum UiLabel {
 pub struct UiCombatPlugin;
 
 impl Plugin for UiCombatPlugin {
-    /// # Note
+    /// # Notes
     /// 
     /// `.run_if(in_state(HUDState::CombatWall))` is NOT implied by any
     /// `.in_set(CombatState::...)`

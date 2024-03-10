@@ -51,9 +51,7 @@ pub mod teamwork;
 pub mod weapons_list;
 
 /// Just help to create a ordered system in the app builder
-///
-/// REFACTOR: Turn `Res<CombatState>` into States
-#[derive(Default, SystemSet, PartialEq, Eq, Hash, Clone, Debug, Reflect, Resource)]
+#[derive(Default, SystemSet, PartialEq, Eq, Hash, Clone, Debug, Reflect, States)]
 pub enum CombatState {
     /// TOTEST: URGENT - connect transitions
     #[default]
@@ -98,7 +96,7 @@ impl Plugin for CombatPlugin {
     #[rustfmt::skip]
     fn build(&self, app: &mut App) {
         app
-            .insert_resource(CombatState::default())
+            .add_state::<CombatState>()
             
             .insert_resource(SkillExecutionQueue::default())
             .init_resource::<CombatResources>()
@@ -109,61 +107,61 @@ impl Plugin for CombatPlugin {
             .add_event::<phases::TransitionPhaseEvent>()
             .add_event::<skills::ExecuteSkillEvent>()
             .add_event::<tactical_position::UpdateCharacterPositionEvent>()
-            
+
             .configure_set(
                 Update,
                 CombatState::Initialisation
-                    .run_if(in_initialisation_phase)
+                    .run_if(in_state(CombatState::Initialisation))
             )
             .configure_set(
                 Update,
                 CombatState::AlterationsExecution
-                    .run_if(in_alteration_phase)
+                    .run_if(in_state(CombatState::AlterationsExecution))
             )
             .configure_set(
                 Update,
                 CombatState::SelectionCaster
-                    .run_if(in_caster_phase)
+                    .run_if(in_state(CombatState::SelectionCaster))
             )
             .configure_set(
                 Update,
                 CombatState::SelectionSkill
-                    .run_if(in_skill_phase)
+                    .run_if(in_state(CombatState::SelectionSkill))
             )
             .configure_set(
                 Update,
                 CombatState::SelectionTarget
-                    .run_if(in_target_phase)
+                    .run_if(in_state(CombatState::SelectionTarget))
             )
             .configure_set(
                 Update,
                 CombatState::AIStrategy
-                    .run_if(in_ai_strategy_phase)
+                    .run_if(in_state(CombatState::AIStrategy))
             )
             .configure_set(
                 Update,
                 CombatState::RollInitiative
-                    .run_if(in_initiative_phase)
+                    .run_if(in_state(CombatState::RollInitiative))
             )
             .configure_set(
                 Update,
                 CombatState::PreExecuteSkills
-                    .run_if(in_pre_executive_phase)
+                    .run_if(in_state(CombatState::PreExecuteSkills))
             )
             .configure_set(
                 Update,
                 CombatState::ExecuteSkills
-                    .run_if(in_executive_phase)
+                    .run_if(in_state(CombatState::ExecuteSkills))
             )
             .configure_set(
                 Update,
                 CombatState::BrowseEnemySheet
-                    .run_if(in_browsing_enemy_sheet_phase)
+                    .run_if(in_state(CombatState::BrowseEnemySheet))
             )
             .configure_set(
                 Update,
                 CombatState::Evasion
-                    .run_if(in_evasive_phase)
+                    .run_if(in_state(CombatState::Evasion))
             )
 
             .add_systems(Startup, stuff::spawn_stuff)
@@ -562,54 +560,4 @@ pub fn update_number_of_fighters(
             combat_panel.number_of_fighters.enemy.total += 1;
         }
     }
-}
-
-/* -------------------------------------------------------------------------- */
-/*                             -- Run Criteria --                             */
-/* -------------------------------------------------------------------------- */
-
-// REFACTOR: Change CombatState to be GlobalState (in the world)
-
-pub fn in_initialisation_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::Initialisation
-}
-
-pub fn in_alteration_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::AlterationsExecution
-}
-
-pub fn in_caster_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::SelectionCaster
-}
-
-pub fn in_skill_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::SelectionSkill
-}
-
-pub fn in_target_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::SelectionTarget
-}
-
-pub fn in_ai_strategy_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::AIStrategy
-}
-
-pub fn in_initiative_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::RollInitiative
-}
-
-pub fn in_pre_executive_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::PreExecuteSkills
-}
-
-pub fn in_executive_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::ExecuteSkills
-}
-
-pub fn in_browsing_enemy_sheet_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::BrowseEnemySheet
-}
-
-pub fn in_evasive_phase(combat_state: Res<CombatState>) -> bool {
-    *combat_state == CombatState::Evasion
 }

@@ -57,7 +57,7 @@ impl Plugin for DebugPlugin {
             app.add_plugins((WorldInspectorPlugin::new(),))
                 .register_type::<GameState>()
                 .register_type::<Location>()
-                .add_plugins((StateInspectorPlugin::<GameState>::default(),))
+                .add_plugins((StateInspectorPlugin::<GameState>::default(), StateInspectorPlugin::<CombatState>::default()))
                 /* -------------------------------------------------------------------------- */
                 /*                              Global Animation                              */
                 /* -------------------------------------------------------------------------- */

@@ -29,7 +29,8 @@ You can read the `CHANGELOG.md` of the Turn-Based Strategy repo in [[Turn-based 
 - rename constants
   - `DIALOG_PANEL_ANIMATION_TIME_MS` to `HUD_PANEL_ANIMATION_TIME_MS`
   - `DIALOG_PANEL_ANIMATION_OFFSET` to `HUD_PANEL_ANIMATION_OFFSET`
-- move up the despawn hud panels (after their animation is ended) to the `ui::mod.rs`.
+- move up the despawn hud panels (after their animation is ended) to the `ui::mod.rs`
+- `CombatState` is now a `States`.
 
 ## NPCs Update - [v0.4.0](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0) - 2023-09-24
 

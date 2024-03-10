@@ -218,7 +218,7 @@ pub fn select_unit_by_mouse(
 ///   - To something else: Cancel (or just back to skill clicked)
 pub fn select_skill(
     mut combat_resources: ResMut<CombatResources>,
-    combat_state: Res<CombatState>,
+    combat_state: Res<State<CombatState>>,
     combat_wall_state: Res<State<CombatWallStage>>,
 
     mut interaction_query: Query<
@@ -359,7 +359,7 @@ pub fn cancel_last_input(
     mut next_state: ResMut<NextState<HUDState>>,
 
     mut combat_resources: ResMut<CombatResources>,
-    combat_state: Res<CombatState>,
+    combat_state: Res<State<CombatState>>,
 
     selected_unit_query: Query<(Entity, &Name), With<Selected>>,
     mut caster_query: Query<(Entity, &mut ActionCount)>,
@@ -589,7 +589,7 @@ pub fn browse_character_sheet(
     keys: Res<Input<KeyCode>>,
     combat_resources: Res<CombatResources>,
     // DEBUG: Print the Phase if no selected
-    combat_phase: Res<CombatState>,
+    combat_phase: Res<State<CombatState>>,
 
     selected_unit_query: Query<&InCombat, With<Selected>>,
     unselected_ally_units_query: Query<

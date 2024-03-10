@@ -293,7 +293,7 @@ pub fn update_alterations_status(
 ///
 /// DEBUG: update_combat_phase_displayer()
 pub fn update_combat_phase_displayer(
-    combat_state: Res<CombatState>,
+    combat_state: Res<State<CombatState>>,
     mut combat_state_displayer_query: Query<&mut Text, With<CombatStateDisplayer>>,
 ) {
     if combat_state.is_changed() {

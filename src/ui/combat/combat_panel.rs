@@ -205,7 +205,7 @@ pub fn create_combat_panel_on_combat_event(
 
     mut current_interlocutor: ResMut<CurrentInterlocutor>,
 
-    mut combat_state: ResMut<CombatState>,
+    mut next_combat_state: ResMut<NextState<CombatState>>,
     mut next_game_state: ResMut<NextState<HUDState>>,
     current_combat_wall_state: Res<State<CombatWallStage>>,
     mut next_combat_wall_state: ResMut<NextState<CombatWallStage>>,
@@ -223,7 +223,7 @@ pub fn create_combat_panel_on_combat_event(
             // FIXME: MustHave - We can avoid getting attack by entering the
             // `CombatWallStage::Preparation`
         } else {
-            *combat_state = CombatState::SelectionCaster;
+            next_combat_state.set(CombatState::SelectionCaster);
             current_interlocutor.interlocutor = None;
             next_game_state.set(HUDState::CombatWall);
 
