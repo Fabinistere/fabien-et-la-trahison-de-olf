@@ -99,9 +99,9 @@ pub fn cleanup(
 ) {
     let end_position = UiRect {
         left: Val::Px(0.),
-        top: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
         right: Val::Px(0.),
-        bottom: Val::Auto,
+        top: Val::Auto,
+        bottom: Val::Px(HUD_PANEL_ANIMATION_OFFSET),
     };
 
     if let Ok((log_cave, style)) = log_cave_query.get_single() {

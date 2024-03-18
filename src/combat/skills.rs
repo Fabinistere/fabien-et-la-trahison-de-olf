@@ -31,15 +31,11 @@ pub enum SkillType {
     Flee,
 }
 
-/// # Note
-///
-/// - AllAllyButSelf
 #[derive(Default, Debug, Clone, PartialEq, Reflect)]
 pub enum TargetOption {
     /// Identity
     #[default]
     OneSelf,
-    // Enemy
     // Enemy(usize, ClosestPosition)
     Enemy(usize),
     /// Include the identity (self)

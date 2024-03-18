@@ -74,7 +74,7 @@ pub struct Alteration {
     ///
     /// shield: reduce/addition to the target
     pub shield: i32,
-    // initiative: lose/gain
+    /// initiative: lose/gain
     pub initiative: i32,
     /// att: lose/gain
     pub attack: i32,

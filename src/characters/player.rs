@@ -30,6 +30,8 @@ use crate::{
     GameState, PlayerCamera,
 };
 
+use self::npcs::SUPREME_GOD_SPAWN_POSITION;
+
 use super::movement::CharacterCloseSensor;
 
 pub struct PlayerPlugin;
@@ -189,15 +191,16 @@ fn spawn_player(
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
                 transform: Transform {
-                    translation: PLAYER_SPAWN.into(),
+                    translation: SUPREME_GOD_SPAWN_POSITION.into(), // PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),
-                    ..Transform::default()
+                    ..default()
                 },
                 ..default()
             },
             Name::new("Morgan"),
             Player,
-            Location::default(),
+            Location::Temple,
+            // Location::default(),
             // -- Combat --
             Leader,
             // TODO: config - import Combat stats from a config_file
