@@ -30,8 +30,6 @@ use crate::{
     GameState, PlayerCamera,
 };
 
-use self::npcs::SUPREME_GOD_SPAWN_POSITION;
-
 use super::movement::CharacterCloseSensor;
 
 pub struct PlayerPlugin;
@@ -191,7 +189,7 @@ fn spawn_player(
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
                 transform: Transform {
-                    translation: SUPREME_GOD_SPAWN_POSITION.into(), // PLAYER_SPAWN.into(),
+                    translation: DEV_SPAWN.into(), // PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),
                     ..default()
                 },

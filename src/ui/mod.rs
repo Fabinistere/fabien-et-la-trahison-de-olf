@@ -3,18 +3,15 @@ use bevy::a11y::AccessibilityNode;
 use bevy::{prelude::*, winit::WinitSettings};
 use bevy_tweening::TweenCompleted;
 
-use crate::constants::ui::style::{
-    get_text_style, ACTION_BUTTON_STYLE, LIST_HIDDEN_OVERFLOW_STYLE, MOVING_PANEL_STYLE, TEXT_STYLE,
-};
 use crate::constants::ui::{
+    style::{get_text_style, ACTION_BUTTON_STYLE, LIST_HIDDEN_OVERFLOW_STYLE, MOVING_PANEL_STYLE},
     FIGHTING_HALL_WIDTH, HUD_WALL_WIDTH, INITIATIVE_BAR_WIDTH, NORMAL_BUTTON,
 };
 use crate::GameState;
 
-use self::combat::combat_panel::{ActionDisplayer, CombatStateDisplayer, TargetMeter};
-use self::combat::combat_system::{HpMeter, MpMeter};
+use self::combat::combat_panel::ActionDisplayer;
 use self::combat::initiative_bar::InitiativeBar;
-use self::combat::player_interaction::{EndOfTurnButton, ScrollingList};
+use self::combat::player_interaction::ScrollingList;
 use self::combat::UiCombatPlugin;
 use self::dialog::UiDialogPlugin;
 
@@ -43,9 +40,13 @@ pub fn despawn_hud_panel(mut commands: Commands, mut completed_event: EventReade
 }
 
 /// Contains two parts. The rightmost is reserved for `HUDWall`s (CombatWall, LogCave, DialogWall).
-/// And the rest of the UIScene can contain the `FightingHall` and the `InitiativeBar`.
+/// And the rest of the UIScene can contain the `FightingScene` and the `InitiativeBar`.
 #[derive(Component)]
 pub struct UIScene;
+
+/// The space not taken by the HUD
+#[derive(Component)]
+pub struct FreeScene;
 
 /// Will contains the HUD walls
 #[derive(Component)]
@@ -71,120 +72,18 @@ pub fn global_ui_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             UIScene,
         ))
         .with_children(|parent| {
-            /* -------------------------------------------------------------------------- */
-            /*                                Fighting Hall                               */
-            /*                             Where the npcs are                             */
-            /* -------------------------------------------------------------------------- */
-            parent
-                .spawn((
-                    NodeBundle {
-                        style: Style {
-                            width: Val::Percent(FIGHTING_HALL_WIDTH),
-                            flex_direction: FlexDirection::Column,
-                            ..default()
-                        },
-                        background_color: Color::rgba(0., 0., 0., 0.).into(),
+            parent.spawn((
+                NodeBundle {
+                    style: Style {
+                        width: Val::Percent(FIGHTING_HALL_WIDTH),
                         ..default()
                     },
-                    Name::new("Fighting Hall"),
-                ))
-                .with_children(|parent| {
-                    // TODO: URGENT UI - hide Combat button
-
-                    // END OF YOUR TURN
-                    parent
-                        .spawn((
-                            ButtonBundle {
-                                style: Style {
-                                    width: Val::Px(200.0),
-                                    height: Val::Px(65.0),
-                                    margin: UiRect::all(Val::Auto),
-                                    top: Val::Percent(5.),
-                                    justify_content: JustifyContent::Center,
-                                    align_items: AlignItems::Center,
-                                    ..default()
-                                },
-                                background_color: NORMAL_BUTTON.into(),
-                                ..default()
-                            },
-                            Name::new("EndTurn Button"),
-                            EndOfTurnButton,
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn(TextBundle::from_section(
-                                "End of Turn",
-                                get_text_style(&asset_server, 40.),
-                            ));
-                        });
-
-                    // Stats - Caster / Target
-                    parent
-                        .spawn((
-                            NodeBundle {
-                                style: Style {
-                                    top: Val::Percent(5.),
-                                    flex_direction: FlexDirection::Column,
-                                    flex_grow: 1.0,
-                                    ..default()
-                                },
-                                ..default()
-                            },
-                            Name::new("Stats"),
-                        ))
-                        .with_children(|parent| {
-                            // List items
-
-                            // ----- DEBUG: Basic Stats -----
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    "Target hp: ???",
-                                    get_text_style(&asset_server, 20.),
-                                )
-                                .with_style(TEXT_STYLE),
-                                Label,
-                                HpMeter,
-                                TargetMeter,
-                                Name::new("Target Hp"),
-                            ));
-
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    "Target mp: ???",
-                                    get_text_style(&asset_server, 20.),
-                                )
-                                .with_style(TEXT_STYLE),
-                                Label,
-                                MpMeter,
-                                TargetMeter,
-                                Name::new("Target Mp"),
-                            ));
-
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    "Combat Phase: ???",
-                                    get_text_style(&asset_server, 20.),
-                                )
-                                .with_style(Style {
-                                    flex_shrink: 0.,
-                                    width: Val::Px(0.),
-                                    height: Val::Px(20.),
-                                    margin: UiRect {
-                                        left: Val::Auto,
-                                        right: Val::Auto,
-                                        ..default()
-                                    },
-                                    ..default()
-                                }),
-                                CombatStateDisplayer,
-                                Name::new("Combat Phase"),
-                                // -- UI --
-                                // Because this is a distinct label widget and
-                                // not button/list item text, this is necessary
-                                // for accessibility to treat the text accordingly.
-                                Label,
-                            ));
-                        });
-                });
+                    background_color: Color::rgba(0., 0., 0., 0.).into(),
+                    ..default()
+                },
+                Name::new("Free Scene"),
+                FreeScene,
+            ));
 
             /* -------------------------------------------------------------------------- */
             /*                            Initiative Bar Order                            */

@@ -40,7 +40,9 @@ use self::{
     teamwork::{Recruited, Reputation},
 };
 use crate::{
-    characters::player::Player, constants::combat::BASE_ACTION_COUNT, hud_combat, ui, HUDState,
+    characters::{npcs::NPC, player::Player},
+    constants::combat::BASE_ACTION_COUNT,
+    hud_combat, ui, HUDState,
 };
 
 pub mod alteration_list;
@@ -201,7 +203,11 @@ impl Plugin for CombatPlugin {
             )
             .add_systems(
                 Update,
-                (update_number_of_fighters, teamwork::recruit_event_handler),
+                (
+                    fair_play_wait,
+                    update_number_of_fighters,
+                    teamwork::recruit_event_handler,
+                ),
             )
             .add_systems(
                 Update,
@@ -537,6 +543,40 @@ pub struct CombatEvent {
 /* -------------------------------------------------------------------------- */
 /*                               Systems Update                               */
 /* -------------------------------------------------------------------------- */
+
+/// Executed `OnExit(HUDState::CombatWall)`
+pub fn pacify_everyone(
+    mut commands: Commands,
+    in_combat_query: Query<Entity, With<InCombat>>,
+    hud_state: Res<State<HUDState>>,
+) {
+    if hud_state.get() != &HUDState::LogCave {
+        for fighter in &in_combat_query {
+            commands.entity(fighter).remove::<InCombat>();
+        }
+    }
+}
+
+/// Decrement the fair play Timer
+/// while doing other things (don't **exclude** entity `With<FairPlayTimer>`).
+/// Remove the FairPlayTimer if the entity is in the player's team
+pub fn fair_play_wait(
+    mut commands: Commands,
+
+    time: Res<Time>,
+    mut npc_query: Query<(Entity, &mut FairPlayTimer, &Reputation, &Name), With<NPC>>,
+) {
+    for (npc, mut fair_play_timer, reputation, name) in npc_query.iter_mut() {
+        fair_play_timer.timer.tick(time.delta());
+
+        // TODO: PostDemo - query player to get their TEAM (it's the player who switch team not all npc)
+        if fair_play_timer.timer.finished() || reputation.is_in_supreme_god_team() {
+            info!("{:?}, {} can now aggro", npc, name);
+
+            commands.entity(npc).remove::<FairPlayTimer>();
+        }
+    }
+}
 
 /// If there is any Hp change in the frame, update the number of fighter alive
 pub fn update_number_of_fighters(

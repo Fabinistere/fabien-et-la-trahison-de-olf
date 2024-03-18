@@ -24,6 +24,7 @@ pub mod player {
     pub const PLAYER_HEIGHT: f32 = 15.;
     pub const PLAYER_SCALE: f32 = super::CHAR_SCALE;
     pub const PLAYER_SPAWN: (f32, f32, f32) = (-24., -150., 0.);
+    pub const DEV_SPAWN: (f32, f32, f32) = (-24., 65., 0.);
 
     pub const CAMERA_INTERPOLATION: f32 = 0.1;
 

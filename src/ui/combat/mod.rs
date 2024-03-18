@@ -1,19 +1,17 @@
 use bevy::prelude::*;
 
-use crate::{
-    characters::FabiensInfos,
-    combat::{
-        // tactical_position,
-        CombatState
-    },
-    HUDState,
-};
+use crate::{characters::FabiensInfos, combat::CombatState, CombatWallStage, HUDState};
 
-use self::{combat_system::{ActionHistory, ActionsLogs, LastTurnActionHistory}, combat_panel::{CharacterSheetElements, CombatWallResources, CharacterSheetAssetsResources}, log_cave::CombatLogResources};
+use self::{
+    combat_panel::{CharacterSheetAssetsResources, CharacterSheetElements, CombatWallResources},
+    combat_system::{ActionHistory, ActionsLogs, LastTurnActionHistory},
+    log_cave::CombatLogResources,
+};
 
 pub mod character_sheet;
 pub mod combat_panel;
 pub mod combat_system;
+pub mod fighting_scene;
 pub mod initiative_bar;
 pub mod log_cave;
 pub mod player_interaction;
@@ -31,13 +29,6 @@ enum UiLabel {
 pub struct UiCombatPlugin;
 
 impl Plugin for UiCombatPlugin {
-    /// # Notes
-    /// 
-    /// `.run_if(in_state(HUDState::CombatWall))` is NOT implied by any
-    /// `.in_set(CombatState::...)`
-    /// 
-    /// REFACTOR: Restrict to CombatWall/LogCave - Add everywhere it's not implied `.run_if(in_state(HUDState::CombatWall))` 
-    #[rustfmt::skip]
     fn build(&self, app: &mut App) {
         app
             .insert_resource(ActionsLogs(String::from("---------------\nActions Logs:")))
@@ -49,6 +40,7 @@ impl Plugin for UiCombatPlugin {
             .init_resource::<CombatWallResources>()
             .init_resource::<CombatLogResources>()
             .init_resource::<CharacterSheetAssetsResources>()
+            /* --------------------------------- Events --------------------------------- */
 
             .add_event::<combat_system::UpdateUnitSelectedEvent>()
             .add_event::<combat_system::UpdateUnitTargetedEvent>()
@@ -73,9 +65,21 @@ impl Plugin for UiCombatPlugin {
             /*                                   States                                   */
             /* -------------------------------------------------------------------------- */
 
-            // .add_systems(Startup, combat_panel::global_ui_setup)
-            .add_systems(OnEnter(HUDState::CombatWall), combat_panel::combat_wall_setup)
-            .add_systems(OnExit(HUDState::CombatWall), combat_panel::cleanup)
+            .add_systems(
+                OnEnter(HUDState::CombatWall),
+                (
+                    combat_panel::combat_wall_setup,
+                    fighting_scene::setup.run_if(in_state(CombatWallStage::InCombat)),
+                )
+            )
+            .add_systems(
+                OnExit(HUDState::CombatWall),
+                (
+                    crate::combat::pacify_everyone,
+                    combat_panel::cleanup,
+                    fighting_scene::cleanup.run_if(in_state(CombatWallStage::InCombat)),
+                )
+            )
             
             .add_systems(
                 OnEnter(HUDState::LogCave),
@@ -230,4 +234,3 @@ impl Plugin for UiCombatPlugin {
             ;
     }
 }
-

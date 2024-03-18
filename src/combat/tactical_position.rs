@@ -68,7 +68,7 @@ pub fn update_character_position(
         let width = window.width();
         let height = window.height();
 
-        // 56% = width of the Fighting Hall
+        // 56% = width of the Fighting Scene
         // 17 = number of box / line
         // 2 = half of the box (to point to the center)
         let x = (width * (FIGHTING_HALL_WIDTH / 100.)) / 17.;

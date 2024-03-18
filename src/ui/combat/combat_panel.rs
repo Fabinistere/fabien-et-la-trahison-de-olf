@@ -252,21 +252,16 @@ pub fn create_combat_panel_on_combat_event(
 /// The Wall will despawn at the end of the animation in [[ui::mod]].
 pub fn cleanup(
     mut commands: Commands,
+    hud_state: Res<State<HUDState>>,
     combat_wall_query: Query<(Entity, &Style), (With<CombatWall>, With<Animator<Style>>)>,
     mut initiative_bar_query: Query<&mut Visibility, With<InitiativeBar>>,
-
-    in_combat_query: Query<Entity, With<InCombat>>,
-    hud_state: Res<State<HUDState>>,
 ) {
+    // The current State where `cleanup()` is called is the upcoming transition state
     if hud_state.get() != &HUDState::LogCave {
         let mut init_bar_visibility = initiative_bar_query.single_mut();
         *init_bar_visibility = Visibility::Hidden;
-        for fighter in &in_combat_query {
-            commands.entity(fighter).remove::<InCombat>();
-        }
     }
 
-    // The current State where `cleanup()` is called is the upcoming transition state
     let end_position = if hud_state.get() == &HUDState::LogCave {
         UiRect {
             left: Val::Px(0.),

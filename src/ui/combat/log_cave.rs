@@ -90,7 +90,7 @@ pub fn cave_ladder(
 /*                                 UI CleanUp                                 */
 /* -------------------------------------------------------------------------- */
 
-/// The Fighting Hall and Initiative Bar are preserved
+/// The Fighting Scene and Initiative Bar are preserved
 /// The current State where `cleanup()` is called is the upcoming transition state
 /// Here It should always be `HUDState::CombatWall`.
 pub fn cleanup(

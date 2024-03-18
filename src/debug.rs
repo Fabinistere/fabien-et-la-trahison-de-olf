@@ -1,19 +1,33 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::{ResourceInspectorPlugin, StateInspectorPlugin, WorldInspectorPlugin};
+use bevy_inspector_egui::quick::{
+    ResourceInspectorPlugin, StateInspectorPlugin, WorldInspectorPlugin,
+};
 
 use crate::{
     animations::sprite_sheet_animation::{
         AnimationIndices, CharacterState, SpriteSheetAnimation, TempoAnimation,
-    }, characters::npcs::movement::{Chaser, NPCBehavior, TargetSeeker, TargetType}, collisions::{TesselatedCollider, TesselatedColliderConfig}, combat::{alterations::{Alteration, AlterationAction}, skills::{SkillType, TargetOption}, stats::{Attack, AttackSpe, Defense, DefenseSpe, Hp, Initiative, Mana, Shield}, stuff::{Equipements, Job, MasteryTier, WeaponType}, ActionCount, CombatState, TacticalPlace}, locations::{
+    },
+    characters::npcs::movement::{Chaser, NPCBehavior, TargetSeeker, TargetType},
+    collisions::{TesselatedCollider, TesselatedColliderConfig},
+    combat::{
+        alterations::{Alteration, AlterationAction},
+        skills::{SkillType, TargetOption},
+        stats::{Attack, AttackSpe, Defense, DefenseSpe, Hp, Initiative, Mana, Shield},
+        stuff::{Equipements, Job, MasteryTier, WeaponType},
+        ActionCount, CombatState, TacticalPlace,
+    },
+    locations::{
         landmarks::Landmark,
         temple::{Location, OverlappingEntity},
-    }, menu::{ManorLightsPattern, ManorLightsTimer}, ui::combat::combat_system::{ActionHistory, ActionsLogs, LastTurnActionHistory}, GameState
+    },
+    menu::{ManorLightsPattern, ManorLightsTimer},
+    ui::combat::combat_system::{ActionHistory, ActionsLogs, LastTurnActionHistory},
+    GameState,
 };
 
 pub struct DebugPlugin;
 
 impl Plugin for DebugPlugin {
-    #[rustfmt::skip]
     fn build(&self, app: &mut App) {
         // log4rs::init_file("data/logging_config.yaml", Default::default()).unwrap();
 
@@ -57,7 +71,10 @@ impl Plugin for DebugPlugin {
             app.add_plugins((WorldInspectorPlugin::new(),))
                 .register_type::<GameState>()
                 .register_type::<Location>()
-                .add_plugins((StateInspectorPlugin::<GameState>::default(), StateInspectorPlugin::<CombatState>::default()))
+                .add_plugins((
+                    StateInspectorPlugin::<GameState>::default(),
+                    StateInspectorPlugin::<CombatState>::default(),
+                ))
                 /* -------------------------------------------------------------------------- */
                 /*                              Global Animation                              */
                 /* -------------------------------------------------------------------------- */
@@ -88,47 +105,29 @@ impl Plugin for DebugPlugin {
                 /* -------------------------------------------------------------------------- */
                 .register_type::<TesselatedCollider>()
                 .register_type::<TesselatedColliderConfig>()
-                
-                /* --------------------------------- Combat --------------------------------- */
                 /* -------------------------------------------------------------------------- */
-                /*                          --- Global Structure ---                          */
+                /*                                   Combat                                   */
                 /* -------------------------------------------------------------------------- */
-                
+                /* ---------------------------- Global Structure ---------------------------- */
                 .register_type::<CombatState>()
                 // .register_type::<CombatResources>()
                 // .register_type::<Action>()
-                
                 .register_type::<ActionCount>()
-
                 // .register_type::<TacticalPosition>()
                 .register_type::<TacticalPlace>()
-                
-                /* -------------------------------------------------------------------------- */
-                /*                       --- Skills and Alterations ---                       */
-                /* -------------------------------------------------------------------------- */
-
+                /* ------------------------- Skills and Alterations ------------------------- */
                 .register_type::<Alteration>()
                 .register_type::<AlterationAction>()
                 .register_type::<TargetOption>()
-                
                 // .register_type::<Skill>()
                 .register_type::<SkillType>()
-                
-                /* -------------------------------------------------------------------------- */
-                /*                               --- Weapons ---                              */
-                /* -------------------------------------------------------------------------- */
-                
+                /* --------------------------------- Weapons -------------------------------- */
                 .register_type::<Equipements>()
                 .register_type::<WeaponType>()
-                
                 .register_type::<Job>()
                 .register_type::<MasteryTier>()
                 // .register_type::<JobsMasteries>()
-                
-                /* -------------------------------------------------------------------------- */
-                /*                                --- Stats ---                               */
-                /* -------------------------------------------------------------------------- */
-                
+                /* ---------------------------------- Stats --------------------------------- */
                 .register_type::<Hp>()
                 .register_type::<Mana>()
                 .register_type::<Shield>()
@@ -137,15 +136,10 @@ impl Plugin for DebugPlugin {
                 .register_type::<AttackSpe>()
                 .register_type::<Defense>()
                 .register_type::<DefenseSpe>()
-
-                /* -------------------------------------------------------------------------- */
-                /*                                 --- UI ---                                 */
-                /* -------------------------------------------------------------------------- */
-
+                /* ----------------------------------- UI ----------------------------------- */
                 .register_type::<ActionHistory>()
                 .register_type::<LastTurnActionHistory>()
                 .register_type::<ActionsLogs>()
-
                 .add_plugins((
                     ResourceInspectorPlugin::<ActionHistory>::default(),
                     ResourceInspectorPlugin::<LastTurnActionHistory>::default(),
