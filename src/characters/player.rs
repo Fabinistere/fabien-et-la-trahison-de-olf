@@ -18,7 +18,7 @@ use crate::{
     hud_closed,
     locations::temple::Location,
     ui::dialog_systems::DialogMap,
-    GameState, PlayerCamera,
+    GameState,
 };
 
 use super::movement::CharacterCloseSensor;
@@ -28,7 +28,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(Update, (player_movement.run_if(hud_closed), camera_follow));
+            .add_systems(Update, (player_movement.run_if(hud_closed)));
     }
 }
 
@@ -110,28 +110,6 @@ fn player_movement(
             } else if left {
                 texture_atlas_sprite.flip_x = true;
             }
-        }
-    }
-}
-
-fn camera_follow(
-    mut query: ParamSet<(
-        Query<&Transform, With<Player>>,
-        Query<&mut Transform, With<PlayerCamera>>,
-    )>,
-) {
-    if let Ok(t) = query.p0().get_single() {
-        let player_transform = *t;
-
-        if let Ok(mut camera_transform) = query.p1().get_single_mut() {
-            camera_transform.translation = camera_transform.translation.lerp(
-                Vec3::new(
-                    player_transform.translation.x,
-                    player_transform.translation.y,
-                    camera_transform.translation.z,
-                ),
-                CAMERA_INTERPOLATION,
-            );
         }
     }
 }

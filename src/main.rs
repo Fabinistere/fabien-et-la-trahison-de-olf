@@ -1,7 +1,9 @@
-#![allow(clippy::type_complexity)]
+#![allow(clippy::type_complexity, clippy::too_many_arguments, clippy::pedantic)]
+// #![warn(missing_docs)]
 
 pub mod animations;
 pub mod characters;
+mod cinematics;
 mod collisions;
 pub mod combat;
 pub mod constants;
@@ -19,6 +21,7 @@ use bevy::{
     asset::ChangeWatcher, audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*,
 };
 use bevy_rapier2d::prelude::*;
+use cinematics::cameras::PlayerCamera;
 
 use crate::{
     constants::{BACKGROUND_COLOR_INGAME, BACKGROUND_COLOR_INMENU},
@@ -45,9 +48,6 @@ pub enum HUDState {
     DialogWall,
     OptionsWall,
 }
-
-#[derive(Component)]
-struct PlayerCamera;
 
 fn main() {
     let mut app = App::new();
@@ -89,6 +89,7 @@ fn main() {
             collisions::CollisionsPlugin,
             interactions::InteractionsPlugin,
             locations::LocationsPlugin,
+            cinematics::CinematicPlugin,
             menu::MenuPlugin,
             characters::CharactersPlugin,
             combat::CombatPlugin,
