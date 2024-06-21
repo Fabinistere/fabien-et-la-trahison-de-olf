@@ -47,7 +47,6 @@ pub struct PlayerInteractionSensor;
 #[derive(Component)]
 pub struct PlayerCloseSensor;
 
-/// FIXME: Freeze the player when in dialog (trigger for ex when interacting while running)
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
