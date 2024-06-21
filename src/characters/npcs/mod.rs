@@ -35,7 +35,7 @@ use self::{
     movement::{FollowRangeSensor, TargetSeeker, TargetType},
 };
 
-use super::player::Player;
+use super::{player::Player, Character};
 
 #[derive(Default)]
 pub struct NPCPlugin;
@@ -256,6 +256,7 @@ fn spawn_characters(
                     ..default()
                 },
                 Name::new(format!("NPC {}", name)),
+                Character,
                 NPC,
                 // -- Movement --
                 behavior,
@@ -407,6 +408,7 @@ fn spawn_vilains(
                     ..default()
                 },
                 Name::new(format!("NPC {}", name)),
+                Character,
                 NPC,
                 // -- Movement --
                 behavior,

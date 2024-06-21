@@ -21,7 +21,7 @@ use crate::{
     GameState,
 };
 
-use super::movement::CharacterCloseSensor;
+use super::{movement::CharacterCloseSensor, Character};
 
 pub struct PlayerPlugin;
 
@@ -142,6 +142,7 @@ fn spawn_player(
                 ..default()
             },
             Name::new("Player"),
+            Character,
             Player,
             Location::default(),
             // -- Social --

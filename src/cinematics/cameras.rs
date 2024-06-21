@@ -1,14 +1,71 @@
 use bevy::prelude::*;
+use rand::seq::IteratorRandom;
 
-use crate::{characters::player::Player, constants::character::player::CAMERA_INTERPOLATION};
+use crate::{
+    characters::{player::Player, Character},
+    constants::character::player::CAMERA_INTERPOLATION,
+};
 
-use super::CameraFocus;
+use super::{CameraFocus, PlayMode};
 
 #[derive(Component)]
 pub struct PlayerCamera;
 
 #[derive(Component)]
 pub struct CinematicCamera;
+
+pub fn follow_a_random_character(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut commands: Commands,
+
+    pop_star_query: Query<Entity, With<CameraFocus>>,
+    characters_query: Query<(Entity, &Name), (With<Character>, Without<CameraFocus>)>,
+    player_query: Query<Entity, With<Player>>,
+
+    current_play_mode: Res<State<PlayMode>>,
+    mut next_play_mode: ResMut<NextState<PlayMode>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::C) {
+        if let Ok(previously_pop_star) = pop_star_query.get_single() {
+            commands.entity(previously_pop_star).remove::<CameraFocus>();
+        }
+
+        let mut rng = rand::thread_rng();
+        let (random_pop_star, pop_star_name) = characters_query.iter().choose(&mut rng).unwrap();
+        info!("{pop_star_name:?} is the new pop star");
+
+        let player = player_query.single();
+        if random_pop_star == player {
+            next_play_mode.set(PlayMode::PlayerIsInControl);
+        } else {
+            commands
+                .entity(random_pop_star)
+                .insert(CameraFocus::default());
+
+            if *current_play_mode != PlayMode::InCinemmatic {
+                next_play_mode.set(PlayMode::InCinemmatic);
+            }
+        }
+    }
+}
+
+pub fn reset_camera_to_player(
+    mut cinematic_camera: Query<&mut Camera, (With<CinematicCamera>, Without<PlayerCamera>)>,
+    mut player_camera: Query<
+        (&mut Camera, &mut Transform),
+        (With<PlayerCamera>, Without<CinematicCamera>),
+    >,
+) {
+    // Remove current camera
+    if let Ok(mut camera) = cinematic_camera.get_single_mut() {
+        camera.is_active = false;
+    }
+
+    // Reactivate `PlayerCamera`
+    if let Ok((mut camera, _camera_transform)) = player_camera.get_single_mut() {
+        camera.is_active = true;
+    }
+}
 
 pub fn player_camera_follow(
     mut queries: ParamSet<(

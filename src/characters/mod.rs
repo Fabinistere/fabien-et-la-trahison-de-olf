@@ -13,6 +13,9 @@ impl Plugin for CharactersPlugin {
 }
 
 #[derive(Component)]
+pub struct Character;
+
+#[derive(Component)]
 pub struct CharacterHitbox;
 
 #[derive(Debug)]
@@ -22,7 +25,7 @@ pub struct CharacterTexture {
 }
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum Character {
+pub enum CharacterTag {
     FabienLInformaticien,
     Olf,
     Panneau,
