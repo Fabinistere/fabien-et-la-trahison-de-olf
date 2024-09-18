@@ -189,6 +189,7 @@ impl FairPlayTimer {
 /// Happens when:
 ///   - npc::movement::pursue
 ///     - target is reach
+///
 /// Read in
 ///   - ui::dialog_panel::create_dialog_panel_on_combat_event
 ///     - open combat ui

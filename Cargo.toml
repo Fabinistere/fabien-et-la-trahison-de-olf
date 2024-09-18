@@ -4,6 +4,7 @@ version = "0.4.0"
 authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "Olf EPAIN <wabtey@disroot.org>", "Grassouille la Fripouille", "Sombre Roi René"]
 repository = "https://github.com/Fabinistere/fabien-et-la-trahison-de-olf"
 license = "MIT OR Apache-2.0"
+exclude = ["assets"]
 edition = "2021"
 
 [workspace]

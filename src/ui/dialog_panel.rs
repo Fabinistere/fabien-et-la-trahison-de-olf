@@ -147,6 +147,7 @@ pub fn create_dialog_panel(
 ) {
     // info!("open dialog event");
 
+    // UI wall's motion
     let dialog_panel_tween = Tween::new(
         EaseFunction::QuadraticOut,
         Duration::from_millis(DIALOG_PANEL_ANIMATION_TIME_MS),
@@ -166,6 +167,7 @@ pub fn create_dialog_panel(
         },
     );
 
+    // Windows' motion
     let panels_tween = Tween::new(
         EaseMethod::Linear,
         Duration::from_millis(1000),
