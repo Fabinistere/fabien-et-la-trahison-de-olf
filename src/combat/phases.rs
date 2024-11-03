@@ -18,257 +18,6 @@ use crate::{
 use super::{skills::SkillToExecute, teamwork::Reputation};
 
 /* -------------------------------------------------------------------------- */
-/*                    ----- Transitions Between Phase -----                   */
-/* -------------------------------------------------------------------------- */
-
-/// Whenever:
-/// - A system ask for a phase transition/change
-///
-/// Read by:
-/// - combat::phases::phase_transition()
-///   - Determine which action to be taken,
-///   accordingly with (/w.r.t.) to the phase we're currently in,
-///   and the phase we want to transit.
-#[derive(Event)]
-pub struct TransitionPhaseEvent(pub CombatState);
-
-/// Action manager, about phase transition.
-/// And Change phase afterall
-pub fn phase_transition(
-    mut transition_phase_event: EventReader<TransitionPhaseEvent>,
-
-    mut commands: Commands,
-    hud_state: Res<State<HUDState>>,
-    mut combat_resources: ResMut<CombatResources>,
-    current_combat_state: Res<State<CombatState>>,
-    mut next_combat_state: ResMut<NextState<CombatState>>,
-
-    mut selected_units_query: Query<Entity, (With<Selected>, With<InCombat>)>,
-    targeted_unit_query: Query<(Entity, &Name), With<Targeted>>,
-    mut combat_unit_query: Query<(Entity, &mut ActionCount, &Hp, &Reputation), With<InCombat>>,
-
-    mut actions_logs: ResMut<ActionsLogs>,
-    action_history: Res<ActionHistory>,
-    mut last_action_history: ResMut<LastTurnActionHistory>,
-
-    character_sheet_elements: Res<CharacterSheetElements>,
-    mut character_sheet_query: Query<&mut Visibility, With<CharacterSheet>>,
-) {
-    for TransitionPhaseEvent(phase_requested) in transition_phase_event.iter() {
-        let mut next_phase = phase_requested;
-
-        let default_state = CombatState::default();
-
-        match (current_combat_state.get(), phase_requested) {
-            (CombatState::SelectionCaster, CombatState::SelectionSkill) => {
-                // Might be a cancel action or just a caster being selected
-            }
-            (CombatState::SelectionSkill, CombatState::SelectionSkill) => {
-                // FIXME: there is still some Targeted - While switching Caster to caster after the creation of a action
-            }
-            (
-                CombatState::SelectionSkill | CombatState::SelectionTarget,
-                CombatState::SelectionTarget,
-            ) => {
-                let last_action = combat_resources.history.last_mut().unwrap();
-
-                // - Select Skill in SelectionSkill
-                // - Changing Skill while being in SelectionTarget
-                if last_action.targets.is_none() {
-                    // remove from previous entity the targeted component
-                    for (targeted, _) in targeted_unit_query.iter() {
-                        commands.entity(targeted).remove::<Targeted>();
-                    }
-
-                    // ------ ActionCount ------
-
-                    let _ = selected_units_query.get(last_action.caster).unwrap();
-                    let mut action_count = combat_unit_query
-                        .get_component_mut::<ActionCount>(last_action.caster)
-                        .unwrap();
-
-                    match last_action.skill.target_option {
-                        TargetOption::OneSelf
-                        | TargetOption::AllAlly
-                        | TargetOption::AllEnemy
-                        | TargetOption::All => {
-                            action_count.current -= 1;
-                            info!("action left: {}", action_count.current);
-
-                            next_phase = if action_count.current > 0 {
-                                &CombatState::SelectionSkill
-                            } else {
-                                &default_state
-                            };
-                        }
-                        _ => {}
-                    }
-
-                    // ------ Targets ------
-
-                    let caster_team = combat_unit_query
-                        .get_component::<Reputation>(last_action.caster)
-                        .unwrap();
-
-                    match last_action.skill.target_option {
-                        TargetOption::OneSelf => {
-                            last_action.targets = Some(vec![last_action.caster]);
-                        }
-                        TargetOption::AllAlly => {
-                            let mut targets: Vec<Entity> = Vec::new();
-                            for (entity, _, hp, team) in combat_unit_query.iter() {
-                                if hp.current > 0 && team.in_the_same_team(caster_team) {
-                                    targets.push(entity);
-                                }
-                            }
-                            last_action.targets = Some(targets);
-                        }
-                        TargetOption::AllEnemy => {
-                            let mut targets: Vec<Entity> = Vec::new();
-                            for (entity, _, hp, team) in combat_unit_query.iter() {
-                                if hp.current > 0 && !team.in_the_same_team(caster_team) {
-                                    targets.push(entity);
-                                }
-                            }
-                            last_action.targets = Some(targets);
-                        }
-                        TargetOption::All => {
-                            let mut targets: Vec<Entity> = Vec::new();
-                            for (entity, _, hp, _) in combat_unit_query.iter() {
-                                if hp.current > 0 {
-                                    targets.push(entity);
-                                }
-                            }
-                            last_action.targets = Some(targets);
-                        }
-                        _ => {}
-                    }
-                } else {
-                    // WARNING: If we implement TargetOption, do not throw phaseTransiEvent if unauthorized
-                    // - Target a entity and there is more to choose left (S.Target -> S.Target)
-                }
-            }
-            // (CombatState::SelectionTarget, CombatState::default())
-            (CombatState::SelectionTarget, CombatState::SelectionCaster) => {
-                // If there is still some action left for the current caster,
-                // skip SelectionCaster (The previous will still have the comp `Selected`)
-                let last_action = combat_resources.history.last().unwrap();
-                let _ = selected_units_query.get(last_action.caster).unwrap();
-                let mut action_count = combat_unit_query
-                    .get_component_mut::<ActionCount>(last_action.caster)
-                    .unwrap();
-
-                action_count.current -= 1;
-                info!("action left: {}", action_count.current);
-
-                next_phase = if action_count.current > 0 {
-                    info!("S.Target to S.Caster bypass to S.Skills");
-                    &CombatState::SelectionSkill
-                } else {
-                    &default_state
-                };
-                // in SelectionSkill we can click another caster to switch
-            }
-
-            /* -------------------------------------------------------------------------- */
-            /*                              Cancel Transition                             */
-            /* -------------------------------------------------------------------------- */
-            (CombatState::SelectionSkill, CombatState::SelectionCaster) => {}
-            (CombatState::BrowseEnemySheet, CombatState::SelectionCaster) => {}
-            (CombatState::SelectionCaster, CombatState::SelectionTarget) => {
-                /* - If the action.targets == None: bypass to SelectionSkill
-                 * - ElseIf the action was a selfcast: bypass to SelectionSkill
-                 * - Else: no bypass - SelectionTarget (rm the last one, still the last action IN)
-                 */
-            }
-
-            /* -------------------------------------------------------------------------- */
-            /*                                 End of Turn                                */
-            /* -------------------------------------------------------------------------- */
-            (_, CombatState::AIStrategy) => {
-                // TODO: Warning if there is still action left
-                // XXX: this is a safeguard preventing from double click the `end_of_turn` (wasn't a pb back there)
-                if combat_resources.history.is_empty() {
-                    info!("End of Turn - Refused (no action)");
-                    continue;
-                }
-                // remove `Selected` from the last potential selected
-                // DOC: will trigger all RemovedComponent queries
-                if let Ok(selected) = selected_units_query.get_single_mut() {
-                    commands.entity(selected).remove::<Selected>();
-                }
-                // remove all `Targeted`
-                for (targeted, _) in targeted_unit_query.iter() {
-                    commands.entity(targeted).remove::<Targeted>();
-                }
-                info!("End of Turn - Accepted");
-            }
-            (_, CombatState::RollInitiative) => {
-                combat_resources.number_of_turn += 1;
-            }
-            (CombatState::RollInitiative, CombatState::ExecuteSkills) => {
-                // --------------------- DEBUG --------------------------
-                // REFACTOR: Move these ui lines somewhere else -> [[combat::phases::phase_transition()]]
-                // IDEA: Push infinitly but Reverse (start of the string = recent, bottom of the cave = start of the combat)
-                // TODO: CouldHave - Turn Count on logs
-                actions_logs.0.push_str(&format!(
-                    "\n---------------\nTurn: {}\n",
-                    combat_resources.number_of_turn
-                ));
-                // --------------------- DEBUG --------------------------
-            }
-
-            /* -------------------------------------------------------------------------- */
-            /*                                  New Turn                                  */
-            /* -------------------------------------------------------------------------- */
-            // replace SelectionCaster by CombatState::default()
-            (CombatState::AlterationsExecution, CombatState::SelectionCaster) => {
-                // IDEA: add this history into a full-log to permit the player to see it.
-
-                // --------------------- DEBUG --------------------------
-                // Save the Sorted Initiative Action Historic
-                last_action_history.0 = action_history
-                    .clone()
-                    .0
-                    .replace("Current Turn Actions:", "Last Turn Actions:");
-                // --------------------- DEBUG --------------------------
-
-                // Reset the action history
-                combat_resources.history = Vec::new();
-
-                // Reset all ActionCounter/Limit
-                for (_, mut action_count, _, _) in combat_unit_query.iter_mut() {
-                    action_count.current = action_count.base;
-                }
-            }
-            _ => {}
-        }
-
-        if hud_state.get() == &HUDState::CombatWall {
-            // TODO: CouldHave - Dynamic Input: AutoSwitch Selection to avoid repetitive inpleasant task ("go to next caster")
-            let mut character_sheet_visibility = character_sheet_query
-                .get_mut(character_sheet_elements.character_sheet.unwrap())
-                .unwrap();
-            *character_sheet_visibility = if next_phase == &CombatState::SelectionCaster {
-                Visibility::Hidden
-            } else if current_combat_state.get() == &CombatState::SelectionCaster {
-                Visibility::Inherited
-            } else {
-                *character_sheet_visibility
-            };
-        }
-
-        // info!(
-        //     "Phase: {:?} to {:?} (was requested: {:?})",
-        //     combat_state.clone(),
-        //     next_phase.clone(),
-        //     phase_requested.clone(),
-        // );
-        next_combat_state.set(next_phase.clone());
-    }
-}
-
-/* -------------------------------------------------------------------------- */
 /*                                Phase Actions                               */
 /* -------------------------------------------------------------------------- */
 
@@ -357,7 +106,7 @@ pub fn execute_alteration(
         alterations.0 = new_alterations_vector;
     }
 
-    transition_phase_event.send(TransitionPhaseEvent(CombatState::default()));
+    transition_phase_event.send(TransitionPhaseEvent(CombatState::SelectionCaster));
 }
 
 /// Roll for each entity a d100 ranged into +-20 initiative
@@ -484,4 +233,257 @@ pub fn execution_phase(
     }
 
     transition_phase_event.send(TransitionPhaseEvent(CombatState::ExecuteSkills));
+}
+
+/* -------------------------------------------------------------------------- */
+/*                    ----- Transitions Between Phase -----                   */
+/* -------------------------------------------------------------------------- */
+
+/// Whenever:
+/// - A system ask for a phase transition/change
+///
+/// Read by:
+/// - combat::phases::phase_transition()
+///   - Determine which action to be taken,
+///   accordingly with (/w.r.t.) the phase we're currently in,
+///   and the phase we want to transit.
+#[derive(Event)]
+pub struct TransitionPhaseEvent(pub CombatState);
+
+/// Action manager, about phase transition.
+/// And Change phase afterall
+///
+/// # Notes
+///
+/// REFACTOR: Just how? - Use `OnExit(CombatState)` exclusive systems instead of `combat::phases::phase_transition`
+/// Without really switching State, because sometimes we bypass requested state.
+pub fn phase_transition(
+    mut transition_phase_event: EventReader<TransitionPhaseEvent>,
+
+    mut commands: Commands,
+    hud_state: Res<State<HUDState>>,
+    mut combat_resources: ResMut<CombatResources>,
+    current_combat_state: Res<State<CombatState>>,
+    mut next_combat_state: ResMut<NextState<CombatState>>,
+
+    selected_units_query: Query<Entity, (With<Selected>, With<InCombat>)>,
+    targeted_unit_query: Query<(Entity, &Name), With<Targeted>>,
+    mut combat_unit_query: Query<(Entity, &mut ActionCount, &Hp, &Reputation), With<InCombat>>,
+
+    mut actions_logs: ResMut<ActionsLogs>,
+    action_history: Res<ActionHistory>,
+    mut last_action_history: ResMut<LastTurnActionHistory>,
+
+    character_sheet_elements: Res<CharacterSheetElements>,
+    mut character_sheet_query: Query<&mut Visibility, With<CharacterSheet>>,
+) {
+    for TransitionPhaseEvent(phase_requested) in transition_phase_event.iter() {
+        let mut next_phase = phase_requested;
+
+        let default_state = CombatState::SelectionCaster;
+
+        match (current_combat_state.get(), phase_requested) {
+            (CombatState::SelectionCaster, CombatState::SelectionSkill) => {
+                // Might be a cancel action or just a caster being selected
+            }
+            (CombatState::SelectionSkill, CombatState::SelectionSkill) => {
+                // FIXME: there is still some Targeted - While switching Caster to caster after the creation of a action
+            }
+            (
+                CombatState::SelectionSkill | CombatState::SelectionTarget,
+                CombatState::SelectionTarget,
+            ) => {
+                let last_action = combat_resources.history.last_mut().unwrap();
+
+                if last_action.targets.is_none() {
+                    // remove from previous entity the targeted component
+                    for (targeted, _) in targeted_unit_query.iter() {
+                        commands.entity(targeted).remove::<Targeted>();
+                    }
+
+                    // ------ ActionCount ------
+
+                    let _ = selected_units_query.get(last_action.caster).unwrap();
+                    let mut action_count = combat_unit_query
+                        .get_component_mut::<ActionCount>(last_action.caster)
+                        .unwrap();
+
+                    // ------ Next Phase ------
+
+                    match last_action.skill.target_option {
+                        TargetOption::OneSelf
+                        | TargetOption::AllAlly
+                        | TargetOption::AllEnemy
+                        | TargetOption::All => {
+                            action_count.current -= 1;
+                            info!("action left: {}", action_count.current);
+
+                            next_phase = if action_count.current > 0 {
+                                &CombatState::SelectionSkill
+                            } else {
+                                &default_state
+                            };
+                        }
+                        _ => {}
+                    }
+                    // ------ Targets ------
+
+                    let caster_team = combat_unit_query
+                        .get_component::<Reputation>(last_action.caster)
+                        .unwrap();
+
+                    match last_action.skill.target_option {
+                        TargetOption::OneSelf => {
+                            last_action.targets = Some(vec![last_action.caster]);
+                        }
+                        TargetOption::AllAlly => {
+                            let mut targets: Vec<Entity> = Vec::new();
+                            for (entity, _, hp, team) in combat_unit_query.iter() {
+                                if hp.current > 0 && team.in_the_same_team(caster_team) {
+                                    targets.push(entity);
+                                }
+                            }
+                            last_action.targets = Some(targets);
+                        }
+                        TargetOption::AllEnemy => {
+                            let mut targets: Vec<Entity> = Vec::new();
+                            for (entity, _, hp, team) in combat_unit_query.iter() {
+                                if hp.current > 0 && !team.in_the_same_team(caster_team) {
+                                    targets.push(entity);
+                                }
+                            }
+                            last_action.targets = Some(targets);
+                        }
+                        TargetOption::All => {
+                            let mut targets: Vec<Entity> = Vec::new();
+                            for (entity, _, hp, _) in combat_unit_query.iter() {
+                                if hp.current > 0 {
+                                    targets.push(entity);
+                                }
+                            }
+                            last_action.targets = Some(targets);
+                        }
+                        _ => {}
+                    }
+                } else {
+                    // WARNING: If we implement TargetOption, do not throw phaseTransiEvent if unauthorized
+                    // - Target a entity and there is more to choose left (S.Target -> S.Target)
+                }
+            }
+            (CombatState::SelectionTarget, CombatState::SelectionCaster) => {
+                // If there is still some action left for the current caster,
+                // skip SelectionCaster (The previous will still have the comp `Selected`)
+                let last_action = combat_resources.history.last().unwrap();
+                let _ = selected_units_query.get(last_action.caster).unwrap();
+                let mut action_count = combat_unit_query
+                    .get_component_mut::<ActionCount>(last_action.caster)
+                    .unwrap();
+
+                action_count.current -= 1;
+                info!("action left: {}", action_count.current);
+
+                next_phase = if action_count.current > 0 {
+                    info!("S.Target to S.Caster bypass to S.Skills");
+                    &CombatState::SelectionSkill
+                } else {
+                    &default_state
+                };
+                // in SelectionSkill we can click another caster to switch
+            }
+
+            /* -------------------------------------------------------------------------- */
+            /*                              Cancel Transition                             */
+            /* -------------------------------------------------------------------------- */
+            (CombatState::SelectionSkill, CombatState::SelectionCaster) => {}
+            (CombatState::BrowseEnemySheet, CombatState::SelectionCaster) => {}
+            (CombatState::SelectionCaster, CombatState::SelectionTarget) => {
+                /* - If the action.targets == None: bypass to SelectionSkill
+                 * - ElseIf the action was a selfcast: bypass to SelectionSkill
+                 * - Else: no bypass - SelectionTarget (rm the last one, still the last action IN)
+                 */
+            }
+
+            /* -------------------------------------------------------------------------- */
+            /*                                 End of Turn                                */
+            /* -------------------------------------------------------------------------- */
+            (_, CombatState::AIStrategy) => {
+                // TODO: Warning if there is still action left
+                // XXX: this is a safeguard preventing from double click the `end_of_turn` (wasn't a pb back there)
+                if combat_resources.history.is_empty() {
+                    info!("End of Turn - Refused (no action)");
+                    continue;
+                }
+                // remove `Selected` from the last potential selected
+                // DOC: will trigger all RemovedComponent queries
+                if let Ok(selected) = selected_units_query.get_single() {
+                    commands.entity(selected).remove::<Selected>();
+                }
+                // remove all `Targeted`
+                for (targeted, _) in targeted_unit_query.iter() {
+                    commands.entity(targeted).remove::<Targeted>();
+                }
+                info!("End of Turn - Accepted");
+            }
+            (_, CombatState::RollInitiative) => {
+                combat_resources.number_of_turn += 1;
+            }
+            (CombatState::RollInitiative, CombatState::ExecuteSkills) => {
+                // --------------------- DEBUG --------------------------
+                // REFACTOR: Move these ui lines somewhere else -> [[combat::phases::phase_transition()]]
+                // IDEA: Push infinitly but Reverse (start of the string = recent, bottom of the cave = start of the combat)
+                // TODO: CouldHave - Turn Count on logs
+                actions_logs.0.push_str(&format!(
+                    "\n---------------\nTurn: {}\n",
+                    combat_resources.number_of_turn
+                ));
+                // --------------------- DEBUG --------------------------
+            }
+
+            /* -------------------------------------------------------------------------- */
+            /*                                  New Turn                                  */
+            /* -------------------------------------------------------------------------- */
+            (CombatState::AlterationsExecution, CombatState::SelectionCaster) => {
+                // IDEA: add this history into a full-log to permit the player to see it.
+
+                // --------------------- DEBUG --------------------------
+                // Save the Sorted Initiative Action Historic
+                last_action_history.0 = action_history
+                    .clone()
+                    .0
+                    .replace("Current Turn Actions:", "Last Turn Actions:");
+                // --------------------- DEBUG --------------------------
+
+                // Reset the action history
+                combat_resources.history = Vec::new();
+
+                // Reset all ActionCounter/Limit
+                for (_, mut action_count, _, _) in combat_unit_query.iter_mut() {
+                    action_count.current = action_count.base;
+                }
+            }
+            _ => {}
+        }
+
+        if hud_state.get() == &HUDState::CombatWall {
+            // TODO: CouldHave - Dynamic Input: AutoSwitch Selection to avoid repetitive unpleasant task ("go to next caster")
+            let mut character_sheet_visibility = character_sheet_query
+                .get_mut(character_sheet_elements.character_sheet.unwrap())
+                .unwrap();
+            *character_sheet_visibility = if next_phase == &CombatState::SelectionCaster {
+                Visibility::Hidden
+            } else if current_combat_state.get() == &CombatState::SelectionCaster {
+                Visibility::Inherited
+            } else {
+                *character_sheet_visibility
+            };
+        }
+
+        // info!(
+        //     "Phase: {:?} to {:?} (was requested: {:?})",
+        //     combat_state.clone(),
+        //     next_phase.clone(),
+        //     phase_requested.clone(),
+        // );
+        next_combat_state.set(next_phase.clone());
+    }
 }

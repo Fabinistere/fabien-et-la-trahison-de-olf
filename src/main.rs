@@ -196,3 +196,7 @@ pub fn hud_closed(hud_state: Res<State<HUDState>>) -> bool {
 pub fn hud_opened(hud_state: Res<State<HUDState>>) -> bool {
     hud_state.get() != &HUDState::Closed
 }
+
+pub fn hud_combat(hud_state: Res<State<HUDState>>) -> bool {
+    hud_state.get() == &HUDState::CombatWall || hud_state.get() == &HUDState::LogCave
+}

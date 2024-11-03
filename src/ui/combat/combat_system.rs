@@ -191,7 +191,7 @@ pub fn update_targeted_unit(
                             TargetOption::Ally(1)
                             | TargetOption::Enemy(1)
                             | TargetOption::OneSelf => transition_phase_event
-                                .send(TransitionPhaseEvent(CombatState::default())),
+                                .send(TransitionPhaseEvent(CombatState::SelectionCaster)),
                             _ => {}
                         }
                         Some(vec![character])
@@ -209,8 +209,9 @@ pub fn update_targeted_unit(
                                     std::cmp::Ordering::Less => targets.push(character),
                                     std::cmp::Ordering::Equal => {
                                         targets.push(character);
-                                        transition_phase_event
-                                            .send(TransitionPhaseEvent(CombatState::default()));
+                                        transition_phase_event.send(TransitionPhaseEvent(
+                                            CombatState::SelectionCaster,
+                                        ));
                                     }
                                     std::cmp::Ordering::Greater => {
                                         warn!(

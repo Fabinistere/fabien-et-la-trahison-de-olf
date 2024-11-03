@@ -32,10 +32,15 @@
 use bevy::prelude::*;
 use std::{cmp::Ordering, time::Duration};
 
-use crate::{characters::player::Player, constants::combat::BASE_ACTION_COUNT, ui, HUDState};
 use self::{
-    alterations::Alteration, skills::{Skill, SkillExecutionQueue, TargetOption}, stats::{Hp, StatBundle},
-    stuff::{Equipements, Job, JobsMasteries}, teamwork::{Recruited, Reputation},
+    alterations::Alteration,
+    skills::{Skill, SkillExecutionQueue, TargetOption},
+    stats::{Hp, StatBundle},
+    stuff::{Equipements, Job, JobsMasteries},
+    teamwork::{Recruited, Reputation},
+};
+use crate::{
+    characters::player::Player, constants::combat::BASE_ACTION_COUNT, hud_combat, ui, HUDState,
 };
 
 pub mod alteration_list;
@@ -50,10 +55,19 @@ pub mod tactical_position;
 pub mod teamwork;
 pub mod weapons_list;
 
-/// Just help to create a ordered system in the app builder
+/// Each state corresponds to an action that is in progress or that can be made.
+///
+/// ## Transitions
+///
+/// - `CombatState::SelectionCaster` to `CombatState::SelectionSkill`
+///   - Might be a cancel action or just a caster being selected
+/// - `CombatState::SelectionSkill` to `CombatState::SelectionSkill`
+///   - FIXME: there is still some Targeted - While switching Caster to caster after the creation of an action
+/// - `CombatState::SelectionSkill` or `CombatState::SelectionTarget` to `CombatState::SelectionTarget`
+///   - when we change target while selecting a skill or selecting all target
+/// - DOC: CombatState's transitions
 #[derive(Default, SystemSet, PartialEq, Eq, Hash, Clone, Debug, Reflect, States)]
 pub enum CombatState {
-    /// TOTEST: URGENT - connect transitions
     #[default]
     NonCombat,
     /// REFACTOR: Useless atm
@@ -93,113 +107,119 @@ impl CombatState {
 pub struct CombatPlugin;
 
 impl Plugin for CombatPlugin {
-    #[rustfmt::skip]
+    // #[rustfmt::skip]
     fn build(&self, app: &mut App) {
         app
+            /* -------------------------------------------------------------------------- */
+            /*                                   States                                   */
+            /* -------------------------------------------------------------------------- */
             .add_state::<CombatState>()
-            
+            /* -------------------------------------------------------------------------- */
+            /*                                  Resources                                 */
+            /* -------------------------------------------------------------------------- */
             .insert_resource(SkillExecutionQueue::default())
             .init_resource::<CombatResources>()
             .init_resource::<JobsMasteries>()
-            
+            /* -------------------------------------------------------------------------- */
+            /*                                   Events                                   */
+            /* -------------------------------------------------------------------------- */
             .add_event::<self::CombatEvent>()
             .add_event::<teamwork::RecruitmentEvent>()
             .add_event::<phases::TransitionPhaseEvent>()
             .add_event::<skills::ExecuteSkillEvent>()
             .add_event::<tactical_position::UpdateCharacterPositionEvent>()
-
-            .configure_set(
-                Update,
-                CombatState::Initialisation
-                    .run_if(in_state(CombatState::Initialisation))
-            )
+            /* -------------------------------------------------------------------------- */
+            /*                                    Sets                                    */
+            /* -------------------------------------------------------------------------- */
             .configure_set(
                 Update,
                 CombatState::AlterationsExecution
                     .run_if(in_state(CombatState::AlterationsExecution))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::SelectionCaster
                     .run_if(in_state(CombatState::SelectionCaster))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::SelectionSkill
                     .run_if(in_state(CombatState::SelectionSkill))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::SelectionTarget
                     .run_if(in_state(CombatState::SelectionTarget))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::AIStrategy
                     .run_if(in_state(CombatState::AIStrategy))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::RollInitiative
                     .run_if(in_state(CombatState::RollInitiative))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::PreExecuteSkills
                     .run_if(in_state(CombatState::PreExecuteSkills))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::ExecuteSkills
                     .run_if(in_state(CombatState::ExecuteSkills))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::BrowseEnemySheet
                     .run_if(in_state(CombatState::BrowseEnemySheet))
+                    .run_if(hud_combat),
             )
             .configure_set(
                 Update,
                 CombatState::Evasion
                     .run_if(in_state(CombatState::Evasion))
+                    .run_if(hud_combat),
             )
-
+            /* -------------------------------------------------------------------------- */
+            /*                                   Systems                                  */
+            /* -------------------------------------------------------------------------- */
             .add_systems(Startup, stuff::spawn_stuff)
-            .add_systems(OnEnter(HUDState::CombatWall), update_number_of_fighters.before(ui::combat::combat_panel::combat_wall_setup))
-
             .add_systems(
-                Update,
-                (
-                    phases::phase_transition,
-                    update_number_of_fighters,
-                    teamwork::recruit_event_handler,
-                )
-            )
-            .add_systems(
-                Update, 
-                phases::execute_alteration
-                    .in_set(CombatState::AlterationsExecution)
-            )
-            .add_systems(
-                Update, 
-                phases::roll_initiative
-                    .in_set(CombatState::RollInitiative)
+                OnEnter(HUDState::CombatWall),
+                update_number_of_fighters.before(ui::combat::combat_panel::combat_wall_setup),
             )
             .add_systems(
                 Update,
-                (
-                    phases::execution_phase,
-                )
-                    .in_set(CombatState::PreExecuteSkills)
+                (update_number_of_fighters, teamwork::recruit_event_handler),
             )
             .add_systems(
                 Update,
-                (
-                    skills::execute_skill,
-                )
-                    .in_set(CombatState::ExecuteSkills)
+                phases::execute_alteration.in_set(CombatState::AlterationsExecution),
             )
-            ;
+            .add_systems(
+                Update,
+                phases::roll_initiative.in_set(CombatState::RollInitiative),
+            )
+            .add_systems(
+                Update,
+                phases::execution_phase.in_set(CombatState::PreExecuteSkills),
+            )
+            .add_systems(
+                Update,
+                skills::execute_skill.in_set(CombatState::ExecuteSkills),
+            )
+            .add_systems(PostUpdate, phases::phase_transition);
     }
 }
 
@@ -235,10 +255,10 @@ impl Default for CombatBundle {
             job: Job::default(),
             alterations: CurrentAlterations::default(),
             skills: Skills(Vec::new()),
-            equipements: Equipements { weapon: None, armor: None },
+            equipements: Equipements::default(),
             action_count: ActionCount::default(),
             tactical_position: TacticalPosition::default(),
-            stats: StatBundle::default()
+            stats: StatBundle::default(),
         }
     }
 }
@@ -255,24 +275,30 @@ pub struct ActionCount {
 
 impl ActionCount {
     pub fn new(base: usize) -> Self {
-        ActionCount { current: base, base }
+        ActionCount {
+            current: base,
+            base,
+        }
     }
 }
 
 impl Default for ActionCount {
     fn default() -> Self {
-        ActionCount { current: BASE_ACTION_COUNT, base: BASE_ACTION_COUNT }
+        ActionCount {
+            current: BASE_ACTION_COUNT,
+            base: BASE_ACTION_COUNT,
+        }
     }
 }
 
 /// Ongoing alterations, Debuff or Buff
-/// 
+///
 /// DOC: The "Current" was added to Differenciate with the simple "Alteration" - new name ?
 #[derive(Default, Component, Deref, DerefMut)]
 pub struct CurrentAlterations(Vec<Alteration>);
 
 /// Marker: Child of a fighter, has as child all the alteration's icon of the fighter
-/// 
+///
 /// Can be removed
 #[derive(Component)]
 pub struct AllAlterationStatuses;
@@ -322,20 +348,19 @@ pub struct CombatResources {
 }
 
 impl FromWorld for CombatResources {
-    fn from_world(
-        world: &mut World,
-    ) -> Self {
+    fn from_world(world: &mut World) -> Self {
         let mut allies_query = world.query_filtered::<Entity, (With<Recruited>, With<InCombat>)>();
         let allies = allies_query.iter(world).collect::<Vec<Entity>>();
 
-        let mut enemies_query = world.query_filtered::<Entity, (Without<Recruited>, With<InCombat>)>();
+        let mut enemies_query =
+            world.query_filtered::<Entity, (Without<Recruited>, With<InCombat>)>();
         let enemies = enemies_query.iter(world).collect::<Vec<Entity>>();
 
         CombatResources {
             history: Vec::new(),
             // `allies.len() + 1` to include the player
             number_of_fighters: GlobalFighterStats::new(allies.len() + 1, enemies.len()),
-            number_of_turn: 0
+            number_of_turn: 0,
         }
     }
 }
@@ -360,9 +385,9 @@ impl GlobalFighterStats {
 
 /// Default = { alive: 0, total: 0 }
 #[derive(Default, Reflect, Debug, Clone)]
-pub struct FightersCount{
-    pub alive: usize, 
-    pub total: usize
+pub struct FightersCount {
+    pub alive: usize,
+    pub total: usize,
 }
 
 impl FightersCount {
@@ -412,42 +437,37 @@ impl Action {
     }
 
     /// Verify if the action has the good number of target depending its skill
-    /// 
+    ///
     /// # Note
     ///
     /// is finished/complete/full
     pub fn is_correct(&self, number_of_fighters: GlobalFighterStats) -> bool {
         match self.skill.target_option {
-            TargetOption::All => {
-                match &self.targets {
-                    Some(targets) => targets.len() == (number_of_fighters.enemy.alive + number_of_fighters.ally.alive),
-                    None => false
+            TargetOption::All => match &self.targets {
+                Some(targets) => {
+                    targets.len()
+                        == (number_of_fighters.enemy.alive + number_of_fighters.ally.alive)
                 }
-            }
-            TargetOption::AllEnemy => {
-                match &self.targets {
-                    Some(targets) => targets.len() == number_of_fighters.enemy.alive,
-                    None => false
-                }
-            }
-            TargetOption::AllAlly => {
-                match &self.targets {
-                    Some(targets) => targets.len() == number_of_fighters.ally.alive,
-                    None => false
-                }
-            }
-            TargetOption::AllyButSelf(number) | TargetOption::Ally(number) | TargetOption::Enemy(number) => {
-                match &self.targets {
-                    Some(targets) => targets.len() == number,
-                    None => false
-                }
-            }
-            TargetOption::OneSelf => {
-                match &self.targets {
-                    Some(targets) => targets.len() == 1,
-                    None => false
-                }
-            }
+                None => false,
+            },
+            TargetOption::AllEnemy => match &self.targets {
+                Some(targets) => targets.len() == number_of_fighters.enemy.alive,
+                None => false,
+            },
+            TargetOption::AllAlly => match &self.targets {
+                Some(targets) => targets.len() == number_of_fighters.ally.alive,
+                None => false,
+            },
+            TargetOption::AllyButSelf(number)
+            | TargetOption::Ally(number)
+            | TargetOption::Enemy(number) => match &self.targets {
+                Some(targets) => targets.len() == number,
+                None => false,
+            },
+            TargetOption::OneSelf => match &self.targets {
+                Some(targets) => targets.len() == 1,
+                None => false,
+            },
         }
     }
 }
@@ -527,13 +547,13 @@ pub fn update_number_of_fighters(
     created_units_query: Query<Entity, Added<InCombat>>,
     updated_units_query: Query<Entity, (Changed<Hp>, With<InCombat>)>,
 
-    player_query : Query<&Hp, With<Player>>,
+    player_query: Query<&Hp, With<Player>>,
     ally_units_query: Query<&Hp, (With<Recruited>, Without<Player>, With<InCombat>)>,
     enemy_units_query: Query<&Hp, (Without<Recruited>, Without<Player>, With<InCombat>)>,
 ) {
     if !updated_units_query.is_empty() || !created_units_query.is_empty() {
         // info!("Update Combat Global Stats");
-        
+
         let player_hp = player_query.single();
 
         combat_panel.number_of_fighters.ally = FightersCount::default();
@@ -546,7 +566,7 @@ pub fn update_number_of_fighters(
             warn!("Player is Dead");
         }
         combat_panel.number_of_fighters.ally.total += 1;
-        
+
         for npc_hp in ally_units_query.iter() {
             if npc_hp.current > 0 {
                 combat_panel.number_of_fighters.ally.alive += 1;
