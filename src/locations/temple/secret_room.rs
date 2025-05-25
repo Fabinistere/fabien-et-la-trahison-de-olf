@@ -8,7 +8,7 @@ use crate::{
         Fade, FadeType,
     },
     characters::player::Player,
-    collisions::{TesselatedCollider, TesselatedColliderConfig},
+    collisions::{TessellatedCollider, TessellatedColliderConfig},
     constants::{locations::secret_room::*, BACKGROUND_COLOR_INGAME},
     locations::temple::{Location, LocationSensor, OverlappingEntity, WallCollider},
 };
@@ -115,7 +115,7 @@ pub fn second_layer_fake_wall_visibility(
 /*                                    Setup                                   */
 /* -------------------------------------------------------------------------- */
 
-/// FIXME: Any entities being behind the fakeOutside Wall in the secret Room will appear infront
+/// FIXME: Any entities being behind the fakeOutside Wall in the secret Room will appear in-front
 pub fn setup_secret_room(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -127,7 +127,7 @@ pub fn setup_secret_room(
 
     let secret_room = asset_server.load("textures/v4.0.0/Secret_Room/Secret_Room.png");
 
-    let fake_stone = asset_server.load("textures/v4.0.0/Secret_Room/fake_stones_cuted.png");
+    let fake_stone = asset_server.load("textures/v4.0.0/Secret_Room/fake_stones_cut.png");
 
     let first_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/1e_frame.png");
@@ -308,9 +308,9 @@ pub fn setup_secret_room(
                 .with_children(|parent| {
                     for collider in &wall_colliders {
                         parent.spawn((
-                            TesselatedCollider {
+                            TessellatedCollider {
                                 texture: collider.clone(),
-                                tesselator_config: TesselatedColliderConfig {
+                                tessellator_config: TessellatedColliderConfig {
                                     vertice_separation: 0.,
                                     ..default()
                                 },
@@ -331,7 +331,7 @@ pub fn setup_secret_room(
             // ));
 
             // BUG: Flower Panel and pot Glitch, like if one of their frame was too short - or lightly out of alignment
-            // (when the camera move horizontaly for the panel)
+            // (when the camera move horizontally for the panel)
             for count in 0..5 {
                 parent
                     .spawn((
@@ -355,14 +355,14 @@ pub fn setup_secret_room(
                     ))
                     .with_children(|parent| {
                         parent.spawn((
-                            TesselatedCollider {
+                            TessellatedCollider {
                                 // The first, Second and Repair (4th) are left sided, the others right sided
                                 texture: if count == 4 || count < 2 {
                                     flower_panel_collider_left.clone()
                                 } else {
                                     flower_panel_collider_right.clone()
                                 },
-                                tesselator_config: TesselatedColliderConfig {
+                                tessellator_config: TessellatedColliderConfig {
                                     vertice_separation: 0.,
                                     ..default()
                                 },

@@ -18,7 +18,7 @@ impl<'de> Deserialize<'de> for Key {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         struct KeyCodeVisitor;
 
-        impl<'de> Visitor<'de> for KeyCodeVisitor {
+        impl<'de> Visitor<'_> for KeyCodeVisitor {
             type Value = Key;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

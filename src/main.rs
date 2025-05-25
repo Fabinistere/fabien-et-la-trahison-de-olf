@@ -3,7 +3,7 @@
 
 pub mod animations;
 pub mod characters;
-mod cinematics;
+mod cinematic;
 mod collisions;
 pub mod combat;
 pub mod constants;
@@ -21,7 +21,7 @@ use bevy::{
     asset::ChangeWatcher, audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*,
 };
 use bevy_rapier2d::prelude::*;
-use cinematics::cameras::PlayerCamera;
+use cinematic::cameras::PlayerCamera;
 
 use crate::{
     constants::{BACKGROUND_COLOR_INGAME, BACKGROUND_COLOR_INMENU},
@@ -89,7 +89,7 @@ fn main() {
             collisions::CollisionsPlugin,
             interactions::InteractionsPlugin,
             locations::LocationsPlugin,
-            cinematics::CinematicPlugin,
+            cinematic::CinematicPlugin,
             menu::MenuPlugin,
             characters::CharactersPlugin,
             combat::CombatPlugin,

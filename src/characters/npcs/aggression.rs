@@ -56,7 +56,8 @@ pub struct EngagePursuitEvent {
 /// - turn off npc detection sensor
 /// - turn on npc pursuit sensor
 /// - insert the new target into the npc
-/// match the ev's args in a query ? => security
+///
+/// match the event's args in a query ? => security
 ///
 /// REFACTOR: Change Detection (Added)
 pub fn activate_pursuit_urge(
@@ -75,7 +76,7 @@ pub fn activate_pursuit_urge(
             Without<DetectionRangeSensor>,
         ),
     >,
-    dectection_sensor_query: Query<
+    detection_sensor_query: Query<
         Entity,
         (
             With<DetectionRangeSensor>,
@@ -102,7 +103,7 @@ pub fn activate_pursuit_urge(
                 commands
                     .entity(*collider)
                     .insert(ActiveEvents::COLLISION_EVENTS);
-            } else if dectection_sensor_query.get(*collider).is_ok() {
+            } else if detection_sensor_query.get(*collider).is_ok() {
                 commands.entity(*collider).remove::<ActiveEvents>();
             }
         }
@@ -113,7 +114,7 @@ pub fn activate_pursuit_urge(
 /// - Active Events of the collider DetectionRangeSensor
 /// - Deactivate Events of the collider PursuitRangeSensor
 ///
-/// REFACTOR: Remove Dectection
+/// REFACTOR: Remove Detection
 pub fn deactivate_pursuit_urge(
     mut commands: Commands,
     mut ev_stop_chase: EventReader<StopChaseEvent>,

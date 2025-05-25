@@ -7,14 +7,6 @@ use bevy_rapier2d::prelude::*;
 use density_mesh_core::prelude::GenerateDensityMeshSettings;
 use density_mesh_core::prelude::PointsSeparation;
 
-#[doc(hidden)]
-pub mod prelude {
-    pub use crate::collisions::{
-        CollisionEventExt, CollisionsPlugin, TesselatedCollider, TesselatedColliderConfig,
-    };
-    pub use bevy_rapier2d::prelude::*;
-}
-
 pub struct CollisionsPlugin;
 
 impl Plugin for CollisionsPlugin {
@@ -61,7 +53,7 @@ impl CollisionEventExt for CollisionEvent {
 /// Returns [`None`] if a mesh for the given image could not be generated
 pub fn create_convex_collider_from_image(
     image: DynamicImage,
-    tesselator_config: &TesselatedColliderConfig,
+    tessellator_config: &TessellatedColliderConfig,
 ) -> Option<Collider> {
     use density_mesh_core::prelude::DensityMeshGenerator;
     use density_mesh_image::settings::GenerateDensityImageSettings;
@@ -80,12 +72,12 @@ pub fn create_convex_collider_from_image(
         vec![],
         density_map,
         GenerateDensityMeshSettings {
-            extrude_size: if tesselator_config.extrusion != 0. {
-                Some(tesselator_config.extrusion)
+            extrude_size: if tessellator_config.extrusion != 0. {
+                Some(tessellator_config.extrusion)
             } else {
                 None
             },
-            points_separation: PointsSeparation::Constant(tesselator_config.vertice_separation),
+            points_separation: PointsSeparation::Constant(tessellator_config.vertice_separation),
             ..Default::default()
         },
     );
@@ -106,24 +98,24 @@ pub fn create_convex_collider_from_image(
         })
         .collect::<Vec<_>>();
 
-    if tesselator_config.vertice_radius == 0. {
+    if tessellator_config.vertice_radius == 0. {
         Collider::convex_hull(&points)
     } else {
-        Collider::round_convex_hull(&points, tesselator_config.vertice_radius)
+        Collider::round_convex_hull(&points, tessellator_config.vertice_radius)
     }
 }
 
 #[derive(Component)]
 #[component(storage = "SparseSet")]
-struct TesselatedColliderHasLoaded;
+struct TessellatedColliderHasLoaded;
 
 use image::DynamicImage;
 use image::GenericImageView;
 use image::ImageBuffer;
 
-/// Sprite collision tesselator config
+/// Sprite collision tessellator config
 #[derive(Debug, Clone, Reflect)]
-pub struct TesselatedColliderConfig {
+pub struct TessellatedColliderConfig {
     /// The minimum separation between generated vertices. This is, in effect, controls the
     /// "resolution" of the mesh, with a value of 0 meaning that vertices may be placed on each
     /// individual pixel, producing the maximum accuracy convex collision shape.
@@ -131,7 +123,7 @@ pub struct TesselatedColliderConfig {
     /// **Default:** `10.0`
     pub vertice_separation: f32,
     /// The distance to extrude the generated mesh. Adding an extrusion can prevent panics from
-    /// being caused when you try to tesselate a collision shape that is only one pixel high.
+    /// being caused when you try to Tessellate a collision shape that is only one pixel high.
     ///
     /// When a collision shape is only one pixel high, only two vertices will be created, which is a
     /// mesh with no interior and therefore no convex "shape". This causes panics when such a shape
@@ -152,7 +144,7 @@ pub struct TesselatedColliderConfig {
     pub vertice_radius: f32,
 }
 
-impl Default for TesselatedColliderConfig {
+impl Default for TessellatedColliderConfig {
     fn default() -> Self {
         Self {
             vertice_separation: 10.,
@@ -163,22 +155,22 @@ impl Default for TesselatedColliderConfig {
 }
 
 /// A component used to automatically add a [`CollisionShape`] to an entity that is generated
-/// automatically by tesselating [`Image`] collision shape based on it's alpha channel
+/// automatically by tessellating [`Image`] collision shape based on it's alpha channel
 #[derive(Default, Component, Reflect)]
-pub struct TesselatedCollider {
+pub struct TessellatedCollider {
     pub texture: Handle<Image>,
-    pub tesselator_config: TesselatedColliderConfig,
+    pub tessellator_config: TessellatedColliderConfig,
 }
 
 fn generate_colliders(
     mut commands: Commands,
-    pending_colliders: Query<(Entity, &TesselatedCollider), Without<TesselatedColliderHasLoaded>>,
+    pending_colliders: Query<(Entity, &TessellatedCollider), Without<TessellatedColliderHasLoaded>>,
     image_assets: Res<Assets<Image>>,
 ) {
     // TODO: Hot reload collision shape changes
-    for (ent, tesselated_collider) in pending_colliders.iter() {
+    for (ent, tessellated_collider) in pending_colliders.iter() {
         // Get the collider image
-        let image = if let Some(image) = image_assets.get(&tesselated_collider.texture) {
+        let image = if let Some(image) = image_assets.get(&tessellated_collider.texture) {
             image
         } else {
             continue;
@@ -193,13 +185,13 @@ fn generate_colliders(
                 )
                 .unwrap(),
             ),
-            &tesselated_collider.tesselator_config,
+            &tessellated_collider.tessellator_config,
         )
         .expect("Could not generate collision shape from image");
 
         commands
             .entity(ent)
             .insert(shape)
-            .insert(TesselatedColliderHasLoaded);
+            .insert(TessellatedColliderHasLoaded);
     }
 }

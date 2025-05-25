@@ -5,12 +5,12 @@ use std::time::Duration;
 use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     characters::player::Player,
-    collisions::{TesselatedCollider, TesselatedColliderConfig},
+    collisions::{TessellatedCollider, TessellatedColliderConfig},
     constants::{
         interactions::INTERACT_BUTTON_SCALE,
         locations::{main_room::*, CHANDELIER_FLAME_POSITIONS},
     },
-    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
+    interactions::{InteractIcon, InteractionResources, InteractionSensor, Interactive},
     locations::temple::{
         secret_room::{AddSecretRoomCoverEvent, RemoveSecretRoomCoverEvent},
         Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
@@ -102,7 +102,7 @@ pub fn setup_main_room(
     let small_flame_texture_atlas =
         TextureAtlas::from_grid(small_flame_spritesheet, Vec2::new(8., 8.), 4, 1, None, None);
 
-    let plants = vec![
+    let plants = [
         asset_server.load("textures/v4.0.0/Temple/TL_plants.png"),
         asset_server.load("textures/v4.0.0/Temple/BL_plants.png"),
         asset_server.load("textures/v4.0.0/Temple/TR_plants.png"),
@@ -211,9 +211,9 @@ pub fn setup_main_room(
                 .with_children(|parent| {
                     for collider in &wall_colliders {
                         parent.spawn((
-                            TesselatedCollider {
+                            TessellatedCollider {
                                 texture: collider.clone(),
-                                tesselator_config: TesselatedColliderConfig {
+                                tessellator_config: TessellatedColliderConfig {
                                     vertice_separation: 0.,
                                     ..default()
                                 },
@@ -233,7 +233,7 @@ pub fn setup_main_room(
                     },
                     SecretBanner,
                     DoorState::Closed,
-                    Interactible::new(
+                    Interactive::new(
                         BANNER_INTERACT_BUTTON_POSITION.into(),
                         BANNER_INTERACTION_ID,
                     ),
@@ -263,9 +263,9 @@ pub fn setup_main_room(
                     ));
 
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: banner_collider,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },
@@ -303,9 +303,9 @@ pub fn setup_main_room(
                 .with_children(|parent| {
                     // use `bevy_rapier_collider_gen` instead
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: throne_hitbox_left_triangle.clone(),
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 extrusion: 0.1,
                                 vertice_radius: 0.4,
@@ -315,9 +315,9 @@ pub fn setup_main_room(
                         Name::new("Throne Hitbox Left Triangle"),
                     ));
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: throne_hitbox_left_bar.clone(),
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 extrusion: 0.1,
                                 vertice_radius: 0.4,
@@ -327,9 +327,9 @@ pub fn setup_main_room(
                         Name::new("Throne Hitbox Left Bar"),
                     ));
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: throne_hitbox_center,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 extrusion: 0.1,
                                 vertice_radius: 0.4,
@@ -339,9 +339,9 @@ pub fn setup_main_room(
                         Name::new("Throne Hitbox Center"),
                     ));
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: throne_hitbox_right_triangle,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 extrusion: 0.1,
                                 vertice_radius: 0.4,
@@ -351,9 +351,9 @@ pub fn setup_main_room(
                         Name::new("Throne Hitbox Right Triangle"),
                     ));
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: throne_hitbox_right_bar,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 extrusion: 0.1,
                                 vertice_radius: 0.4,
@@ -384,9 +384,9 @@ pub fn setup_main_room(
                     ))
                     .with_children(|parent| {
                         parent.spawn((
-                            TesselatedCollider {
+                            TessellatedCollider {
                                 texture: column_hitbox.clone(),
-                                tesselator_config: TesselatedColliderConfig {
+                                tessellator_config: TessellatedColliderConfig {
                                     vertice_separation: 0.,
                                     ..default()
                                 },
@@ -459,9 +459,9 @@ pub fn setup_main_room(
                     ))
                     .with_children(|parent| {
                         parent.spawn((
-                            TesselatedCollider {
+                            TessellatedCollider {
                                 texture: plants_collider.clone(),
-                                tesselator_config: TesselatedColliderConfig {
+                                tessellator_config: TessellatedColliderConfig {
                                     vertice_separation: 0.,
                                     ..default()
                                 },
@@ -484,7 +484,7 @@ pub fn setup_main_room(
                         RigidBody::Fixed,
                         // Brazier,
                         OverlappingEntity::new(BRAZIER_Z_OFFSET),
-                        Name::new(format!("Braizier {}", count + 1)),
+                        Name::new(format!("Brazier {}", count + 1)),
                     ))
                     .with_children(|parent| {
                         parent.spawn((
@@ -508,13 +508,13 @@ pub fn setup_main_room(
                                 texture: brazier_front.clone(),
                                 ..default()
                             },
-                            Name::new("Braizier Front"),
+                            Name::new("Brazier Front"),
                         ));
 
                         parent.spawn((
-                            TesselatedCollider {
+                            TessellatedCollider {
                                 texture: brazier_collider.clone(),
-                                tesselator_config: TesselatedColliderConfig {
+                                tessellator_config: TessellatedColliderConfig {
                                     vertice_separation: 0.,
                                     ..default()
                                 },
@@ -540,9 +540,9 @@ pub fn setup_main_room(
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: statue_collider.clone(),
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },
@@ -566,9 +566,9 @@ pub fn setup_main_room(
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: statue_collider.clone(),
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },

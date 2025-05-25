@@ -42,12 +42,13 @@ impl DialogBox {
 ///     - updates UpperScroll Text with the UpperScroll infos
 ///   - ui::dialog_panel::update_player_scroll
 ///     - updates PlayerScroll Text with the UpperScroll infos
-///     happens for every choice there is in the PlayerScroll
+///       happens for every choice there is in the PlayerScroll
+///
 /// Read in
 ///   - ui::dialog_panel::reset_dialog_box
 ///     - creates a DialogBox to transfer info to the child Text
-///     if there is none
-///     or resets the text and dialogBox
+///       if there is none
+///       or resets the text and dialogBox
 #[derive(Event)]
 pub struct ResetDialogBoxEvent {
     pub dialog_box: Entity,

@@ -21,7 +21,7 @@ use crate::{
         interactions::INTERACT_BUTTON_SCALE,
     },
     hud_opened,
-    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
+    interactions::{InteractIcon, InteractionResources, InteractionSensor, Interactive},
     locations::{
         landmarks::{reserved_random_free_landmark, Landmark},
         temple::{Location, OverlappingEntity},
@@ -37,33 +37,32 @@ use self::{
 
 use super::{player::Player, Character};
 
+/// NPC has hobbies
+/// - landmark
+///   - index in const, with free: bol
+///   - when talking to a npc in a landmark, include the other present
+///   - ⇒ rest
+/// - stroll
+///   - in a restricted zone -index in const-
+///   - ⇒ rest
+/// - rest
+///   - ⇒ stroll
+///   - ⇒ landmark
+/// - talking to MC
+///   - inflict rest until the MC is leaving
+///   - 2 outputs
+///     - ⇒ short rest
+///     - or normal loop
+///       - ⇒ stroll
+///       - ⇒ landmark
+///       - ⇒ rest
+///
+/// Reflection
+/// - should npc avoid hit other entity
+/// - turn false the free param from a landmark position taken by the MC
 #[derive(Default)]
 pub struct NPCPlugin;
 
-/**
- * NPC has hobbies
- *  - landwark
- *    - index in const, with free: bol
- *    - when talking to a npc in a landwark, include the other present
- *    -> rest
- *  - stroll
- *    - in a restricted zone -index in const-
- *    -> rest
- *  - rest
- *    -> stroll
- *    -> landwark
- *  - talking to MC
- *    - infite rest until the MC is leaving
- *    -> short rest
- *    or
- *    -> stroll
- *    -> landmark
- *    -> rest
- *
- * Reflexion
- *  - should npc avoid hit other entity
- *  - turn false the free param from a landmark position taken by the MC
- */
 impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
         app
@@ -76,7 +75,7 @@ impl Plugin for NPCPlugin {
             .add_event::<aggression::EngagePursuitEvent>()
             .add_systems(
                 OnEnter(GameState::Playing),
-                (spawn_characters, spawn_vilains, spawn_cat),
+                (spawn_characters, spawn_villains, spawn_cat),
             )
             .add_systems(
                 Update,
@@ -242,7 +241,7 @@ fn spawn_characters(
             global_animations_indices[spritesheet_line][1],
         );
 
-        let interactible = Interactible::new_npc();
+        let interactive = Interactive::new_npc();
 
         let npc = commands
             .spawn((
@@ -266,7 +265,7 @@ fn spawn_characters(
                 },
                 location,
                 // -- Social --
-                interactible,
+                interactive,
                 reputation,
                 // -- Hitbox --
                 RigidBody::Dynamic,
@@ -285,7 +284,7 @@ fn spawn_characters(
                     SpriteBundle {
                         texture: interaction_resources.interact_button.clone(),
                         transform: Transform {
-                            translation: interactible.icon_translation,
+                            translation: interactive.icon_translation,
                             scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },
@@ -352,10 +351,10 @@ fn spawn_characters(
     }
 }
 
-/// All vilain npc
+/// All villain npc
 ///
 /// Merge all spawn npcs function
-fn spawn_vilains(
+fn spawn_villains(
     mut commands: Commands,
     characters_spritesheet: Res<CharacterSpriteSheet>,
     mut dialogs: ResMut<DialogMap>,
@@ -364,7 +363,7 @@ fn spawn_vilains(
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
 ) {
     /* -------------------------------------------------------------------------- */
-    /*                                   Vilains                                  */
+    /*                                  Villains                                  */
     /* -------------------------------------------------------------------------- */
 
     let olf_dialog_path = "data/olf_dialog.yml";
@@ -394,7 +393,7 @@ fn spawn_vilains(
             global_animations_indices[spritesheet_line][1],
         );
 
-        let interactible = Interactible::new_npc();
+        let interactive = Interactive::new_npc();
 
         let npc = commands
             .spawn((
@@ -418,7 +417,7 @@ fn spawn_vilains(
                 },
                 Location::SecretRoom,
                 // -- Social --
-                interactible,
+                interactive,
                 reputation,
                 TargetSeeker(TargetType::Player),
                 // -- Hitbox --
@@ -438,7 +437,7 @@ fn spawn_vilains(
                     SpriteBundle {
                         texture: interaction_resources.interact_button.clone(),
                         transform: Transform {
-                            translation: interactible.icon_translation,
+                            translation: interactive.icon_translation,
                             scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },

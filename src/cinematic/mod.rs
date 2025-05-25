@@ -14,13 +14,13 @@ impl Plugin for CinematicPlugin {
                     cameras::follow_a_random_character,
                 ),
             )
-            .add_systems(OnEnter(PlayMode::InCinemmatic), perform_camera_swap)
+            .add_systems(OnEnter(PlayMode::InCinematic), perform_camera_swap)
             .add_systems(
                 Update,
-                cameras::cinematic_camera_follow.run_if(in_state(PlayMode::InCinemmatic)),
+                cameras::cinematic_camera_follow.run_if(in_state(PlayMode::InCinematic)),
             )
             .add_systems(
-                OnExit(PlayMode::InCinemmatic),
+                OnExit(PlayMode::InCinematic),
                 cameras::reset_camera_to_player,
             );
     }
@@ -30,7 +30,7 @@ impl Plugin for CinematicPlugin {
 pub enum PlayMode {
     #[default]
     PlayerIsInControl,
-    InCinemmatic,
+    InCinematic,
 }
 
 #[derive(Default)]
@@ -39,7 +39,7 @@ pub enum CameraFocusType {
     Normal,
     Shaky,
     DramaticZoom,
-    SupriseZoom,
+    SurpriseZoom,
 }
 
 #[derive(Component, Default)]

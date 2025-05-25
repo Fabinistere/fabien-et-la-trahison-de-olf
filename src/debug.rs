@@ -6,7 +6,7 @@ use crate::{
         AnimationIndices, CharacterState, SpriteSheetAnimation, TempoAnimation,
     },
     characters::npcs::movement::{Chaser, NPCBehavior, TargetSeeker, TargetType},
-    collisions::{TesselatedCollider, TesselatedColliderConfig},
+    collisions::{TessellatedCollider, TessellatedColliderConfig},
     locations::{
         landmarks::Landmark,
         temple::{Location, OverlappingEntity},
@@ -52,8 +52,8 @@ impl Plugin for DebugPlugin {
                 /* -------------------------------------------------------------------------- */
                 /*                                   Hitbox                                   */
                 /* -------------------------------------------------------------------------- */
-                .register_type::<TesselatedCollider>()
-                .register_type::<TesselatedColliderConfig>();
+                .register_type::<TessellatedCollider>()
+                .register_type::<TessellatedColliderConfig>();
         }
     }
 }

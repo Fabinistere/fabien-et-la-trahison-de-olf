@@ -28,7 +28,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(Update, (player_movement.run_if(hud_closed)));
+            .add_systems(Update, player_movement.run_if(hud_closed));
     }
 }
 

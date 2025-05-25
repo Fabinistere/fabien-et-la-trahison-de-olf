@@ -42,8 +42,8 @@ pub fn follow_a_random_character(
                 .entity(random_pop_star)
                 .insert(CameraFocus::default());
 
-            if *current_play_mode != PlayMode::InCinemmatic {
-                next_play_mode.set(PlayMode::InCinemmatic);
+            if *current_play_mode != PlayMode::InCinematic {
+                next_play_mode.set(PlayMode::InCinematic);
             }
         }
     }

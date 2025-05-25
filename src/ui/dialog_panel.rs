@@ -1,11 +1,11 @@
-//! All base method involved in creating the UI ingame
+//! All base method involved in creating the UI in-game
 //!
 //! EventHandler:
 //!
 //! - Enter in Combat
 //! - Exit in Combat
 //! - Open HUD manually (pressing 'o')
-//! - Scolls Gestion
+//! - Scrolls management
 //!   - Update Dialog Tree
 //!   - Update each Scroll
 //!   - Update Dialog Box / Text
@@ -26,7 +26,7 @@ use super::dialog_systems::CurrentInterlocutor;
 #[derive(Resource)]
 pub struct DialogPanelResources {
     text_font: Handle<Font>,
-    appartements: Handle<Image>,
+    apartments: Handle<Image>,
     stained_glass_panels: Handle<Image>,
     background: Handle<Image>,
     _stained_glass_closed: Handle<Image>,
@@ -44,25 +44,26 @@ pub fn load_textures(
     asset_server: Res<AssetServer>,
     // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    // let scroll_texture = asset_server.load("textures/hud/scroll_animation.png");
+    // let scroll_texture = asset_server.load("textures/UI/HUD/dialog/scroll_animation.png");
     // let scroll_atlas = TextureAtlas::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45);
 
     let mut scroll_animation_frames = vec![];
     for i in 0..SCROLL_ANIMATION_FRAMES_NUMBER {
-        scroll_animation_frames
-            .push(asset_server.load(&format!("textures/hud/scroll_animation/frame_{}.png", i)));
+        scroll_animation_frames.push(asset_server.load(format!(
+            "textures/UI/HUD/dialog/scroll_animation/frame_{i}.png"
+        )));
     }
 
     commands.insert_resource(DialogPanelResources {
         text_font: asset_server.load("fonts/dpcomic.ttf"),
-        appartements: asset_server.load("textures/hud/papier_paint.png"),
-        background: asset_server.load("textures/hud/dialog_background.png"),
+        apartments: asset_server.load("textures/UI/HUD/dialog/papier_paint.png"),
+        background: asset_server.load("textures/UI/HUD/dialog/dialog_background.png"),
         scroll_animation: scroll_animation_frames,
-        chandelier: asset_server.load("textures/hud/chandelier.png"),
-        _stained_glass_closed: asset_server.load("textures/hud/stained_glass_closed.png"),
-        stained_glass_opened: asset_server.load("textures/hud/stained_glass_opened.png"),
-        _stained_glass_bars: asset_server.load("textures/hud/stained_glass_bars.png"),
-        stained_glass_panels: asset_server.load("textures/hud/stained_glass_panels.png"),
+        chandelier: asset_server.load("textures/UI/HUD/dialog/chandelier.png"),
+        _stained_glass_closed: asset_server.load("textures/UI/HUD/dialog/stained_glass_closed.png"),
+        stained_glass_opened: asset_server.load("textures/UI/HUD/dialog/stained_glass_opened.png"),
+        _stained_glass_bars: asset_server.load("textures/UI/HUD/dialog/stained_glass_bars.png"),
+        stained_glass_panels: asset_server.load("textures/UI/HUD/dialog/stained_glass_panels.png"),
     });
 }
 
@@ -190,7 +191,7 @@ pub fn create_dialog_panel(
             // the top of the window.
             // Because the main Wall Background is above these panels.
             ImageBundle {
-                image: dialog_panel_resources.appartements.clone().into(),
+                image: dialog_panel_resources.apartments.clone().into(),
                 style: Style {
                     display: Display::Flex,
                     flex_direction: FlexDirection::Column,
@@ -339,7 +340,7 @@ pub fn create_dialog_panel(
             // Player Scroll
 
             let player_scroll_img =
-                asset_server.load("textures/hud/HUD_1px_parchemin_MC_ouvert.png");
+                asset_server.load("textures/UI/HUD/dialog/HUD_1px_parchemin_MC_ouvert.png");
 
             parent
                 .spawn((

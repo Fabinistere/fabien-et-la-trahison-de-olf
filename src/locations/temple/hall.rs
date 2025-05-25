@@ -9,13 +9,13 @@ use crate::{
         Fade, FadeType,
     },
     characters::player::PlayerHitbox,
-    collisions::{TesselatedCollider, TesselatedColliderConfig},
+    collisions::{TessellatedCollider, TessellatedColliderConfig},
     constants::{
         interactions::INTERACT_BUTTON_SCALE,
         locations::{hall::*, CHANDELIER_FLAME_POSITIONS},
         BACKGROUND_COLOR_INGAME,
     },
-    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
+    interactions::{InteractIcon, InteractionResources, InteractionSensor, Interactive},
     locations::temple::{
         Chandelier, DoorColliderClosed, DoorState, Flame, Location, LocationSensor,
         OverlappingEntity, WallCollider,
@@ -118,9 +118,9 @@ pub fn remove_balcony_cover(
 /*                                    Setup                                   */
 /* -------------------------------------------------------------------------- */
 
-/// FIXME: When in Temple you could slip a lttle bit under the hall asset
+/// FIXME: When in Temple you could slip a little bit under the hall asset
 /// 2 solutions:
-/// - Move sensors (carefull with interaction)
+/// - Move sensors (careful with interaction)
 /// - cut the Hall floor and put it in the Temple Floor which will always be under
 pub fn setup_hall(
     mut commands: Commands,
@@ -290,9 +290,9 @@ pub fn setup_hall(
                 .with_children(|parent| {
                     for collider in &wall_colliders {
                         parent.spawn((
-                            TesselatedCollider {
+                            TessellatedCollider {
                                 texture: collider.clone(),
-                                tesselator_config: TesselatedColliderConfig {
+                                tessellator_config: TessellatedColliderConfig {
                                     vertice_separation: 0.,
                                     ..default()
                                 },
@@ -311,7 +311,7 @@ pub fn setup_hall(
                         ..default()
                     },
                     OverlappingEntity::default(),
-                    Interactible::new(BOX_INTERACT_BUTTON_POSITION.into(), BOX_INTERACTION_ID),
+                    Interactive::new(BOX_INTERACT_BUTTON_POSITION.into(), BOX_INTERACTION_ID),
                     RigidBody::Fixed,
                     Name::new("Box"),
                 ))
@@ -338,9 +338,9 @@ pub fn setup_hall(
                     ));
 
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: props_hitbox,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },
@@ -359,7 +359,7 @@ pub fn setup_hall(
                     TempleDoor,
                     DoorState::Closed,
                     OverlappingEntity::new(TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED),
-                    Interactible::new(DOOR_INTERACT_BUTTON_POSITION.into(), DOOR_INTERACTION_ID),
+                    Interactive::new(DOOR_INTERACT_BUTTON_POSITION.into(), DOOR_INTERACTION_ID),
                     RigidBody::Fixed,
                     Name::new("Temple Door"),
                 ))
@@ -386,9 +386,9 @@ pub fn setup_hall(
                     ));
 
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: door_collider,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },
@@ -397,9 +397,9 @@ pub fn setup_hall(
                         DoorColliderClosed,
                     ));
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: door_collider_opened_left,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },
@@ -409,9 +409,9 @@ pub fn setup_hall(
                         Sensor,
                     ));
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: door_collider_opened_right,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },
@@ -430,7 +430,7 @@ pub fn setup_hall(
                         ..default()
                     },
                     OverlappingEntity::default(),
-                    Interactible::new(
+                    Interactive::new(
                         STATUE_INTERACT_BUTTON_POSITION.into(),
                         STATUE_INTERACTION_ID,
                     ),
@@ -460,9 +460,9 @@ pub fn setup_hall(
                     ));
 
                     parent.spawn((
-                        TesselatedCollider {
+                        TessellatedCollider {
                             texture: statue_hitbox,
-                            tesselator_config: TesselatedColliderConfig {
+                            tessellator_config: TessellatedColliderConfig {
                                 vertice_separation: 0.,
                                 ..default()
                             },
@@ -500,13 +500,13 @@ pub fn setup_hall(
                     });
             }
 
-            for (count, hall_chancelier_position) in HALL_CHANDELIER_POSITIONS.iter().enumerate() {
+            for (count, hall_chandelier_position) in HALL_CHANDELIER_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
                         SpriteBundle {
                             texture: chandelier.clone(),
                             transform: Transform {
-                                translation: (*hall_chancelier_position).into(),
+                                translation: (*hall_chandelier_position).into(),
                                 ..default()
                             },
                             ..default()
@@ -516,7 +516,7 @@ pub fn setup_hall(
                     ))
                     .with_children(|parent| {
                         // spawn 3 flame
-                        for (flame_number, chancelier_flame_position) in
+                        for (flame_number, chandelier_flame_position) in
                             CHANDELIER_FLAME_POSITIONS.iter().enumerate()
                         {
                             parent.spawn((
@@ -524,7 +524,7 @@ pub fn setup_hall(
                                     texture_atlas: texture_atlases
                                         .add(small_flame_texture_atlas.clone()),
                                     transform: Transform::from_translation(
-                                        (*chancelier_flame_position).into(),
+                                        (*chandelier_flame_position).into(),
                                     ),
                                     ..default()
                                 },

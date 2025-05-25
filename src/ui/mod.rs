@@ -42,7 +42,7 @@ impl Plugin for UiPlugin {
             .add_systems(
                 Update,
                 (
-                    // TODO: Chain
+                    // REFACTOR: Systems Chain
                     dialog_systems::change_dialog_state,
                     dialog_systems::update_dialog_panel.after(dialog_systems::change_dialog_state),
                     dialog_systems::update_monolog.after(dialog_systems::update_dialog_panel),
