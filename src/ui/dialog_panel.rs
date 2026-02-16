@@ -139,6 +139,7 @@ pub fn despawn_dialog_panel(
     }
 }
 
+/// FIXME: render - at different scale the dialog box's position is not correct (fix by using Percent instead of Px)
 pub fn create_dialog_panel(
     mut commands: Commands,
     mut _meshes: ResMut<Assets<Mesh>>,

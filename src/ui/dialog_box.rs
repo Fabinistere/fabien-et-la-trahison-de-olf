@@ -118,13 +118,16 @@ pub fn update_dialog_box(
                 // pb: on which scroll...
                 Err(e) => error!("No Text in the Dialog Wall: {:?}", e),
                 Ok(mut text) => {
+                    if dialog_box.progress >= dialog_box.text.len() {
+                        dialog_box.finished = true;
+                        continue;
+                    }
                     // prompt the simple text
                     // FIXME: bug - if the given text contains a accent this will crash
                     match dialog_box.text.chars().nth(dialog_box.progress) {
                         // will ignore any louche symbol
                         None => {
-                            println!("text: {}", dialog_box.text);
-                            error!("Blank or Accent Typical Crash");
+                            error!("Blank or Accent Typical Crash. text: `{}`", dialog_box.text);
                             dialog_box.progress += 1;
                             if dialog_box.progress >= dialog_box.text.len() {
                                 dialog_box.finished = true;

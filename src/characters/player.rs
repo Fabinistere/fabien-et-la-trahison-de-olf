@@ -13,8 +13,12 @@ use crate::{
         CharacterHitbox,
     },
     combat::{Leader, Reputation},
-    constants::character::{player::*, *},
+    constants::{
+        character::{player::*, *},
+        locations::main_room::THRONE_POSITION,
+    },
     controls::KeyBindings,
+    cutscene::player_is_in_control,
     hud_closed,
     locations::temple::Location,
     ui::dialog_systems::DialogMap,
@@ -28,7 +32,15 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(Update, player_movement.run_if(hud_closed));
+            .add_systems(
+                Update,
+                (
+                    player_movement
+                        .run_if(hud_closed)
+                        .run_if(player_is_in_control),
+                    player_animation,
+                ),
+            );
     }
 }
 
@@ -47,23 +59,49 @@ pub struct PlayerInteractionSensor;
 #[derive(Component)]
 pub struct PlayerCloseSensor;
 
+fn player_animation(
+    mut player_query: Query<
+        (&Velocity, &mut TextureAtlasSprite, &mut CharacterState),
+        (Changed<Velocity>, With<Player>),
+    >,
+) {
+    if let Ok((rb_vel, mut texture_atlas_sprite, mut player_state)) = player_query.get_single_mut()
+    {
+        /* -------------------------------------------------------------------------- */
+        /*                                  Animation                                 */
+        /* -------------------------------------------------------------------------- */
+
+        // if there is any movement
+        if (rb_vel.linvel.x != 0. || rb_vel.linvel.y != 0.) && *player_state != CharacterState::Run
+        {
+            *player_state = CharacterState::Run;
+        } else if rb_vel.linvel.x == 0.
+            && rb_vel.linvel.y == 0.
+            && *player_state == CharacterState::Run
+            && *player_state != CharacterState::Idle
+        {
+            // IDEA: Polish #visual - When we reach max speed (one full run loop), whenever you stop there is a smoke anim (sudden braking)
+            *player_state = CharacterState::Idle;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  Direction                                 */
+        /* -------------------------------------------------------------------------- */
+
+        if rb_vel.linvel.x > 0. {
+            texture_atlas_sprite.flip_x = false;
+        } else if rb_vel.linvel.x < 0. {
+            texture_atlas_sprite.flip_x = true;
+        }
+    }
+}
+
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<
-        (
-            Entity,
-            &Speed,
-            &mut Velocity,
-            &mut TextureAtlasSprite,
-            &mut CharacterState,
-        ),
-        With<Player>,
-    >,
+    mut player_query: Query<(Entity, &Speed, &mut Velocity), With<Player>>,
 ) {
-    if let Ok((_player, speed, mut rb_vel, mut texture_atlas_sprite, mut player_state)) =
-        player_query.get_single_mut()
-    {
+    if let Ok((_player, speed, mut rb_vel)) = player_query.get_single_mut() {
         let up = keyboard_input.any_pressed(key_bindings.up());
         let down = keyboard_input.any_pressed(key_bindings.down());
         let left = keyboard_input.any_pressed(key_bindings.left());
@@ -83,33 +121,6 @@ fn player_movement(
         // rb_vel.linvel.x = x_axis as f32 * **speed * 200. * time.delta_seconds();
         rb_vel.linvel.x = vel_x;
         rb_vel.linvel.y = vel_y;
-
-        /* -------------------------------------------------------------------------- */
-        /*                                  Animation                                 */
-        /* -------------------------------------------------------------------------- */
-
-        // if there is any movement
-        if (left || right || up || down) && *player_state != CharacterState::Run {
-            *player_state = CharacterState::Run;
-        } else if !(left || right || up || down)
-            && *player_state == CharacterState::Run
-            && *player_state != CharacterState::Idle
-        {
-            // IDEA: Polish #visual - When we reach max speed (one full run loop), whenever you stop there is a smoke anim (sudden braking)
-            *player_state = CharacterState::Idle;
-        }
-
-        /* -------------------------------------------------------------------------- */
-        /*                                  Direction                                 */
-        /* -------------------------------------------------------------------------- */
-
-        if !(left && right) {
-            if right {
-                texture_atlas_sprite.flip_x = false;
-            } else if left {
-                texture_atlas_sprite.flip_x = true;
-            }
-        }
     }
 }
 
@@ -135,7 +146,7 @@ fn spawn_player(
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
                 transform: Transform {
-                    translation: PLAYER_SPAWN.into(),
+                    translation: THRONE_POSITION.into(), // PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),
                     ..Transform::default()
                 },
@@ -144,7 +155,8 @@ fn spawn_player(
             Name::new("Player"),
             Character,
             Player,
-            Location::default(),
+            // Location::default(),
+            Location::Temple,
             // -- Social --
             Reputation::new(100, 0),
             Leader,

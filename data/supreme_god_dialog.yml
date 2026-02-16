@@ -8,7 +8,7 @@
       condition: null
       exit_state: 3
 2:
-  source: Dieu Suprème
+  source: Supreme God
   content:
     text:
       - Sure
@@ -16,7 +16,7 @@
   trigger_event:
     - FollowPlayer
 3:
-  source: Dieu Suprème
+  source: Supreme God
   content:
     text:
       - :O

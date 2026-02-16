@@ -7,12 +7,13 @@ use crate::{
     },
     characters::npcs::movement::{Chaser, NPCBehavior, TargetSeeker, TargetType},
     collisions::{TessellatedCollider, TessellatedColliderConfig},
+    cutscene::PlayMode,
     locations::{
         landmarks::Landmark,
         temple::{Location, OverlappingEntity},
     },
     menu::{ManorLightsPattern, ManorLightsTimer},
-    GameState,
+    GameState, HUDState,
 };
 
 pub struct DebugPlugin;
@@ -22,8 +23,13 @@ impl Plugin for DebugPlugin {
         if cfg!(debug_assertions) {
             app.add_plugins((WorldInspectorPlugin::new(),))
                 .register_type::<GameState>()
-                .register_type::<Location>()
-                .add_plugins((StateInspectorPlugin::<GameState>::default(),))
+                .register_type::<HUDState>()
+                .register_type::<PlayMode>()
+                .add_plugins((
+                    StateInspectorPlugin::<GameState>::default(),
+                    StateInspectorPlugin::<HUDState>::default(),
+                    StateInspectorPlugin::<PlayMode>::default(),
+                ))
                 /* -------------------------------------------------------------------------- */
                 /*                              Global Animation                              */
                 /* -------------------------------------------------------------------------- */
@@ -58,10 +64,14 @@ impl Plugin for DebugPlugin {
     }
 }
 
-// TODO: Create debug log kind
+// IDEA: debug - log every state change
+
+// TODO: debug - Create debug log kind
 // Combat Debug
 // Movement Debug
 // Dialog Debug
+// States
+// Cutscene
 // ...
 
 // make it clear in the global log (different files ?)

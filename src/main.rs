@@ -1,13 +1,18 @@
-#![allow(clippy::type_complexity, clippy::too_many_arguments, clippy::pedantic)]
+#![allow(
+    clippy::type_complexity,
+    clippy::too_many_arguments,
+    clippy::pedantic,
+    clippy::nursery
+)]
 // #![warn(missing_docs)]
 
 pub mod animations;
 pub mod characters;
-mod cinematic;
 mod collisions;
 pub mod combat;
 pub mod constants;
 pub mod controls;
+mod cutscene;
 pub mod debug;
 pub mod dialogs;
 pub mod interactions;
@@ -21,7 +26,7 @@ use bevy::{
     asset::ChangeWatcher, audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*,
 };
 use bevy_rapier2d::prelude::*;
-use cinematic::cameras::PlayerCamera;
+use cutscene::{cameras::PlayerCamera, PlayMode};
 
 use crate::{
     constants::{BACKGROUND_COLOR_INGAME, BACKGROUND_COLOR_INMENU},
@@ -52,8 +57,8 @@ pub enum HUDState {
 fn main() {
     let mut app = App::new();
 
-    #[cfg(debug_assertions)]
-    app.add_plugins(RapierDebugRenderPlugin::default());
+    // #[cg(debug_assertions)]
+    // app.add_plugins(RapierDebugRenderPlugin::default());
 
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
@@ -89,7 +94,7 @@ fn main() {
             collisions::CollisionsPlugin,
             interactions::InteractionsPlugin,
             locations::LocationsPlugin,
-            cinematic::CinematicPlugin,
+            cutscene::CinematicPlugin,
             menu::MenuPlugin,
             characters::CharactersPlugin,
             combat::CombatPlugin,
@@ -143,12 +148,18 @@ fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
 /*                                   Run If                                   */
 /* -------------------------------------------------------------------------- */
 
+// REFACTOR: use `in_state` instead of redefining the functions
+
 pub fn playing(game_state: Res<State<GameState>>) -> bool {
     game_state.get() == &GameState::Playing
 }
 
 pub fn in_menu(game_state: Res<State<GameState>>) -> bool {
     game_state.get() == &GameState::Menu
+}
+
+pub fn in_cutscene(play_mode: Res<State<PlayMode>>) -> bool {
+    play_mode.get() == &PlayMode::InCinematic
 }
 
 pub fn hud_closed(hud_state: Res<State<HUDState>>) -> bool {

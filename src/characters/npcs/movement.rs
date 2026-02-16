@@ -107,7 +107,7 @@ pub struct FollowEvent {
 /*                                   Systems                                  */
 /* -------------------------------------------------------------------------- */
 
-// REFACTOR: The whole movement plugin ([x] close sensor, smooth movement)
+// REFACTOR: The whole movement plugin ([x] close sensor, [ ] smooth movement)
 
 /// Detect any change from the npcs about their behavior
 pub fn npc_behavior_change(
@@ -176,6 +176,8 @@ pub fn follow_event(
     }
 }
 
+/// FIXME: animation - npc flickering when there is even a slight velocity (if the player is
+/// slightly touching a following npc for example)
 pub fn animation(
     mut npc_query: Query<
         (
@@ -195,7 +197,7 @@ pub fn animation(
         /* -------------------------------------------------------------------------- */
 
         // if there is any movement
-        if rb_vel.linvel.x != 0. && rb_vel.linvel.y != 0. && *npc_state != CharacterState::Run {
+        if (rb_vel.linvel.x != 0. || rb_vel.linvel.y != 0.) && *npc_state != CharacterState::Run {
             *npc_state = CharacterState::Run;
         } else if rb_vel.linvel.x == 0.
             && rb_vel.linvel.y == 0.
@@ -553,12 +555,12 @@ fn move_to(
         0.
     };
 
-    let up = target_transform.translation().y + target_y_offset
-        > transform.translation.y + CHAR_HITBOX_Y_OFFSET;
-    let down = target_transform.translation().y + target_y_offset
-        < transform.translation.y + CHAR_HITBOX_Y_OFFSET;
-    let left = target_transform.translation().x < transform.translation.x;
-    let right = target_transform.translation().x > transform.translation.x;
+    let up = (target_transform.translation().y + target_y_offset) as i32
+        > (transform.translation.y + CHAR_HITBOX_Y_OFFSET) as i32;
+    let down = ((target_transform.translation().y + target_y_offset) as i32)
+        < (transform.translation.y + CHAR_HITBOX_Y_OFFSET) as i32;
+    let left = (target_transform.translation().x as i32) < transform.translation.x as i32;
+    let right = target_transform.translation().x as i32 > transform.translation.x as i32;
 
     let x_axis = -(left as i8) + right as i8;
     let y_axis = -(down as i8) + up as i8;
