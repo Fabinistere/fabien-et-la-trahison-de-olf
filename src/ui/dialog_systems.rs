@@ -347,6 +347,10 @@ pub fn update_dialog_panel(
 
 /// If the resource `Monolog` is changed,
 /// update the NPC/Player text.
+///
+/// ## Notes
+///
+/// FIXME: crash - quickly opening/closing a dialog provoke the MonologPanel.`single` to crash due to multiple entities (ensure to fully despawn the UI before re spawning)
 pub fn update_monolog(
     current_monolog: Res<Monolog>,
     monolog_panel_query: Query<Entity, With<MonologPanel>>,

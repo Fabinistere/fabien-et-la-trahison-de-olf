@@ -139,7 +139,6 @@ pub fn despawn_dialog_panel(
     }
 }
 
-/// FIXME: render - at different scale the dialog box's position is not correct (fix by using Percent instead of Px)
 pub fn create_dialog_panel(
     mut commands: Commands,
     mut _meshes: ResMut<Assets<Mesh>>,
@@ -310,13 +309,12 @@ pub fn create_dialog_panel(
                         .with_alignment(TextAlignment::Left),
                         style: Style {
                             flex_wrap: FlexWrap::Wrap,
-                            top: Val::Px(565.),
+                            top: Val::Percent(UPPER_TEXT_TOP),
                             margin: UiRect {
                                 left: Val::Percent(24.),
                                 ..UiRect::default()
                             },
-                            // Percent ?
-                            width: Val::Px(300.),
+                            width: Val::Percent(100.),
                             height: Val::Percent(100.),
                             ..Style::default()
                         },
@@ -338,7 +336,9 @@ pub fn create_dialog_panel(
             //         ..ImageBundle::default()
             //     });
 
-            // Player Scroll
+            /* -------------------------------------------------------------------------- */
+            /*                                Player Scroll                               */
+            /* -------------------------------------------------------------------------- */
 
             let player_scroll_img =
                 asset_server.load("textures/UI/HUD/dialog/HUD_1px_parchemin_MC_ouvert.png");
@@ -379,14 +379,13 @@ pub fn create_dialog_panel(
                             .spawn((
                                 ButtonBundle {
                                     style: Style {
-                                        // TODO: custom size ? (text dependent)
-                                        width: Val::Px(300.),
-                                        height: Val::Px(30.),
+                                        width: Val::Percent(BUTTON_WIDTH),
+                                        height: Val::Percent(3.5),
                                         margin: UiRect::all(Val::Auto),
-                                        top: Val::Px(
-                                            FIRST_BUTTON_TOP_VAL - BUTTON_SPACING * i as f32,
+                                        top: Val::Percent(
+                                            FIRST_BUTTON_TOP_PERCENT - BUTTON_SPACING * i as f32,
                                         ),
-                                        left: Val::Px(BUTTON_LEFT_VAL),
+                                        left: Val::Percent(BUTTON_LEFT_PERCENT),
                                         ..default()
                                     },
                                     background_color: NORMAL_BUTTON.into(),
@@ -402,7 +401,7 @@ pub fn create_dialog_panel(
                                         "",
                                         TextStyle {
                                             font: dialog_panel_resources.text_font.clone(),
-                                            // TODO: Find the correct value for the choice font size
+                                            // REFACTOR: dialog box - scale the text with the UI (shitty fix: use window height)
                                             font_size: 25.,
                                             color: Color::BLACK,
                                         },
@@ -410,7 +409,7 @@ pub fn create_dialog_panel(
                                     .with_alignment(TextAlignment::Left),
                                     style: Style {
                                         flex_wrap: FlexWrap::Wrap,
-                                        max_width: Val::Px(300.),
+                                        max_width: Val::Percent(100.),
                                         max_height: Val::Percent(100.),
                                         ..default()
                                     },

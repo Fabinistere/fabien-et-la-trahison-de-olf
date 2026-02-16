@@ -8,9 +8,12 @@ pub mod dialogs {
     pub const SCROLL_ANIMATION_DELTA_S: f32 = 0.1;
     pub const SCROLL_ANIMATION_FRAMES_NUMBER: usize = 45;
 
-    pub const FIRST_BUTTON_TOP_VAL: f32 = 690.;
-    pub const BUTTON_SPACING: f32 = 320.;
-    pub const BUTTON_LEFT_VAL: f32 = -52.;
+    pub const UPPER_TEXT_TOP: f32 = 53.;
+
+    pub const FIRST_BUTTON_TOP_PERCENT: f32 = 65.;
+    pub const BUTTON_SPACING: f32 = 30.;
+    pub const BUTTON_LEFT_PERCENT: f32 = 2.5;
+    pub const BUTTON_WIDTH: f32 = 60.;
 
     pub const TRANSPARENT_BUTTON: Color = Color::rgba(0., 0., 0., 0.);
     // pub const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
