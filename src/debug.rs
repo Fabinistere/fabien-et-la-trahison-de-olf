@@ -66,7 +66,7 @@ impl Plugin for DebugPlugin {
 
 // IDEA: debug - log every state change
 
-// TODO: debug - Create debug log kind
+// TODO: debug - Create debug log kind (search for `target: "`)
 // Combat Debug
 // Movement Debug
 // Dialog Debug

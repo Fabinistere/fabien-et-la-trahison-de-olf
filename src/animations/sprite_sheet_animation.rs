@@ -100,7 +100,7 @@ pub fn jump_frame_character_state(
         sprite.index = *start_anim;
 
         match character_state {
-            // when running each time the anim loops it triggers this match arm
+            // when running each time the anim loops, it's back to the Idle State
             CharacterState::Idle => {
                 commands.entity(character).insert(TempoAnimation(Timer::new(
                     Duration::from_secs_f32(rand::thread_rng().gen_range(0.1..=5.)),
@@ -177,7 +177,7 @@ pub fn animate_character(
             } else if sprite.index + 1 < texture_atlas.textures.len() {
                 sprite.index += 1;
             } else {
-                error!("anim limit reached: {}", name);
+                error!(target: "Animation", "anim limit reached: {}", name);
                 // commands.entity(character).remove::<AnimationTimer>();
                 *character_state = *next_phase;
                 sprite.index = indices.get(next_phase).unwrap().0;
@@ -185,6 +185,10 @@ pub fn animate_character(
         }
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/*                           Title Screen Animation                           */
+/* -------------------------------------------------------------------------- */
 
 /// Jump directly to the correct frame when the state has changed.
 /// - If the state is the default one: `ManorLightsPattern::FullLights`,

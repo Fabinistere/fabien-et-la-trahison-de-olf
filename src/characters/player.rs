@@ -1,11 +1,11 @@
-use bevy::prelude::*;
+use bevy::{input::common_conditions::input_just_pressed, prelude::*, transform::commands};
 use bevy_rapier2d::prelude::*;
 use std::collections::{BTreeMap, HashMap};
 use yml_dialog::DialogNode;
 
 use crate::{
     animations::{
-        sprite_sheet_animation::{AnimationIndices, CharacterState},
+        sprite_sheet_animation::{AnimationIndices, CharacterState, TempoAnimation},
         CharacterSpriteSheet,
     },
     characters::{
@@ -39,6 +39,7 @@ impl Plugin for PlayerPlugin {
                         .run_if(hud_closed)
                         .run_if(player_is_in_control),
                     player_animation,
+                    player_squat.run_if(input_just_pressed(KeyCode::ControlLeft)),
                 ),
             );
     }
@@ -93,6 +94,18 @@ fn player_animation(
         } else if rb_vel.linvel.x < 0. {
             texture_atlas_sprite.flip_x = true;
         }
+    }
+}
+
+/// NOTE: can't let the player squat down (we only trigger the idle anim) -> bypass the anim system
+fn player_squat(
+    mut commands: Commands,
+    mut player_query: Query<(Entity, &AnimationIndices, &mut TextureAtlasSprite), With<Player>>,
+) {
+    if let Ok((player, indices, mut sprite)) = player_query.get_single_mut() {
+        let (start_anim, _, _) = &indices.get(&CharacterState::Idle).unwrap();
+        sprite.index = *start_anim;
+        commands.entity(player).remove::<TempoAnimation>();
     }
 }
 

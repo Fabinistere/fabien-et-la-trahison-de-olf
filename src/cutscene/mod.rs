@@ -1,4 +1,5 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use serde::{Deserialize, Serialize};
 
 use crate::GameState;
 
@@ -18,7 +19,7 @@ impl Plugin for CinematicPlugin {
                 (
                     cameras::player_camera_follow,
                     cameras::follow_a_random_character.run_if(input_just_pressed(KeyCode::C)),
-                    staging::run_cutscenes.run_if(in_state(GameState::Playing)),
+                    staging::run_cutscene.run_if(in_state(GameState::Playing)),
                     staging::frame_timer.run_if(in_state(GameState::Playing)),
                     staging::cutscene_characters_movement
                         .run_if(in_state(GameState::Playing))
@@ -45,7 +46,7 @@ pub enum PlayMode {
     InCinematic,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum CameraFocusType {
     #[default]
     Normal,

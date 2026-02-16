@@ -3,6 +3,7 @@
 
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::Velocity;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     characters::{movement::Speed, Character},
@@ -12,7 +13,7 @@ use crate::{
 
 // TODO: cutscene - an event in the location sensor to trigger the temple entrance cutscene
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize, Clone, Debug)]
 pub struct Cutscene {
     frames: Vec<FrameShot>,
 }
@@ -21,36 +22,76 @@ impl Cutscene {
     pub fn new() -> Self {
         Self {
             frames: vec![
-                // FrameShot {
-                //     camera_focus_type: CameraFocusType::Normal,
-                //     player_is_in_control: false,
-                //     pop_star: Some("Player"),
-                //     dialogue: None,
-                //     positions: vec![("Player", (THRONE_X, THRONE_Y - 100.))],
-                //     duration: 5.,
-                // },
-                // FrameShot {
-                //     camera_focus_type: CameraFocusType::Normal,
-                //     player_is_in_control: false,
-                //     pop_star: Some("NPC Supreme God"),
-                //     dialogue: None,
-                //     positions: vec![("Player", (THRONE_X, THRONE_Y - 50.))],
-                //     duration: 2.,
-                // },
+                FrameShot {
+                    camera_focus_type: CameraFocusType::Normal,
+                    player_is_in_control: false,
+                    pop_star: Some("Player".to_string()),
+                    dialogue: None,
+                    positions: vec![("Player".to_string(), (THRONE_X, THRONE_Y - 100.))],
+                    duration: 5.,
+                },
+                FrameShot {
+                    camera_focus_type: CameraFocusType::Normal,
+                    player_is_in_control: false,
+                    pop_star: Some("NPC Supreme God".to_string()),
+                    dialogue: Some("prout prout".to_string()),
+                    positions: vec![],
+                    duration: 2.,
+                },
+                FrameShot {
+                    camera_focus_type: CameraFocusType::Normal,
+                    player_is_in_control: false,
+                    pop_star: Some("Player".to_string()),
+                    dialogue: None,
+                    positions: vec![("Player".to_string(), (THRONE_X, THRONE_Y - 50.))],
+                    duration: 2.,
+                },
+                FrameShot {
+                    camera_focus_type: CameraFocusType::Normal,
+                    player_is_in_control: true,
+                    pop_star: Some("NPC Supreme God".to_string()),
+                    dialogue: None,
+                    positions: vec![("NPC Supreme God".to_string(), (THRONE_X, THRONE_Y - 40.))],
+                    duration: 5.,
+                },
+                // Control to the player while giving them destinations: the player has priority
                 // FrameShot {
                 //     camera_focus_type: CameraFocusType::Normal,
                 //     player_is_in_control: true,
-                //     pop_star: Some("NPC Supreme God"),
+                //     pop_star: Some("Player".to_string()),
                 //     dialogue: None,
-                //     positions: vec![("NPC Supreme God", (THRONE_X, THRONE_Y - 40.))],
-                //     duration: 8.,
+                //     positions: vec![("Player".to_string(), (THRONE_X, THRONE_Y - 100.))],
+                //     duration: 5.,
                 // },
             ],
         }
     }
+
+    /// Import from YML file
+    ///
+    /// YML script obtained by
+    /// ```
+    /// std::fs::write(
+    ///     "data/cutscene/open_temple.yml",
+    ///     serde_yaml::to_string(&Cutscene::new()).unwrap(),
+    /// );
+    /// ```
+    pub fn import_from_script(file_path: String) -> Self {
+        if let Ok(cutscene) = std::fs::read_to_string(file_path.clone()) {
+            if let Ok(cutscene) = serde_yaml::from_str(&cutscene) {
+                cutscene
+            } else {
+                error!(target: "Cutscene", "Failed to load: `{file_path}`");
+                Self { frames: vec![] }
+            }
+        } else {
+            error!(target: "Cutscene", "Failed to load: `{file_path}`");
+            Self { frames: vec![] }
+        }
+    }
 }
 
-#[derive(Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct FrameShot {
     /// WARNING: if you control the position of the player in the frame and give them control
     player_is_in_control: bool,
@@ -61,11 +102,11 @@ pub struct FrameShot {
     ///
     /// REFACTOR: how to store the pop star?
     /// for now the name of the entity.
-    pop_star: Option<&'static str>,
+    pop_star: Option<String>,
     camera_focus_type: CameraFocusType,
     dialogue: Option<String>,
     /// the position of all characters
-    positions: Vec<(&'static str, (f32, f32))>,
+    positions: Vec<(String, (f32, f32))>,
     duration: f32,
 }
 
@@ -82,11 +123,21 @@ pub struct CutsceneDestination(f32, f32, f32);
 /*                                  Systems                                   */
 /* -------------------------------------------------------------------------- */
 
+/// TODO: cutscene - import specific cutscene for specific trigger
 pub fn spawn_cutscene(mut commands: Commands) {
-    commands.spawn((Name::new("Cutscene"), Cutscene::new()));
+    commands.spawn((
+        Name::new("Cutscene"),
+        // Cutscene::new(),
+        Cutscene::import_from_script("data/cutscene/open_temple_dos.yml".to_string()),
+    ));
+
+    // let _ = std::fs::write(
+    //     "data/cutscene/open_temple.yml",
+    //     serde_yaml::to_string(&Cutscene::new()).unwrap(),
+    // );
 }
 
-pub fn run_cutscenes(
+pub fn run_cutscene(
     mut commands: Commands,
     mut cutscene_query: Query<(Entity, &mut Cutscene), Without<FrameTime>>,
     characters_query: Query<(Entity, &Name), With<Character>>,
@@ -109,7 +160,7 @@ pub fn run_cutscenes(
             player_is_in_control_resource.0 = frame.player_is_in_control;
 
             // define the pop star
-            if let Some(pop_star_name) = frame.pop_star {
+            if let Some(pop_star_name) = &frame.pop_star {
                 for (character, name) in characters_query.iter() {
                     if name.as_str().eq(pop_star_name) {
                         commands.entity(character).insert(CameraFocus::default());
@@ -125,7 +176,7 @@ pub fn run_cutscenes(
 
                 for (character, _name) in characters_query
                     .iter()
-                    .filter(|(_, name)| name.as_str().eq(*character_name))
+                    .filter(|(_, name)| name.as_str().eq(character_name))
                 {
                     character_found = true;
 
@@ -164,7 +215,7 @@ pub fn run_cutscenes(
 }
 
 /// Run the timer between the cutscene's frames.
-/// Block the `run_cutscenes` to pursue to the next frame.
+/// Block the `run_cutscene` to pursue to the next frame.
 pub fn frame_timer(
     mut commands: Commands,
     time: Res<Time>,
