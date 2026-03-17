@@ -10,7 +10,11 @@ use std::time::Duration;
 
 use crate::{
     characters::{
-        npcs::{idle::RestTime, movement::NPCBehavior, NPC},
+        npcs::{
+            idle::RestTime,
+            movement::{LandmarkSeekingStatus, NPCBehavior},
+            NPC,
+        },
         player::Player,
         CharacterHitbox,
     },
@@ -83,33 +87,33 @@ impl Landmark {
             direction,
         }
     }
+
+    /// ## Errors
+    ///
+    /// - `LandmarkReservationError` when all landmarks are occupied/reserved
+    pub fn reserve_random_free_landmark(
+        landmark_sensor_query: &mut Query<(Entity, &mut Landmark), With<Sensor>>,
+        location: Location,
+    ) -> Result<Entity, LandmarkReservationError> {
+        match (*landmark_sensor_query)
+            .iter_mut()
+            .filter(|(_, landmark)| {
+                landmark.status == LandmarkStatus::Free && landmark.location == location
+            })
+            .choose(&mut rand::thread_rng())
+        {
+            None => Err(LandmarkReservationError::NoFreeLandmarks),
+            Some((free_random_landmark, mut landmark)) => {
+                landmark.status = LandmarkStatus::Reserved;
+                Ok(free_random_landmark)
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum LandmarkReservationError {
     NoFreeLandmarks,
-}
-
-/// TODO: Create an impl to automatictly Reserved a free landmark
-///
-/// LandmarkReservationError
-pub fn reserved_random_free_landmark(
-    landmark_sensor_query: &mut Query<(Entity, &mut Landmark), With<Sensor>>,
-    location: Location,
-) -> Result<Entity, LandmarkReservationError> {
-    match (*landmark_sensor_query)
-        .iter_mut()
-        .filter(|(_, landmark)| {
-            landmark.status == LandmarkStatus::Free && landmark.location == location
-        })
-        .choose(&mut rand::thread_rng())
-    {
-        None => Err(LandmarkReservationError::NoFreeLandmarks),
-        Some((free_random_landmark, mut landmark)) => {
-            landmark.status = LandmarkStatus::Reserved;
-            Ok(free_random_landmark)
-        }
-    }
 }
 
 #[derive(Component)]
@@ -149,22 +153,24 @@ fn landmark_arrival(
                 landmark_sensor_query.get_mut(potential_landmark)
             {
                 if let Ok((npc, mut behavior, _npc_name)) = npc_query.get_mut(**character_parent) {
-                    if let NPCBehavior::LandmarkSeeking(landmark_destination, location) = *behavior
+                    if let NPCBehavior::LandmarkSeeking(LandmarkSeekingStatus::Location(
+                        landmark_destination,
+                        location,
+                    )) = behavior.clone()
                     {
+                        // we don't handle NPCs, that was waiting for a landmark, pushed into a landmark
+
                         // A npc enters/exits a landmark sensor
                         match landmark.status {
                             LandmarkStatus::OccupiedBy(occupant) => {
                                 if collision_event.is_started()
                                     && landmark_destination == landmark_entity
                                 {
-                                    // info!("This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent)
-                                    let next_destination = reserved_random_free_landmark(
+                                    info!(target: "NPC", "This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent);
+                                    *behavior = NPCBehavior::new_destination(
                                         &mut landmark_sensor_query,
                                         location,
-                                    )
-                                    .unwrap();
-                                    *behavior =
-                                        NPCBehavior::LandmarkSeeking(next_destination, location);
+                                    );
                                 } else if collision_event.is_stopped() && occupant == npc {
                                     landmark.status = LandmarkStatus::Free;
                                     commands.entity(**character_parent).remove::<Direction>();
@@ -183,20 +189,18 @@ fn landmark_arrival(
                                             .insert(forced_direction);
                                     }
                                     // TODO: Or start dialog with the other
-                                    // info!(target: "Start Rest", "{:?}, {}", **character_parent, _name);
+                                    // info!(target: "NPC", "{:?}, {}", **character_parent, _name);
                                     commands.entity(**character_parent).insert(RestTime {
                                         timer: Timer::new(
                                             Duration::from_secs(REST_TIMER),
                                             TimerMode::Once,
                                         ),
                                     });
-                                    let next_destination = reserved_random_free_landmark(
+
+                                    *behavior = NPCBehavior::new_destination(
                                         &mut landmark_sensor_query,
                                         location,
-                                    )
-                                    .unwrap();
-                                    *behavior =
-                                        NPCBehavior::LandmarkSeeking(next_destination, location);
+                                    );
                                 }
                             }
                         }

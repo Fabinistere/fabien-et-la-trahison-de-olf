@@ -23,7 +23,7 @@ use crate::{
     hud_opened,
     interactions::{InteractIcon, InteractionResources, InteractionSensor, Interactive},
     locations::{
-        landmarks::{reserved_random_free_landmark, Landmark},
+        landmarks::Landmark,
         temple::{Location, OverlappingEntity},
     },
     ui::dialog_systems::{CurrentInterlocutor, DialogMap},
@@ -83,6 +83,7 @@ impl Plugin for NPCPlugin {
                     character_interaction_event,
                     movement::follow_event,
                     movement::npc_behavior_change,
+                    movement::landmark_seeking_timer,
                     movement::chase_management.in_set(NPCSystems::Collision),
                     aggression::activate_pursuit_urge.after(NPCSystems::Collision),
                     aggression::deactivate_pursuit_urge.after(NPCSystems::Collision),
@@ -201,28 +202,18 @@ fn spawn_characters(
             VAMPIRE_LINE,
             VAMPIRE_SPAWN_POSITION,
             Reputation::new(100, 0),
-            NPCBehavior::LandmarkSeeking(
-                // match if there is none
-                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
-                    .unwrap(),
-                Location::Temple,
-            ),
+            NPCBehavior::new_destination(&mut landmark_sensor_query, Location::Temple),
             Location::Temple,
             fabien_dialog_path,
         ),
     ];
     for i in 0..5 {
         npcs_infos.push((
-            format!("Fabien {}", i),
+            format!("Fabien {i}"),
             FABIEN_LOYAL_LINE,
             FABIEN_SPAWN_POSITION,
             Reputation::new(0, 0),
-            NPCBehavior::LandmarkSeeking(
-                // match if there is none
-                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
-                    .unwrap(),
-                Location::Temple,
-            ),
+            NPCBehavior::new_destination(&mut landmark_sensor_query, Location::Temple),
             Location::Temple,
             fabien_dialog_path,
         ));
@@ -254,7 +245,7 @@ fn spawn_characters(
                     },
                     ..default()
                 },
-                Name::new(format!("NPC {}", name)),
+                Name::new(format!("NPC {name}")),
                 Character,
                 NPC,
                 // -- Movement --
@@ -277,7 +268,7 @@ fn spawn_characters(
                     Transform::IDENTITY,
                     Sensor,
                     InteractionSensor,
-                    Name::new(format!("{} Interaction Sensor", name)),
+                    Name::new(format!("{name} Interaction Sensor")),
                 ));
 
                 parent.spawn((
@@ -298,7 +289,7 @@ fn spawn_characters(
                     Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
                     Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
                     CharacterHitbox,
-                    Name::new(format!("{} Hitbox", name)),
+                    Name::new(format!("{name} Hitbox")),
                 ));
 
                 // REFACTOR: Spawn all sensor (but with a component "InactiveSensor" or query With<ActiveEvents>)
@@ -309,7 +300,7 @@ fn spawn_characters(
                 //     ActiveEvents::COLLISION_EVENTS,
                 //     ActiveCollisionTypes::STATIC_STATIC,
                 //     CharacterCloseSensor,
-                //     Name::new(format!("{} Close Sensor", name)),
+                //     Name::new(format!("{name} Close Sensor")),
                 // ));
 
                 // parent.spawn((
@@ -317,7 +308,7 @@ fn spawn_characters(
                 //     // ActiveEvents::COLLISION_EVENTS,
                 //     Sensor,
                 //     PursuitRangeSensor,
-                //     Name::new(format!("{} Pursuit Range", name)),
+                //     Name::new(format!("{name} Pursuit Range")),
                 // ));
 
                 // parent.spawn((
@@ -325,7 +316,7 @@ fn spawn_characters(
                 //     // ActiveEvents::COLLISION_EVENTS,
                 //     Sensor,
                 //     DetectionRangeSensor,
-                //     Name::new(format!("{} Detection Range", name)),
+                //     Name::new(format!("{name} Detection Range")),
                 // ));
 
                 parent.spawn((
@@ -333,7 +324,7 @@ fn spawn_characters(
                     // ActiveEvents::COLLISION_EVENTS,
                     Sensor,
                     FollowRangeSensor,
-                    Name::new(format!("{} Follow Range", name)),
+                    Name::new(format!("{name} Follow Range")),
                 ));
             })
             .id();
@@ -373,12 +364,7 @@ fn spawn_villains(
         OLF_LINE,
         OLF_SPAWN_POSITION,
         Reputation::new(0, 100),
-        NPCBehavior::LandmarkSeeking(
-            // match if there is none
-            reserved_random_free_landmark(&mut landmark_sensor_query, Location::SecretRoom)
-                .unwrap(),
-            Location::SecretRoom,
-        ),
+        NPCBehavior::new_destination(&mut landmark_sensor_query, Location::SecretRoom),
         olf_dialog_path,
     )];
 
@@ -406,7 +392,7 @@ fn spawn_villains(
                     },
                     ..default()
                 },
-                Name::new(format!("NPC {}", name)),
+                Name::new(format!("NPC {name}")),
                 Character,
                 NPC,
                 // -- Movement --
@@ -430,7 +416,7 @@ fn spawn_villains(
                     Transform::IDENTITY,
                     Sensor,
                     InteractionSensor,
-                    Name::new(format!("{} Interaction Sensor", name)),
+                    Name::new(format!("{name} Interaction Sensor")),
                 ));
 
                 parent.spawn((
@@ -451,7 +437,7 @@ fn spawn_villains(
                     Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
                     Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
                     CharacterHitbox,
-                    Name::new(format!("{} Hitbox", name)),
+                    Name::new(format!("{name} Hitbox")),
                 ));
 
                 // parent.spawn((
@@ -460,7 +446,7 @@ fn spawn_villains(
                 //     ActiveEvents::COLLISION_EVENTS,
                 //     ActiveCollisionTypes::STATIC_STATIC,
                 //     CharacterCloseSensor,
-                //     Name::new(format!("{} Close Sensor", name)),
+                //     Name::new(format!("{name} Close Sensor")),
                 // ));
 
                 parent.spawn((
@@ -468,7 +454,7 @@ fn spawn_villains(
                     // ActiveEvents::COLLISION_EVENTS,
                     Sensor,
                     PursuitRangeSensor,
-                    Name::new(format!("{} Pursuit Range", name)),
+                    Name::new(format!("{name} Pursuit Range")),
                 ));
 
                 parent.spawn((
@@ -476,7 +462,7 @@ fn spawn_villains(
                     ActiveEvents::COLLISION_EVENTS,
                     Sensor,
                     DetectionRangeSensor,
-                    Name::new(format!("{} Detection Range", name)),
+                    Name::new(format!("{name} Detection Range")),
                 ));
 
                 // parent.spawn((
@@ -484,7 +470,7 @@ fn spawn_villains(
                 //     // ActiveEvents::COLLISION_EVENTS,
                 //     Sensor,
                 //     FollowRangeSensor,
-                //     Name::new(format!("{} Follow Range", name)),
+                //     Name::new(format!("{name} Follow Range")),
                 // ));
             })
             .id();

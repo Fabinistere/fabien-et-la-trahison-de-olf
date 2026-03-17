@@ -1,4 +1,4 @@
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, transform::commands};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_rapier2d::prelude::*;
 use std::collections::{BTreeMap, HashMap};
 use yml_dialog::DialogNode;
@@ -98,6 +98,8 @@ fn player_animation(
 }
 
 /// NOTE: can't let the player squat down (we only trigger the idle anim) -> bypass the anim system
+///
+/// FIXME: bug - When pressing a move input into pressing down squat it goes through the whole spritesheet
 fn player_squat(
     mut commands: Commands,
     mut player_query: Query<(Entity, &AnimationIndices, &mut TextureAtlasSprite), With<Player>>,

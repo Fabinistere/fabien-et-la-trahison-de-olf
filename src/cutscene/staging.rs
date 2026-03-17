@@ -15,6 +15,10 @@ use crate::{
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug)]
 pub struct Cutscene {
+    /// /// When the Player enters this sensor, it triggers the cutscene
+    /// trigger_sensor: Sensor,
+    /// /// When the Player's location match, it triggers the cutscene
+    /// trigger: Location,
     frames: Vec<FrameShot>,
 }
 
@@ -54,14 +58,15 @@ impl Cutscene {
                     positions: vec![("NPC Supreme God".to_string(), (THRONE_X, THRONE_Y - 40.))],
                     duration: 5.,
                 },
-                // Control to the player while giving them destinations: the player has priority
+                // Control to the player while giving them destinations: the player has priority +
+                // the remote control stop working (even if no input)
                 // FrameShot {
                 //     camera_focus_type: CameraFocusType::Normal,
                 //     player_is_in_control: true,
                 //     pop_star: Some("Player".to_string()),
                 //     dialogue: None,
-                //     positions: vec![("Player".to_string(), (THRONE_X, THRONE_Y - 100.))],
-                //     duration: 5.,
+                //     positions: vec![("Player".to_string(), (THRONE_X, THRONE_Y - 150.))],
+                //     duration: 15.,
                 // },
             ],
         }
@@ -117,7 +122,7 @@ pub struct FrameTime {
 }
 
 #[derive(Component)]
-pub struct CutsceneDestination(f32, f32, f32);
+pub struct CutsceneDestination(f32, f32);
 
 /* -------------------------------------------------------------------------- */
 /*                                  Systems                                   */
@@ -128,7 +133,7 @@ pub fn spawn_cutscene(mut commands: Commands) {
     commands.spawn((
         Name::new("Cutscene"),
         // Cutscene::new(),
-        Cutscene::import_from_script("data/cutscene/open_temple_dos.yml".to_string()),
+        Cutscene::import_from_script("data/cutscene/open_temple.yml".to_string()),
     ));
 
     // let _ = std::fs::write(
@@ -182,7 +187,7 @@ pub fn run_cutscene(
 
                     commands
                         .entity(character)
-                        .insert(CutsceneDestination(*x, *y, 0.));
+                        .insert(CutsceneDestination(*x, *y));
                 }
 
                 if !character_found {

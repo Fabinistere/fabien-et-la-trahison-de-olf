@@ -37,7 +37,7 @@ pub struct Title;
 
 #[derive(Component)]
 pub enum TitleState {
-    /// Behind the moutains
+    /// Behind the mountains
     Hidden,
     /// At top position
     FlexTop,

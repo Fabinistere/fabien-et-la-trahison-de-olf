@@ -1,5 +1,7 @@
 //! Implements Npc for moving and steering entities.
 
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy_ecs::query::QueryEntityError;
 use bevy_rapier2d::prelude::{
@@ -25,7 +27,7 @@ use crate::{
     combat::{CombatEvent, FairPlayTimer, Reputation},
     constants::character::CHAR_HITBOX_Y_OFFSET,
     locations::{
-        landmarks::{reserved_random_free_landmark, Direction, Landmark, LandmarkStatus},
+        landmarks::{Direction, Landmark, LandmarkStatus},
         temple::Location,
     },
 };
@@ -36,11 +38,16 @@ use crate::{
 /*                                 Components                                 */
 /* -------------------------------------------------------------------------- */
 
-#[derive(PartialEq, Clone, Copy, Reflect, Component)]
+#[derive(PartialEq, Clone, Reflect, Component)]
 pub enum NPCBehavior {
     /// The entity runs to a specify location and occupy this zone.
     /// Tourist butterfly.
-    LandmarkSeeking(Entity, Location),
+    ///
+    /// ## Notes
+    ///
+    /// NOTE: we opt to include the timer in the option to really associate the two `None` and `Timer`
+    /// but we could have an `Option<(Entity, Location)>` + add another component Timer (less readability but optimized)
+    LandmarkSeeking(LandmarkSeekingStatus),
     Camping,
     Follow {
         target: Entity,
@@ -53,11 +60,41 @@ impl NPCBehavior {
     pub fn follow(target: Entity, close: bool) -> Self {
         NPCBehavior::Follow { target, close }
     }
+
+    pub fn new_destination(
+        landmark_sensor_query: &mut Query<(Entity, &mut Landmark), With<Sensor>>,
+        location: Location,
+    ) -> Self {
+        NPCBehavior::LandmarkSeeking(
+            match Landmark::reserve_random_free_landmark(landmark_sensor_query, location) {
+                Err(_) => LandmarkSeekingStatus::default(),
+
+                Ok(landmark) => LandmarkSeekingStatus::Location(landmark, location),
+            },
+        )
+    }
 }
 
 impl Default for NPCBehavior {
     fn default() -> Self {
         Self::Camping
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Reflect, Component)]
+pub enum LandmarkSeekingStatus {
+    /// found
+    Location(Entity, Location),
+    /// waiting one
+    TimerUntilSearching(Timer),
+}
+
+impl Default for LandmarkSeekingStatus {
+    fn default() -> Self {
+        LandmarkSeekingStatus::TimerUntilSearching(Timer::new(
+            Duration::from_millis(2000),
+            TimerMode::Once,
+        ))
     }
 }
 
@@ -96,6 +133,7 @@ pub struct FollowRangeSensor;
 /*                                   Events                                   */
 /* -------------------------------------------------------------------------- */
 
+/// DOC: WHEN?
 #[derive(Event)]
 pub struct FollowEvent {
     /// In many situation, could be the interlocutor
@@ -108,6 +146,31 @@ pub struct FollowEvent {
 /* -------------------------------------------------------------------------- */
 
 // REFACTOR: The whole movement plugin ([x] close sensor, [ ] smooth movement)
+
+/// Wait the Timer of the landmarkSeeker and at the end try to find another
+/// 
+/// ## Notes
+/// 
+/// TOTEST: if the NPC do wait and if they find something after
+pub fn landmark_seeking_timer(
+    time: Res<Time>,
+    mut npc_query: Query<(&mut NPCBehavior, &Location, &Name), With<NPC>>,
+    mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
+) {
+    for (mut behavior, location, name) in &mut npc_query {
+        if let NPCBehavior::LandmarkSeeking(LandmarkSeekingStatus::TimerUntilSearching(mut timer)) =
+            behavior.clone()
+        {
+            timer.tick(time.delta());
+            *behavior = if timer.finished() {
+                info!(target: "NPC", "{name} has finished waiting for a landmark");
+                NPCBehavior::new_destination(&mut landmark_sensor_query, *location)
+            } else {
+                NPCBehavior::LandmarkSeeking(LandmarkSeekingStatus::TimerUntilSearching(timer))
+            };
+        }
+    }
+}
 
 /// Detect any change from the npcs about their behavior
 pub fn npc_behavior_change(
@@ -250,24 +313,39 @@ pub fn npc_movement(
         &mut npc_query
     {
         let (vel_x, vel_y) = match potential_chaser {
-            None => match *behavior {
+            None => match behavior.clone() {
                 NPCBehavior::Camping => (0., 0.),
-                NPCBehavior::LandmarkSeeking(destination, location) => {
-                    let (_, landmark) = landmark_sensor_query.get(destination).unwrap();
-                    let landmark_transform = pos_query.get(destination).unwrap();
-                    match landmark.status {
-                        LandmarkStatus::OccupiedBy(_) => {
-                            // FIXME: Match the LandmarkReservationError
-                            let next_destination =
-                                reserved_random_free_landmark(&mut landmark_sensor_query, location)
-                                    .unwrap();
-                            *behavior = NPCBehavior::LandmarkSeeking(next_destination, location);
-                            let next_transform = pos_query.get(next_destination).unwrap();
-                            move_to(next_transform, false, transform, speed)
+                NPCBehavior::LandmarkSeeking(status) => match status {
+                    LandmarkSeekingStatus::TimerUntilSearching(_) => (0., 0.),
+                    LandmarkSeekingStatus::Location(destination, location) => {
+                        let (_, landmark) = landmark_sensor_query.get(destination).unwrap();
+                        let landmark_transform = pos_query.get(destination).unwrap();
+                        match landmark.status {
+                            // If the target is occupied, try to get a new one
+                            LandmarkStatus::OccupiedBy(_) => {
+                                match Landmark::reserve_random_free_landmark(
+                                    &mut landmark_sensor_query,
+                                    location,
+                                ) {
+                                    Err(_) => (0., 0.),
+                                    Ok(next_destination) => {
+                                        *behavior = NPCBehavior::LandmarkSeeking(
+                                            LandmarkSeekingStatus::Location(
+                                                next_destination,
+                                                location,
+                                            ),
+                                        );
+                                        let next_transform =
+                                            pos_query.get(next_destination).unwrap();
+                                        move_to(next_transform, false, transform, speed)
+                                    }
+                                }
+                            }
+                            // Else move towards it
+                            _ => move_to(landmark_transform, false, transform, speed),
                         }
-                        _ => move_to(landmark_transform, false, transform, speed),
                     }
-                }
+                },
                 NPCBehavior::Follow { target, close } => {
                     if close {
                         (0., 0.)
