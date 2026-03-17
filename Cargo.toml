@@ -1,7 +1,12 @@
 [package]
 name = "fabien-et-la-trahison-de-olf"
 version = "0.4.0"
-authors = ["Morgan Van Amerongen <vanamerongen.morgan@gmail.com>", "Olf EPAIN <wabtey@disroot.org>", "Grassouille la Fripouille", "Sombre Roi René"]
+authors = [
+    "Morgan Van Amerongen <vanamerongen.morgan@gmail.com>",
+    "Olf EPAIN <wabtey@disroot.org>",
+    "Grassouille la Fripouille",
+    "Sombre Roi René",
+]
 repository = "https://github.com/Fabinistere/fabien-et-la-trahison-de-olf"
 license = "MIT OR Apache-2.0"
 exclude = ["assets"]
@@ -11,7 +16,7 @@ edition = "2021"
 resolver = "2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-bevy = { version = "0.11",  features = ["dynamic_linking"] }
+bevy = { version = "0.11", features = ["dynamic_linking"] }
 bevy_ecs = "0.11"
 bevy_reflect = "0.11"
 
@@ -32,7 +37,10 @@ yml_dialog = "0.2"
 serde_yaml = "0.9"
 
 # ----- Hitbox - Velocity -----
-bevy_rapier2d = { version = "0.22", features = ["simd-stable", "debug-render-2d"] }
+bevy_rapier2d = { version = "0.22", features = [
+    "simd-stable",
+    "debug-render-2d",
+] }
 
 density-mesh-core = "1.5"
 density-mesh-image = "1.5"
@@ -48,7 +56,12 @@ rand = "0.8.5"
 # ----------- Debug -----------
 # until a clear release, we're tracking `main`
 bevy-inspector-egui = { version = "0.18", git = "https://github.com/jakobhellermann/bevy-inspector-egui", rev = "a181bdf5c5c621d524d63ee89e22570e01e1b162" }
-# log = "0.4.17"
+log = "0.4"
+log4rs = "1.4"
+colored = "3"
+# tracing-appender = "0.2"
+# tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = "0.4"
 
 [profile.dev.package."*"]
 opt-level = 3

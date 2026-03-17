@@ -57,7 +57,7 @@ pub fn follow_a_random_character(
 
     let mut rng = rand::thread_rng();
     let (random_pop_star, pop_star_name) = characters_query.iter().choose(&mut rng).unwrap();
-    info!("{pop_star_name:?} is the new pop star");
+    log::info!("{pop_star_name:?} is the new pop star");
 
     let player = player_query.single();
     if random_pop_star == player {
@@ -65,7 +65,7 @@ pub fn follow_a_random_character(
 
         if *current_play_mode != PlayMode::Improvisation {
             next_play_mode.set(PlayMode::Improvisation);
-            info!(target:"States", "PlayMode::Improvisation sended");
+            log::info!(target:"States", "PlayMode::Improvisation sended");
         }
     } else {
         commands
@@ -76,7 +76,7 @@ pub fn follow_a_random_character(
         // FIXME: instant switch to PlayMode::Improvisation
         if *current_play_mode != PlayMode::InCinematic {
             next_play_mode.set(PlayMode::InCinematic);
-            info!(target:"States", "PlayMode::InCinematic sended");
+            log::info!(target:"States", "PlayMode::InCinematic sended");
         }
     }
 }

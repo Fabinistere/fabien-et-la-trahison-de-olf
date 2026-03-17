@@ -94,7 +94,7 @@ fn interaction_icon_events(
     mut interaction_icon_event: EventWriter<InteractionIconEvent>,
 ) {
     for collision_event in collision_events.iter() {
-        // info!("{:#?}", collision_event);
+        // log::info!("{:#?}", collision_event);
         let (e1, e2) = collision_event.entities();
 
         if let (Ok(interacted), Err(_), Err(_), Ok(_)) | (Err(_), Ok(interacted), Ok(_), Err(_)) = (
@@ -138,7 +138,7 @@ pub fn interaction_icon(
             }
         }
         if !found {
-            error!("Theres is no Interaction Icon in {:?}", *entity)
+            log::error!("Theres is no Interaction Icon in {:?}", *entity)
         }
     }
 }
@@ -182,7 +182,7 @@ pub fn interaction(
                     NPC_TALK_INTERACTION_ID => {
                         character_interact_event.send(CharacterInteractionEvent(entity));
                     }
-                    id => error!("Unknown interaction id {id}"),
+                    id => log::error!("Unknown interaction id {id}"),
                 }
             }
         }

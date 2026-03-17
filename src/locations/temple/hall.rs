@@ -59,7 +59,7 @@ pub struct PropsInteractionEvent;
 /// TODO: Lunch a dialog or smth
 pub fn props_interaction_event(mut props_interaction_events: EventReader<PropsInteractionEvent>) {
     for PropsInteractionEvent in props_interaction_events.iter() {
-        info!("interact with props");
+        log::info!("interact with props");
     }
 }
 

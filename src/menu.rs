@@ -225,7 +225,8 @@ fn adjust_art_height(
     } in resize_reader.iter()
     {
         let mut style = query.single_mut();
-        info!(
+        log::info!(
+            target: "Video",
             "window's width: {} * {} / window's height {} = {}",
             width,
             (9. / 16.),
@@ -470,7 +471,7 @@ fn setup_menu(
                                 },
                                 Selected(Language::default() == language),
                                 language,
-                                Name::new(format!("{}", language)),
+                                Name::new(language.to_string()),
                             ))
                             .with_children(|parent| {
                                 parent.spawn(TextBundle {

@@ -79,7 +79,7 @@ pub fn reset_dialog_box(
         let (potential_dialog_box, children) = dialog_box_query.get_mut(*dialog_box).unwrap();
         match potential_dialog_box {
             None => {
-                // info!("DEBUG: no DialogBox in the UpperScroll/ButtonChoice");
+                // log::info!("DEBUG: no DialogBox in the UpperScroll/ButtonChoice");
                 commands.entity(*dialog_box).insert(DialogBox::new(
                     event_text.clone(),
                     DIALOG_BOX_UPDATE_DELTA_S,
@@ -116,7 +116,7 @@ pub fn update_dialog_box(
             match text_query.get_mut(children[0]) {
                 // FIXME: If there is no TEXT then insert one in it
                 // pb: on which scroll...
-                Err(e) => error!("No Text in the Dialog Wall: {:?}", e),
+                Err(e) => log::error!("No Text in the Dialog Wall: {e:?}"),
                 Ok(mut text) => {
                     if dialog_box.progress >= dialog_box.text.len() {
                         dialog_box.finished = true;
@@ -127,7 +127,10 @@ pub fn update_dialog_box(
                     match dialog_box.text.chars().nth(dialog_box.progress) {
                         // will ignore any louche symbol
                         None => {
-                            error!("Blank or Accent Typical Crash. text: `{}`", dialog_box.text);
+                            log::error!(
+                                "Blank or Accent Typical Crash. text: `{}`",
+                                dialog_box.text
+                            );
                             dialog_box.progress += 1;
                             if dialog_box.progress >= dialog_box.text.len() {
                                 dialog_box.finished = true;

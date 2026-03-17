@@ -119,9 +119,9 @@ pub fn trigger_event_handler(
     for TriggerEvents(incoming_events) in trigger_event.iter() {
         for event_to_trigger in incoming_events {
             match WorldEvent::from_str(event_to_trigger) {
-                Err(_) => error!("{} is not recognize as a WorldEvent", event_to_trigger),
+                Err(_) => log::error!("{event_to_trigger} is not recognize as a WorldEvent"),
                 Ok(WorldEvent::FollowPlayer) => {
-                    // info!("Follow Player Event");
+                    // log::info!("Follow Player Event");
                     let player = player_query.single();
                     follow_event.send(FollowEvent {
                         npc: interlocutor.interlocutor.unwrap(),
@@ -236,10 +236,10 @@ pub fn update_dialog_panel(
 ) {
     if current_interlocutor.is_some() && (current_interlocutor.is_changed() || dialogs.is_changed())
     {
-        // info!("UpdateDialogPanel");
+        // log::info!("UpdateDialogPanel");
         let interlocutor = current_interlocutor.interlocutor.unwrap();
         if let Some(&(current_state, ref dialog)) = dialogs.get(&interlocutor) {
-            // info!("current_state: {}", current_state);
+            // log::info!("current_state: {}", current_state);
             match dialog.get(&current_state) {
                 None => {
                     current_monolog.texts = Vec::new();
@@ -275,7 +275,7 @@ pub fn update_dialog_panel(
                                             .map(|x| x.to_string())
                                             .collect::<Vec<String>>(),
                                     ) {
-                                        // info!(
+                                        // log::info!(
                                         //     "{} -> {}",
                                         //     choice.text().to_owned(),
                                         //     *choice.exit_state()
@@ -333,7 +333,7 @@ pub fn update_dialog_panel(
                                 {
                                     change_state_event.send(ChangeStateEvent(*child_index))
                                 } else {
-                                    warn!("The NPC doesn't have a possible choice");
+                                    log::warn!("The NPC doesn't have a possible choice");
                                     // TODO: if `possible_choices_index.is_empty()`
                                 }
                             }

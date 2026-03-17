@@ -21,16 +21,26 @@ mod menu;
 mod ui;
 
 use std::time::Duration;
+// use std::io::Write; // for infox!
 
 use bevy::{
     asset::ChangeWatcher, audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*,
 };
 use bevy_rapier2d::prelude::*;
 use cutscene::{cameras::PlayerCamera, PlayMode};
+/* ------------------------ LOGGING  ------------------------ */
+// use std::sync::OnceLock;
+// use tracing_appender::{non_blocking::WorkerGuard, rolling, rolling::never};
+// use tracing_subscriber::{layer::SubscriberExt, Registry, filter};
+use bevy::log::LogPlugin;
+// to use our custom logger
+pub use log::{error, info, warn};
+/* --------------------------------------------------------- */
 
 use crate::{
     constants::{BACKGROUND_COLOR_INGAME, BACKGROUND_COLOR_INMENU},
     controls::Key,
+    debug::setup_logging,
     dialogs::{DialogId, Dialogs, Language},
 };
 
@@ -54,11 +64,29 @@ pub enum HUDState {
     OptionsWall,
 }
 
+// fn custom_layer(_app: &mut App) -> Option<BoxedLayer> {
+//     let file_appender = rolling::daily("logs", "app.log");
+//     let (non_blocking, guard) = tracing_appender::non_blocking(file_appender);
+//     let _ = LOG_GUARD.set(guard);
+//     Some(bevy::log::tracing_subscriber::fmt::layer()
+//             .with_writer(non_blocking)
+//             .with_file(true)
+//             .with_line_number(true)
+//             .boxed())
+// }
+
 fn main() {
     let mut app = App::new();
 
     // #[cg(debug_assertions)]
     // app.add_plugins(RapierDebugRenderPlugin::default());
+
+    /* ------------------------ Logging  ------------------------ */
+    let session_time = chrono::Local::now().format("%Y-%m-%dT%H-%M-%S");
+    let log_dir = format!("logs/{session_time}");
+
+    setup_logging(&log_dir).expect("Failed to init logging");
+    /* ---------------------------------------------------------- */
 
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
@@ -75,7 +103,8 @@ fn main() {
                     primary_window: Some(Window {
                         title: "Fabien et la Trahison de Olf".to_string(),
                         // vsync: true,
-                        mode: bevy::window::WindowMode::BorderlessFullscreen,
+                        mode: bevy::window::WindowMode::Windowed,
+                        // mode: bevy::window::WindowMode::BorderlessFullscreen,
                         ..Window::default()
                     }),
                     ..default()
@@ -84,7 +113,30 @@ fn main() {
                 .set(AssetPlugin {
                     watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(200)),
                     ..default()
-                }),
+                })
+                //,
+                // .set(LogPlugin {
+                //     update_subscriber: Some(|subscriber| {
+                //         // File writer for the "Audio" target
+                //         let file_appender = never(&log_dir, "Audio.log");
+                //         let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+                //
+                //         let audio_layer = tracing_subscriber::fmt::layer()
+                //             .with_writer(non_blocking)
+                //             .with_filter(
+                //                 filter::Targets::new()
+                //                     .with_target("Audio", Level::INFO)
+                //             );
+                //
+                //         Box::new(subscriber.with(audio_layer))
+                //     }),
+                //     ..default()
+                // })
+                // .set(LogPlugin {
+                //     custom_layer,
+                //     ..default()
+                // }),
+                .disable::<LogPlugin>(),
             bevy_tweening::TweeningPlugin,
             RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1.),
             // ----- Our plugins -----
@@ -141,7 +193,8 @@ fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
         CastleTheme,
     ));
 
-    info!("audio playing...");
+    info!(target: "Audio", "audio playing...");
+    // debug::infox!(&["Audio"], "audio playing...");
 }
 
 /* -------------------------------------------------------------------------- */

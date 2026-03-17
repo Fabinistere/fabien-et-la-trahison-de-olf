@@ -99,7 +99,7 @@ pub fn close_dialog_panel(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Animator<Style>, &Style), With<DialogPanel>>,
 ) {
-    // info!("close dialog event");
+    // log::info!("close dialog event");
     if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
         let dialog_panel_tween = Tween::new(
             EaseFunction::QuadraticIn,
@@ -146,7 +146,7 @@ pub fn create_dialog_panel(
     dialog_panel_resources: Res<DialogPanelResources>,
     asset_server: Res<AssetServer>,
 ) {
-    // info!("open dialog event");
+    // log::info!("open dialog event");
 
     // UI wall's motion
     let dialog_panel_tween = Tween::new(

@@ -92,7 +92,7 @@ pub fn activate_pursuit_urge(
     } in ev_engage_pursuit.iter()
     {
         let (npc, children, name) = npc_query.get(*npc_entity).unwrap();
-        info!("activate pursuit urge to {}", name);
+        log::info!("activate pursuit urge to {name}");
 
         commands.entity(npc).insert(Chaser::new(*target_entity));
 
@@ -143,7 +143,7 @@ pub fn deactivate_pursuit_urge(
 ) {
     for StopChaseEvent { npc_entity } in ev_stop_chase.iter() {
         let (npc, children, name) = npc_query.get(*npc_entity).unwrap();
-        info!("deactivate pursuit urge to {}", name);
+        log::info!("deactivate pursuit urge to {name}");
 
         commands
             .entity(npc)

@@ -86,11 +86,11 @@ impl Cutscene {
             if let Ok(cutscene) = serde_yaml::from_str(&cutscene) {
                 cutscene
             } else {
-                error!(target: "Cutscene", "Failed to load: `{file_path}`");
+                log::error!(target: "Cutscene", "Failed to load: `{file_path}`");
                 Self { frames: vec![] }
             }
         } else {
-            error!(target: "Cutscene", "Failed to load: `{file_path}`");
+            log::error!(target: "Cutscene", "Failed to load: `{file_path}`");
             Self { frames: vec![] }
         }
     }
@@ -154,11 +154,11 @@ pub fn run_cutscene(
 ) {
     if let Ok((cutscene_entity, mut cutscene)) = cutscene_query.get_single_mut() {
         if let Some(frame) = cutscene.frames.first() {
-            info!(target: "Cutscene", "{frame:#?}");
+            log::info!(target: "Cutscene", "{frame:#?}");
 
             if *current_play_mode != PlayMode::InCinematic {
                 next_play_mode.set(PlayMode::InCinematic);
-                info!(target:"States", "PlayMode::InCinematic sended");
+                log::info!(target:"States", "PlayMode::InCinematic sended");
             }
 
             // define if the player can move freely
@@ -196,7 +196,7 @@ pub fn run_cutscene(
                         .map(|(_, name)| name.to_string())
                         .reduce(|first, second| format!("{first}\n- {second}"))
                         .unwrap();
-                    warn!(target: "Cutscene", "frame's position character not found: {character_name}\nall characters' name:\n{all_names}");
+                    log::warn!(target: "Cutscene", "frame's position character not found: {character_name}\nall characters' name:\n{all_names}");
                 }
             }
 
@@ -210,7 +210,7 @@ pub fn run_cutscene(
 
             if *current_play_mode != PlayMode::Improvisation {
                 next_play_mode.set(PlayMode::Improvisation);
-                info!(target:"States", "PlayMode::Improvisation sended");
+                log::info!(target:"States", "PlayMode::Improvisation sended");
 
                 // NOTE: we could have created a system InEnter(PlayMode::Improvisation) to auto handle (but there is only this spot where we switch to Improvisation)
                 player_is_in_control_resource.0 = true;

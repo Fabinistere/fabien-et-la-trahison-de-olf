@@ -95,7 +95,7 @@ pub fn jump_frame_character_state(
     >,
 ) {
     for (character, indices, mut sprite, character_state) in &mut query {
-        // info!("{character_state:#?}",);
+        // log::info!("{character_state:#?}",);
         let (start_anim, _, _) = &indices.get(character_state).unwrap();
         sprite.index = *start_anim;
 
@@ -162,7 +162,7 @@ pub fn animate_character(
 
         if timer.just_finished() {
             let (_first_frame, last_frame, next_phase) = &indices.get(&character_state).unwrap();
-            // info!(
+            // log::info!(
             //     "({_first_frame}, {last_frame}, {next_phase:#?}): {}",
             //     sprite.index
             // );
@@ -177,7 +177,7 @@ pub fn animate_character(
             } else if sprite.index + 1 < texture_atlas.textures.len() {
                 sprite.index += 1;
             } else {
-                error!(target: "Animation", "anim limit reached: {}", name);
+                log::error!(target: "Animation", "anim limit reached: {name}");
                 // commands.entity(character).remove::<AnimationTimer>();
                 *character_state = *next_phase;
                 sprite.index = indices.get(next_phase).unwrap().0;
@@ -203,7 +203,7 @@ pub fn jump_frame_manor_lights_state(
     >,
 ) {
     for (manor_lights, mut sprite, manor_lights_state) in &mut manor_lights_query {
-        // info!("{manor_lights_state:#?}");
+        // log::info!("{manor_lights_state:#?}");
         sprite.index = MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_state) as usize].0;
 
         match manor_lights_state {
@@ -292,7 +292,7 @@ pub fn animate_manor_lights(
                     *manor_lights_pattern = rand::thread_rng().gen::<ManorLightsPattern>()
                 }
                 _ => {
-                    // info!(
+                    // log::info!(
                     //     "atlas.index: {}/{}",
                     //     atlas_image.index,
                     //     MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_pattern) as usize].1

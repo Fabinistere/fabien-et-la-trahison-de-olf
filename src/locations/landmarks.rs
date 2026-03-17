@@ -136,7 +136,7 @@ fn landmark_arrival(
     // parent_query: Query<&Parent>,
 ) {
     for collision_event in collision_events.iter() {
-        // info!("{:#?}", collision_event);
+        // log::info!("{:#?}", collision_event);
         let (entity_1, entity_2) = collision_event.entities();
 
         if let (Err(_), Ok((character_hitbox, character_parent, _name)))
@@ -166,7 +166,7 @@ fn landmark_arrival(
                                 if collision_event.is_started()
                                     && landmark_destination == landmark_entity
                                 {
-                                    info!(target: "NPC", "This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent);
+                                    log::info!(target: "NPC", "This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent);
                                     *behavior = NPCBehavior::new_destination(
                                         &mut landmark_sensor_query,
                                         location,
@@ -183,13 +183,13 @@ fn landmark_arrival(
                                     landmark.status = LandmarkStatus::OccupiedBy(npc);
 
                                     if let Some(forced_direction) = landmark.direction {
-                                        // info!("Forced Direction for {npc:?}: {forced_direction:?}",);
+                                        // log::info!("Forced Direction for {npc:?}: {forced_direction:?}",);
                                         commands
                                             .entity(**character_parent)
                                             .insert(forced_direction);
                                     }
                                     // TODO: Or start dialog with the other
-                                    // info!(target: "NPC", "{:?}, {}", **character_parent, _name);
+                                    // log::info!(target: "NPC", "{:?}, {}", **character_parent, _name);
                                     commands.entity(**character_parent).insert(RestTime {
                                         timer: Timer::new(
                                             Duration::from_secs(REST_TIMER),

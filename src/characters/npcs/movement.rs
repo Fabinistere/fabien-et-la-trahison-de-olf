@@ -148,9 +148,9 @@ pub struct FollowEvent {
 // REFACTOR: The whole movement plugin ([x] close sensor, [ ] smooth movement)
 
 /// Wait the Timer of the landmarkSeeker and at the end try to find another
-/// 
+///
 /// ## Notes
-/// 
+///
 /// TOTEST: if the NPC do wait and if they find something after
 pub fn landmark_seeking_timer(
     time: Res<Time>,
@@ -163,7 +163,7 @@ pub fn landmark_seeking_timer(
         {
             timer.tick(time.delta());
             *behavior = if timer.finished() {
-                info!(target: "NPC", "{name} has finished waiting for a landmark");
+                log::info!(target: "NPC", "{name} has finished waiting for a landmark");
                 NPCBehavior::new_destination(&mut landmark_sensor_query, *location)
             } else {
                 NPCBehavior::LandmarkSeeking(LandmarkSeekingStatus::TimerUntilSearching(timer))
@@ -364,7 +364,7 @@ pub fn npc_movement(
 
                     if target_location != npc_location {
                         ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
-                        info!("{} change zone. {:?}: chase canceled", npc_name, *target);
+                        log::info!("{} change zone. {:?}: chase canceled", npc_name, *target);
                         (0., 0.)
                     } else {
                         let target_transform = pos_query.get(*target).unwrap();
@@ -436,13 +436,13 @@ pub fn chase_management(
     mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
     for collision_event in collision_events.iter() {
-        // info!("{:#?}", collision_event);
+        // log::info!("{:#?}", collision_event);
         let (entity_1, entity_2) = collision_event.entities();
 
         // if rapier_context.intersection_pair(entity_1, entity_2) == Some(true) {
-        //     info!("Some(true) with {:#?}, {:#?}", entity_1, entity_2);
+        //     log::info!("Some(true) with {:#?}, {:#?}", entity_1, entity_2);
         // } else if rapier_context.intersection_pair(entity_1, entity_2) == Some(false) {
-        //     info!("Some(false) with {:#?}, {:#?}", entity_1, entity_2);
+        //     log::info!("Some(false) with {:#?}, {:#?}", entity_1, entity_2);
         // }
 
         match (
@@ -472,7 +472,7 @@ pub fn chase_management(
                                                 target,
                                                 close: collision_event.is_started(),
                                             };
-                                            // info!(
+                                            // log::info!(
                                             //     "Follow Behavior: {}",
                                             //     collision_event.is_started()
                                             // );
@@ -503,9 +503,8 @@ pub fn chase_management(
                                                 // The npc has their target leaving their `PursuitRangeSensor`
                                                 ev_stop_chase
                                                     .send(StopChaseEvent { npc_entity: **npc });
-                                                info!(
-                                                    "{} outran {}: chase canceled",
-                                                    character_name, npc_name
+                                                log::info!(
+                                                    "{character_name} outran {npc_name}: chase canceled"
                                                 );
                                             }
                                         }
@@ -560,9 +559,8 @@ pub fn chase_management(
                                                     npc_entity: **npc,
                                                     target_entity: **character,
                                                 });
-                                                info!(
-                                                    "{} detected {}: chase initialized",
-                                                    npc_name, character_name
+                                                log::info!(
+                                                    "{npc_name} detected {character_name}: chase initialized"
                                                 );
                                             }
                                         }
@@ -597,9 +595,8 @@ pub fn chase_management(
                                             ev_stop_chase.send(StopChaseEvent {
                                                 npc_entity: **character,
                                             });
-                                            info!(
-                                                "Target Caught in 4K by {:?} {}",
-                                                character, npc_name
+                                            log::info!(
+                                                "Target Caught in 4K by {character:?} {npc_name}"
                                             );
 
                                             // handle flee when pressing o or moving ? (timer on npc before rechase)

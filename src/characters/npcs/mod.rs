@@ -143,7 +143,7 @@ pub fn character_interaction_event(
     mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
     for CharacterInteractionEvent(character) in character_interaction_events.iter() {
-        // info!("CharacterInteractionEvent({:#?})", character);
+        // log::info!("CharacterInteractionEvent({:#?})", character);
         current_interlocutor.interlocutor = Some(*character);
         next_game_state.set(HUDState::DialogWall);
     }
