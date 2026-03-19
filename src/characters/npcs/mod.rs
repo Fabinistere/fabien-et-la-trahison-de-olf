@@ -21,9 +21,9 @@ use crate::{
         interactions::INTERACT_BUTTON_SCALE,
     },
     hud_opened,
-    interactions::{InteractIcon, Interactible, InteractionResources, InteractionSensor},
+    interactions::{InteractIcon, InteractionResources, InteractionSensor, Interactive},
     locations::{
-        landmarks::{reserved_random_free_landmark, Landmark},
+        landmarks::Landmark,
         temple::{Location, OverlappingEntity},
     },
     ui::dialog_systems::{CurrentInterlocutor, DialogMap},
@@ -35,35 +35,34 @@ use self::{
     movement::{FollowRangeSensor, TargetSeeker, TargetType},
 };
 
-use super::player::Player;
+use super::{player::Player, Character};
 
+/// NPC has hobbies
+/// - landmark
+///   - index in const, with free: bol
+///   - when talking to a npc in a landmark, include the other present
+///   - ⇒ rest
+/// - stroll
+///   - in a restricted zone -index in const-
+///   - ⇒ rest
+/// - rest
+///   - ⇒ stroll
+///   - ⇒ landmark
+/// - talking to MC
+///   - inflict rest until the MC is leaving
+///   - 2 outputs
+///     - ⇒ short rest
+///     - or normal loop
+///       - ⇒ stroll
+///       - ⇒ landmark
+///       - ⇒ rest
+///
+/// Reflection
+/// - should npc avoid hit other entity
+/// - turn false the free param from a landmark position taken by the MC
 #[derive(Default)]
 pub struct NPCPlugin;
 
-/**
- * NPC has hobbies
- *  - landwark
- *    - index in const, with free: bol
- *    - when talking to a npc in a landwark, include the other present
- *    -> rest
- *  - stroll
- *    - in a restricted zone -index in const-
- *    -> rest
- *  - rest
- *    -> stroll
- *    -> landwark
- *  - talking to MC
- *    - infite rest until the MC is leaving
- *    -> short rest
- *    or
- *    -> stroll
- *    -> landmark
- *    -> rest
- *
- * Reflexion
- *  - should npc avoid hit other entity
- *  - turn false the free param from a landmark position taken by the MC
- */
 impl Plugin for NPCPlugin {
     fn build(&self, app: &mut App) {
         app
@@ -76,7 +75,7 @@ impl Plugin for NPCPlugin {
             .add_event::<aggression::EngagePursuitEvent>()
             .add_systems(
                 OnEnter(GameState::Playing),
-                (spawn_characters, spawn_vilains, spawn_cat),
+                (spawn_characters, spawn_villains, spawn_cat),
             )
             .add_systems(
                 Update,
@@ -84,6 +83,7 @@ impl Plugin for NPCPlugin {
                     character_interaction_event,
                     movement::follow_event,
                     movement::npc_behavior_change,
+                    movement::landmark_seeking_timer,
                     movement::chase_management.in_set(NPCSystems::Collision),
                     aggression::activate_pursuit_urge.after(NPCSystems::Collision),
                     aggression::deactivate_pursuit_urge.after(NPCSystems::Collision),
@@ -143,7 +143,7 @@ pub fn character_interaction_event(
     mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
     for CharacterInteractionEvent(character) in character_interaction_events.iter() {
-        // info!("CharacterInteractionEvent({:#?})", character);
+        // log::info!("CharacterInteractionEvent({:#?})", character);
         current_interlocutor.interlocutor = Some(*character);
         next_game_state.set(HUDState::DialogWall);
     }
@@ -202,28 +202,18 @@ fn spawn_characters(
             VAMPIRE_LINE,
             VAMPIRE_SPAWN_POSITION,
             Reputation::new(100, 0),
-            NPCBehavior::LandmarkSeeking(
-                // match if there is none
-                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
-                    .unwrap(),
-                Location::Temple,
-            ),
+            NPCBehavior::new_destination(&mut landmark_sensor_query, Location::Temple),
             Location::Temple,
             fabien_dialog_path,
         ),
     ];
     for i in 0..5 {
         npcs_infos.push((
-            format!("Fabien {}", i),
+            format!("Fabien {i}"),
             FABIEN_LOYAL_LINE,
             FABIEN_SPAWN_POSITION,
             Reputation::new(0, 0),
-            NPCBehavior::LandmarkSeeking(
-                // match if there is none
-                reserved_random_free_landmark(&mut landmark_sensor_query, Location::Temple)
-                    .unwrap(),
-                Location::Temple,
-            ),
+            NPCBehavior::new_destination(&mut landmark_sensor_query, Location::Temple),
             Location::Temple,
             fabien_dialog_path,
         ));
@@ -242,7 +232,7 @@ fn spawn_characters(
             global_animations_indices[spritesheet_line][1],
         );
 
-        let interactible = Interactible::new_npc();
+        let interactive = Interactive::new_npc();
 
         let npc = commands
             .spawn((
@@ -255,7 +245,8 @@ fn spawn_characters(
                     },
                     ..default()
                 },
-                Name::new(format!("NPC {}", name)),
+                Name::new(format!("NPC {name}")),
+                Character,
                 NPC,
                 // -- Movement --
                 behavior,
@@ -265,7 +256,7 @@ fn spawn_characters(
                 },
                 location,
                 // -- Social --
-                interactible,
+                interactive,
                 reputation,
                 // -- Hitbox --
                 RigidBody::Dynamic,
@@ -277,14 +268,14 @@ fn spawn_characters(
                     Transform::IDENTITY,
                     Sensor,
                     InteractionSensor,
-                    Name::new(format!("{} Interaction Sensor", name)),
+                    Name::new(format!("{name} Interaction Sensor")),
                 ));
 
                 parent.spawn((
                     SpriteBundle {
                         texture: interaction_resources.interact_button.clone(),
                         transform: Transform {
-                            translation: interactible.icon_translation,
+                            translation: interactive.icon_translation,
                             scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },
@@ -298,7 +289,7 @@ fn spawn_characters(
                     Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
                     Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
                     CharacterHitbox,
-                    Name::new(format!("{} Hitbox", name)),
+                    Name::new(format!("{name} Hitbox")),
                 ));
 
                 // REFACTOR: Spawn all sensor (but with a component "InactiveSensor" or query With<ActiveEvents>)
@@ -309,7 +300,7 @@ fn spawn_characters(
                 //     ActiveEvents::COLLISION_EVENTS,
                 //     ActiveCollisionTypes::STATIC_STATIC,
                 //     CharacterCloseSensor,
-                //     Name::new(format!("{} Close Sensor", name)),
+                //     Name::new(format!("{name} Close Sensor")),
                 // ));
 
                 // parent.spawn((
@@ -317,7 +308,7 @@ fn spawn_characters(
                 //     // ActiveEvents::COLLISION_EVENTS,
                 //     Sensor,
                 //     PursuitRangeSensor,
-                //     Name::new(format!("{} Pursuit Range", name)),
+                //     Name::new(format!("{name} Pursuit Range")),
                 // ));
 
                 // parent.spawn((
@@ -325,7 +316,7 @@ fn spawn_characters(
                 //     // ActiveEvents::COLLISION_EVENTS,
                 //     Sensor,
                 //     DetectionRangeSensor,
-                //     Name::new(format!("{} Detection Range", name)),
+                //     Name::new(format!("{name} Detection Range")),
                 // ));
 
                 parent.spawn((
@@ -333,7 +324,7 @@ fn spawn_characters(
                     // ActiveEvents::COLLISION_EVENTS,
                     Sensor,
                     FollowRangeSensor,
-                    Name::new(format!("{} Follow Range", name)),
+                    Name::new(format!("{name} Follow Range")),
                 ));
             })
             .id();
@@ -351,10 +342,10 @@ fn spawn_characters(
     }
 }
 
-/// All vilain npc
+/// All villain npc
 ///
 /// Merge all spawn npcs function
-fn spawn_vilains(
+fn spawn_villains(
     mut commands: Commands,
     characters_spritesheet: Res<CharacterSpriteSheet>,
     mut dialogs: ResMut<DialogMap>,
@@ -363,7 +354,7 @@ fn spawn_vilains(
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
 ) {
     /* -------------------------------------------------------------------------- */
-    /*                                   Vilains                                  */
+    /*                                  Villains                                  */
     /* -------------------------------------------------------------------------- */
 
     let olf_dialog_path = "data/olf_dialog.yml";
@@ -373,12 +364,7 @@ fn spawn_vilains(
         OLF_LINE,
         OLF_SPAWN_POSITION,
         Reputation::new(0, 100),
-        NPCBehavior::LandmarkSeeking(
-            // match if there is none
-            reserved_random_free_landmark(&mut landmark_sensor_query, Location::SecretRoom)
-                .unwrap(),
-            Location::SecretRoom,
-        ),
+        NPCBehavior::new_destination(&mut landmark_sensor_query, Location::SecretRoom),
         olf_dialog_path,
     )];
 
@@ -393,7 +379,7 @@ fn spawn_vilains(
             global_animations_indices[spritesheet_line][1],
         );
 
-        let interactible = Interactible::new_npc();
+        let interactive = Interactive::new_npc();
 
         let npc = commands
             .spawn((
@@ -406,7 +392,8 @@ fn spawn_vilains(
                     },
                     ..default()
                 },
-                Name::new(format!("NPC {}", name)),
+                Name::new(format!("NPC {name}")),
+                Character,
                 NPC,
                 // -- Movement --
                 behavior,
@@ -416,7 +403,7 @@ fn spawn_vilains(
                 },
                 Location::SecretRoom,
                 // -- Social --
-                interactible,
+                interactive,
                 reputation,
                 TargetSeeker(TargetType::Player),
                 // -- Hitbox --
@@ -429,14 +416,14 @@ fn spawn_vilains(
                     Transform::IDENTITY,
                     Sensor,
                     InteractionSensor,
-                    Name::new(format!("{} Interaction Sensor", name)),
+                    Name::new(format!("{name} Interaction Sensor")),
                 ));
 
                 parent.spawn((
                     SpriteBundle {
                         texture: interaction_resources.interact_button.clone(),
                         transform: Transform {
-                            translation: interactible.icon_translation,
+                            translation: interactive.icon_translation,
                             scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },
@@ -450,7 +437,7 @@ fn spawn_vilains(
                     Collider::cuboid(CHAR_HITBOX_WIDTH, CHAR_HITBOX_HEIGHT),
                     Transform::from_xyz(0., CHAR_HITBOX_Y_OFFSET, 0.),
                     CharacterHitbox,
-                    Name::new(format!("{} Hitbox", name)),
+                    Name::new(format!("{name} Hitbox")),
                 ));
 
                 // parent.spawn((
@@ -459,7 +446,7 @@ fn spawn_vilains(
                 //     ActiveEvents::COLLISION_EVENTS,
                 //     ActiveCollisionTypes::STATIC_STATIC,
                 //     CharacterCloseSensor,
-                //     Name::new(format!("{} Close Sensor", name)),
+                //     Name::new(format!("{name} Close Sensor")),
                 // ));
 
                 parent.spawn((
@@ -467,7 +454,7 @@ fn spawn_vilains(
                     // ActiveEvents::COLLISION_EVENTS,
                     Sensor,
                     PursuitRangeSensor,
-                    Name::new(format!("{} Pursuit Range", name)),
+                    Name::new(format!("{name} Pursuit Range")),
                 ));
 
                 parent.spawn((
@@ -475,7 +462,7 @@ fn spawn_vilains(
                     ActiveEvents::COLLISION_EVENTS,
                     Sensor,
                     DetectionRangeSensor,
-                    Name::new(format!("{} Detection Range", name)),
+                    Name::new(format!("{name} Detection Range")),
                 ));
 
                 // parent.spawn((
@@ -483,7 +470,7 @@ fn spawn_vilains(
                 //     // ActiveEvents::COLLISION_EVENTS,
                 //     Sensor,
                 //     FollowRangeSensor,
-                //     Name::new(format!("{} Follow Range", name)),
+                //     Name::new(format!("{name} Follow Range")),
                 // ));
             })
             .id();

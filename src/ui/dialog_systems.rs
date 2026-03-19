@@ -17,7 +17,7 @@ use super::{
     dialog_scrolls::{ButtonChoice, Monolog, MonologPanel},
 };
 
-// Funny artefacts:
+// NOTE: Funny artefact:
 
 // don't change panel.dialog_tree here
 // it will be detected by update_dialog_panel
@@ -53,9 +53,9 @@ pub enum WorldEvent {
     HasFriend,
     // -- Special Dialog Event --
     // NOTE: could be in another enum
-    // matched when getting an arror when parsing the WorldEvent
+    // matched when getting an error when parsing the WorldEvent
     FollowPlayer,
-    /// Even if the exit_state exists, overide and quit.
+    /// Even if the exit_state exists, override and quit.
     /// The Content of the node will be displayed after
     EndDialog,
 }
@@ -102,7 +102,7 @@ impl FromStr for WorldEvent {
 /// Read in
 ///   - `trigger_event_handler()`
 ///     - If the event is not already active
-///     add it to the WorldEvent list.
+///       add it to the WorldEvent list.
 #[derive(Event)]
 pub struct TriggerEvents(Vec<String>);
 
@@ -116,12 +116,12 @@ pub fn trigger_event_handler(
 
     mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
-    for TriggerEvents(incomming_events) in trigger_event.iter() {
-        for event_to_trigger in incomming_events {
+    for TriggerEvents(incoming_events) in trigger_event.iter() {
+        for event_to_trigger in incoming_events {
             match WorldEvent::from_str(event_to_trigger) {
-                Err(_) => error!("{} is not recognize as a WorldEvent", event_to_trigger),
+                Err(_) => log::error!("{event_to_trigger} is not recognize as a WorldEvent"),
                 Ok(WorldEvent::FollowPlayer) => {
-                    // info!("Follow Player Event");
+                    // log::info!("Follow Player Event");
                     let player = player_query.single();
                     follow_event.send(FollowEvent {
                         npc: interlocutor.interlocutor.unwrap(),
@@ -146,10 +146,10 @@ pub fn trigger_event_handler(
 /// Read in
 ///   - `change_dialog_state()`
 ///     - analyze the current node;
-///     If the state asked is a `Content::Choice`
-///     without any choice verified it won't transit to the new state.
-///     Else transit and throw all trigger events,
-///     while leaving the `current_node`.
+///       If the state asked is a `Content::Choice`
+///       without any choice verified it won't transit to the new state.
+///       Else transit and throw all trigger events,
+///       while leaving the `current_node`.
 #[derive(Event)]
 pub struct ChangeStateEvent(pub usize);
 
@@ -236,10 +236,10 @@ pub fn update_dialog_panel(
 ) {
     if current_interlocutor.is_some() && (current_interlocutor.is_changed() || dialogs.is_changed())
     {
-        // info!("UpdateDialogPanel");
+        // log::info!("UpdateDialogPanel");
         let interlocutor = current_interlocutor.interlocutor.unwrap();
         if let Some(&(current_state, ref dialog)) = dialogs.get(&interlocutor) {
-            // info!("current_state: {}", current_state);
+            // log::info!("current_state: {}", current_state);
             match dialog.get(&current_state) {
                 None => {
                     current_monolog.texts = Vec::new();
@@ -275,7 +275,7 @@ pub fn update_dialog_panel(
                                             .map(|x| x.to_string())
                                             .collect::<Vec<String>>(),
                                     ) {
-                                        // info!(
+                                        // log::info!(
                                         //     "{} -> {}",
                                         //     choice.text().to_owned(),
                                         //     *choice.exit_state()
@@ -288,7 +288,7 @@ pub fn update_dialog_panel(
                                 for (button_entity, mut button_infos, mut visibility) in
                                     &mut player_choices_query
                                 {
-                                    // Here you could compare the index with `dialogs.len()` to incorpore all choice but
+                                    // Here you could compare the index with `dialogs.len()` to incorporate all choices but
                                     // lock the unsatisfied choice's condition
                                     if button_infos.ui_position < verified_choices.len() {
                                         reset_event.send(ResetDialogBoxEvent {
@@ -333,7 +333,7 @@ pub fn update_dialog_panel(
                                 {
                                     change_state_event.send(ChangeStateEvent(*child_index))
                                 } else {
-                                    warn!("The NPC doesn't have a possible choice");
+                                    log::warn!("The NPC doesn't have a possible choice");
                                     // TODO: if `possible_choices_index.is_empty()`
                                 }
                             }
@@ -347,6 +347,10 @@ pub fn update_dialog_panel(
 
 /// If the resource `Monolog` is changed,
 /// update the NPC/Player text.
+///
+/// ## Notes
+///
+/// FIXME: crash - quickly opening/closing a dialog provoke the MonologPanel.`single` to crash due to multiple entities (ensure to fully despawn the UI before re spawning)
 pub fn update_monolog(
     current_monolog: Res<Monolog>,
     monolog_panel_query: Query<Entity, With<MonologPanel>>,

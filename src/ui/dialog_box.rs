@@ -42,12 +42,13 @@ impl DialogBox {
 ///     - updates UpperScroll Text with the UpperScroll infos
 ///   - ui::dialog_panel::update_player_scroll
 ///     - updates PlayerScroll Text with the UpperScroll infos
-///     happens for every choice there is in the PlayerScroll
+///       happens for every choice there is in the PlayerScroll
+///
 /// Read in
 ///   - ui::dialog_panel::reset_dialog_box
 ///     - creates a DialogBox to transfer info to the child Text
-///     if there is none
-///     or resets the text and dialogBox
+///       if there is none
+///       or resets the text and dialogBox
 #[derive(Event)]
 pub struct ResetDialogBoxEvent {
     pub dialog_box: Entity,
@@ -78,7 +79,7 @@ pub fn reset_dialog_box(
         let (potential_dialog_box, children) = dialog_box_query.get_mut(*dialog_box).unwrap();
         match potential_dialog_box {
             None => {
-                // info!("DEBUG: no DialogBox in the UpperScroll/ButtonChoice");
+                // log::info!("DEBUG: no DialogBox in the UpperScroll/ButtonChoice");
                 commands.entity(*dialog_box).insert(DialogBox::new(
                     event_text.clone(),
                     DIALOG_BOX_UPDATE_DELTA_S,
@@ -115,15 +116,21 @@ pub fn update_dialog_box(
             match text_query.get_mut(children[0]) {
                 // FIXME: If there is no TEXT then insert one in it
                 // pb: on which scroll...
-                Err(e) => error!("No Text in the Dialog Wall: {:?}", e),
+                Err(e) => log::error!("No Text in the Dialog Wall: {e:?}"),
                 Ok(mut text) => {
+                    if dialog_box.progress >= dialog_box.text.len() {
+                        dialog_box.finished = true;
+                        continue;
+                    }
                     // prompt the simple text
                     // FIXME: bug - if the given text contains a accent this will crash
                     match dialog_box.text.chars().nth(dialog_box.progress) {
                         // will ignore any louche symbol
                         None => {
-                            println!("text: {}", dialog_box.text);
-                            error!("Blank or Accent Typical Crash");
+                            log::error!(
+                                "Blank or Accent Typical Crash. text: `{}`",
+                                dialog_box.text
+                            );
                             dialog_box.progress += 1;
                             if dialog_box.progress >= dialog_box.text.len() {
                                 dialog_box.finished = true;

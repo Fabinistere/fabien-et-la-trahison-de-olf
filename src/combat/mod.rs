@@ -189,6 +189,7 @@ impl FairPlayTimer {
 /// Happens when:
 ///   - npc::movement::pursue
 ///     - target is reach
+///
 /// Read in
 ///   - ui::dialog_panel::create_dialog_panel_on_combat_event
 ///     - open combat ui
@@ -246,7 +247,7 @@ pub fn fair_play_wait(
         // REFACTOR: compare NPC's team with Player's Team instead of a global Player Team CST
         // query player to get his TEAM (it's the player who switch team not all npc)
         if fair_play_timer.timer.finished() || reputation.is_in_supreme_god_team() {
-            info!("{:?}, {} can now aggro", npc, name);
+            log::info!("{npc:?}, {name} can now aggro");
 
             commands.entity(npc).remove::<FairPlayTimer>();
         }
@@ -274,7 +275,7 @@ pub fn enter_combat(
     mut foes_query: Query<(Entity, Option<&GroupSize>), (With<NPC>, Without<Recruted>)>,
 ) {
     for CombatEvent { entity } in ev_combat_enter.iter() {
-        info!("Combat Event");
+        log::info!("Combat Event");
         let player = player_query.single_mut();
 
         commands.entity(player).insert(InCombat);
@@ -340,7 +341,7 @@ pub fn exit_combat(
 
     foes_query: Query<(Entity, &Name), (With<NPC>, With<InCombat>, Without<Recruted>)>,
 ) {
-    info!("DEBUG: Combat Exit");
+    log::info!("DEBUG: Combat Exit");
 
     for (allie, _name) in allies_query.iter() {
         commands.entity(allie).remove::<InCombat>();

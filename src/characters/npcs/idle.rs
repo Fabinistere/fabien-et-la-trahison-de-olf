@@ -22,9 +22,9 @@ pub fn flexing_timer(
 
         rb_vel.linvel.x = 0.;
         rb_vel.linvel.y = 0.;
-        // info!("{:#?}", rest_timer.timer);
+        // log::info!("{:#?}", rest_timer.timer);
         if rest_timer.timer.finished() {
-            // info!(target: "Stop Rest", "{:?}, {}", npc, _name);
+            log::info!(target: "NPC", "{npc:?}, {_name} stop resting.");
 
             // restart previous behavior
             commands.entity(npc).remove::<RestTime>();

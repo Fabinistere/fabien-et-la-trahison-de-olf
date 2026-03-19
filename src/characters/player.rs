@@ -1,11 +1,11 @@
-use bevy::prelude::*;
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_rapier2d::prelude::*;
 use std::collections::{BTreeMap, HashMap};
 use yml_dialog::DialogNode;
 
 use crate::{
     animations::{
-        sprite_sheet_animation::{AnimationIndices, CharacterState},
+        sprite_sheet_animation::{AnimationIndices, CharacterState, TempoAnimation},
         CharacterSpriteSheet,
     },
     characters::{
@@ -13,22 +13,35 @@ use crate::{
         CharacterHitbox,
     },
     combat::{Leader, Reputation},
-    constants::character::{player::*, *},
+    constants::{
+        character::{player::*, *},
+        locations::main_room::THRONE_POSITION,
+    },
     controls::KeyBindings,
+    cutscene::player_is_in_control,
     hud_closed,
     locations::temple::Location,
     ui::dialog_systems::DialogMap,
-    GameState, PlayerCamera,
+    GameState,
 };
 
-use super::movement::CharacterCloseSensor;
+use super::{movement::CharacterCloseSensor, Character};
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Playing), spawn_player)
-            .add_systems(Update, (player_movement.run_if(hud_closed), camera_follow));
+            .add_systems(
+                Update,
+                (
+                    player_movement
+                        .run_if(hud_closed)
+                        .run_if(player_is_in_control),
+                    player_animation,
+                    player_squat.run_if(input_just_pressed(KeyCode::ControlLeft)),
+                ),
+            );
     }
 }
 
@@ -47,24 +60,63 @@ pub struct PlayerInteractionSensor;
 #[derive(Component)]
 pub struct PlayerCloseSensor;
 
-/// FIXME: Freeze the player when in dialog (trigger for ex when interacting while running)
+fn player_animation(
+    mut player_query: Query<
+        (&Velocity, &mut TextureAtlasSprite, &mut CharacterState),
+        (Changed<Velocity>, With<Player>),
+    >,
+) {
+    if let Ok((rb_vel, mut texture_atlas_sprite, mut player_state)) = player_query.get_single_mut()
+    {
+        /* -------------------------------------------------------------------------- */
+        /*                                  Animation                                 */
+        /* -------------------------------------------------------------------------- */
+
+        // if there is any movement
+        if (rb_vel.linvel.x != 0. || rb_vel.linvel.y != 0.) && *player_state != CharacterState::Run
+        {
+            *player_state = CharacterState::Run;
+        } else if rb_vel.linvel.x == 0.
+            && rb_vel.linvel.y == 0.
+            && *player_state == CharacterState::Run
+            && *player_state != CharacterState::Idle
+        {
+            // IDEA: Polish #visual - When we reach max speed (one full run loop), whenever you stop there is a smoke anim (sudden braking)
+            *player_state = CharacterState::Idle;
+        }
+
+        /* -------------------------------------------------------------------------- */
+        /*                                  Direction                                 */
+        /* -------------------------------------------------------------------------- */
+
+        if rb_vel.linvel.x > 0. {
+            texture_atlas_sprite.flip_x = false;
+        } else if rb_vel.linvel.x < 0. {
+            texture_atlas_sprite.flip_x = true;
+        }
+    }
+}
+
+/// NOTE: can't let the player squat down (we only trigger the idle anim) -> bypass the anim system
+///
+/// FIXME: bug - When pressing a move input into pressing down squat it goes through the whole spritesheet
+fn player_squat(
+    mut commands: Commands,
+    mut player_query: Query<(Entity, &AnimationIndices, &mut TextureAtlasSprite), With<Player>>,
+) {
+    if let Ok((player, indices, mut sprite)) = player_query.get_single_mut() {
+        let (start_anim, _, _) = &indices.get(&CharacterState::Idle).unwrap();
+        sprite.index = *start_anim;
+        commands.entity(player).remove::<TempoAnimation>();
+    }
+}
+
 fn player_movement(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<
-        (
-            Entity,
-            &Speed,
-            &mut Velocity,
-            &mut TextureAtlasSprite,
-            &mut CharacterState,
-        ),
-        With<Player>,
-    >,
+    mut player_query: Query<(Entity, &Speed, &mut Velocity), With<Player>>,
 ) {
-    if let Ok((_player, speed, mut rb_vel, mut texture_atlas_sprite, mut player_state)) =
-        player_query.get_single_mut()
-    {
+    if let Ok((_player, speed, mut rb_vel)) = player_query.get_single_mut() {
         let up = keyboard_input.any_pressed(key_bindings.up());
         let down = keyboard_input.any_pressed(key_bindings.down());
         let left = keyboard_input.any_pressed(key_bindings.left());
@@ -84,55 +136,6 @@ fn player_movement(
         // rb_vel.linvel.x = x_axis as f32 * **speed * 200. * time.delta_seconds();
         rb_vel.linvel.x = vel_x;
         rb_vel.linvel.y = vel_y;
-
-        /* -------------------------------------------------------------------------- */
-        /*                                  Animation                                 */
-        /* -------------------------------------------------------------------------- */
-
-        // if there is any movement
-        if (left || right || up || down) && *player_state != CharacterState::Run {
-            *player_state = CharacterState::Run;
-        } else if !(left || right || up || down)
-            && *player_state == CharacterState::Run
-            && *player_state != CharacterState::Idle
-        {
-            // IDEA: Polish #visual - When we reach max speed (one full run loop), whenever you stop there is a smoke anim (sudden braking)
-            *player_state = CharacterState::Idle;
-        }
-
-        /* -------------------------------------------------------------------------- */
-        /*                                  Direction                                 */
-        /* -------------------------------------------------------------------------- */
-
-        if !(left && right) {
-            if right {
-                texture_atlas_sprite.flip_x = false;
-            } else if left {
-                texture_atlas_sprite.flip_x = true;
-            }
-        }
-    }
-}
-
-fn camera_follow(
-    mut query: ParamSet<(
-        Query<&Transform, With<Player>>,
-        Query<&mut Transform, With<PlayerCamera>>,
-    )>,
-) {
-    if let Ok(t) = query.p0().get_single() {
-        let player_transform = *t;
-
-        if let Ok(mut camera_transform) = query.p1().get_single_mut() {
-            camera_transform.translation = camera_transform.translation.lerp(
-                Vec3::new(
-                    player_transform.translation.x,
-                    player_transform.translation.y,
-                    camera_transform.translation.z,
-                ),
-                CAMERA_INTERPOLATION,
-            );
-        }
     }
 }
 
@@ -158,15 +161,17 @@ fn spawn_player(
             SpriteSheetBundle {
                 texture_atlas: characters_spritesheet.texture_atlas.clone(),
                 transform: Transform {
-                    translation: PLAYER_SPAWN.into(),
+                    translation: THRONE_POSITION.into(), // PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),
                     ..Transform::default()
                 },
                 ..default()
             },
             Name::new("Player"),
+            Character,
             Player,
-            Location::default(),
+            // Location::default(),
+            Location::Temple,
             // -- Social --
             Reputation::new(100, 0),
             Leader,

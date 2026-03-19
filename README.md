@@ -1,9 +1,10 @@
 # Fabien et la trahison de Olf
 
 [![v0.4.0](https://img.shields.io/badge/v0.4.0-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)
-[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-released%20version-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
+[![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-0.11-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
 [![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf#license)
 ![Demo](https://img.shields.io/badge/Demo-gray?style=flat&logo=darkreader&logoColor=181717&link=https://fabinistere.github.io/fabien-et-la-trahison-de-olf/)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 
 ## Preview
 
@@ -25,6 +26,12 @@ Release's format is based on [Keep a Changelog](https://keepachangelog.com/en/1.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 This project also follows to [A successful Git branching model](https://nvie.com/posts/a-successful-git-branching-model/).
+
+### Visualizing log files
+
+- using less: `less -R logs/date/Global.log`
+- in neovim: you can use [baleia.nvim](https://github.com/m00qek/baleia.nvim)
+- in vscode: install [ANSI Colors](https://marketplace.visualstudio.com/items?itemName=iliazeus.vscode-ansi), and with your command palette `> ANSI Text: Open Preview`
 
 ## Assets are excluded from git storage
 
@@ -54,8 +61,8 @@ See the very good reasons for including both [here](https://github.com/bevyengin
 
 ## Inspirations
 
-This is my first Bevy project so I used another game source code to learn.
-I've used [this repository](https://github.com/TheRealTeamFReSh/MurderUserDungeon)
+This was our first Bevy project so we used another game source code to learn.
+We've used [this repository](https://github.com/TheRealTeamFReSh/MurderUserDungeon)
 a lot to understand how Bevy works and is used.
 
 ![the freaking poti chat](https://user-images.githubusercontent.com/73140258/176795348-5eb8f7ed-87c4-49d2-82d4-6895bbddedf6.gif "poti chat")

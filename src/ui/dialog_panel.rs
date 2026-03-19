@@ -1,11 +1,11 @@
-//! All base method involved in creating the UI ingame
+//! All base method involved in creating the UI in-game
 //!
 //! EventHandler:
 //!
 //! - Enter in Combat
 //! - Exit in Combat
 //! - Open HUD manually (pressing 'o')
-//! - Scolls Gestion
+//! - Scrolls management
 //!   - Update Dialog Tree
 //!   - Update each Scroll
 //!   - Update Dialog Box / Text
@@ -26,7 +26,7 @@ use super::dialog_systems::CurrentInterlocutor;
 #[derive(Resource)]
 pub struct DialogPanelResources {
     text_font: Handle<Font>,
-    appartements: Handle<Image>,
+    apartments: Handle<Image>,
     stained_glass_panels: Handle<Image>,
     background: Handle<Image>,
     _stained_glass_closed: Handle<Image>,
@@ -44,25 +44,26 @@ pub fn load_textures(
     asset_server: Res<AssetServer>,
     // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    // let scroll_texture = asset_server.load("textures/hud/scroll_animation.png");
+    // let scroll_texture = asset_server.load("textures/UI/HUD/dialog/scroll_animation.png");
     // let scroll_atlas = TextureAtlas::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45);
 
     let mut scroll_animation_frames = vec![];
     for i in 0..SCROLL_ANIMATION_FRAMES_NUMBER {
-        scroll_animation_frames
-            .push(asset_server.load(&format!("textures/hud/scroll_animation/frame_{}.png", i)));
+        scroll_animation_frames.push(asset_server.load(format!(
+            "textures/UI/HUD/dialog/scroll_animation/frame_{i}.png"
+        )));
     }
 
     commands.insert_resource(DialogPanelResources {
         text_font: asset_server.load("fonts/dpcomic.ttf"),
-        appartements: asset_server.load("textures/hud/papier_paint.png"),
-        background: asset_server.load("textures/hud/dialog_background.png"),
+        apartments: asset_server.load("textures/UI/HUD/dialog/papier_paint.png"),
+        background: asset_server.load("textures/UI/HUD/dialog/dialog_background.png"),
         scroll_animation: scroll_animation_frames,
-        chandelier: asset_server.load("textures/hud/chandelier.png"),
-        _stained_glass_closed: asset_server.load("textures/hud/stained_glass_closed.png"),
-        stained_glass_opened: asset_server.load("textures/hud/stained_glass_opened.png"),
-        _stained_glass_bars: asset_server.load("textures/hud/stained_glass_bars.png"),
-        stained_glass_panels: asset_server.load("textures/hud/stained_glass_panels.png"),
+        chandelier: asset_server.load("textures/UI/HUD/dialog/chandelier.png"),
+        _stained_glass_closed: asset_server.load("textures/UI/HUD/dialog/stained_glass_closed.png"),
+        stained_glass_opened: asset_server.load("textures/UI/HUD/dialog/stained_glass_opened.png"),
+        _stained_glass_bars: asset_server.load("textures/UI/HUD/dialog/stained_glass_bars.png"),
+        stained_glass_panels: asset_server.load("textures/UI/HUD/dialog/stained_glass_panels.png"),
     });
 }
 
@@ -98,7 +99,7 @@ pub fn close_dialog_panel(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Animator<Style>, &Style), With<DialogPanel>>,
 ) {
-    // info!("close dialog event");
+    // log::info!("close dialog event");
     if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
         let dialog_panel_tween = Tween::new(
             EaseFunction::QuadraticIn,
@@ -145,8 +146,9 @@ pub fn create_dialog_panel(
     dialog_panel_resources: Res<DialogPanelResources>,
     asset_server: Res<AssetServer>,
 ) {
-    // info!("open dialog event");
+    // log::info!("open dialog event");
 
+    // UI wall's motion
     let dialog_panel_tween = Tween::new(
         EaseFunction::QuadraticOut,
         Duration::from_millis(DIALOG_PANEL_ANIMATION_TIME_MS),
@@ -166,6 +168,7 @@ pub fn create_dialog_panel(
         },
     );
 
+    // Windows' motion
     let panels_tween = Tween::new(
         EaseMethod::Linear,
         Duration::from_millis(1000),
@@ -188,7 +191,7 @@ pub fn create_dialog_panel(
             // the top of the window.
             // Because the main Wall Background is above these panels.
             ImageBundle {
-                image: dialog_panel_resources.appartements.clone().into(),
+                image: dialog_panel_resources.apartments.clone().into(),
                 style: Style {
                     display: Display::Flex,
                     flex_direction: FlexDirection::Column,
@@ -306,13 +309,12 @@ pub fn create_dialog_panel(
                         .with_alignment(TextAlignment::Left),
                         style: Style {
                             flex_wrap: FlexWrap::Wrap,
-                            top: Val::Px(565.),
+                            top: Val::Percent(UPPER_TEXT_TOP),
                             margin: UiRect {
                                 left: Val::Percent(24.),
                                 ..UiRect::default()
                             },
-                            // Percent ?
-                            width: Val::Px(300.),
+                            width: Val::Percent(100.),
                             height: Val::Percent(100.),
                             ..Style::default()
                         },
@@ -334,10 +336,12 @@ pub fn create_dialog_panel(
             //         ..ImageBundle::default()
             //     });
 
-            // Player Scroll
+            /* -------------------------------------------------------------------------- */
+            /*                                Player Scroll                               */
+            /* -------------------------------------------------------------------------- */
 
             let player_scroll_img =
-                asset_server.load("textures/hud/HUD_1px_parchemin_MC_ouvert.png");
+                asset_server.load("textures/UI/HUD/dialog/HUD_1px_parchemin_MC_ouvert.png");
 
             parent
                 .spawn((
@@ -375,14 +379,13 @@ pub fn create_dialog_panel(
                             .spawn((
                                 ButtonBundle {
                                     style: Style {
-                                        // TODO: custom size ? (text dependent)
-                                        width: Val::Px(300.),
-                                        height: Val::Px(30.),
+                                        width: Val::Percent(BUTTON_WIDTH),
+                                        height: Val::Percent(3.5),
                                         margin: UiRect::all(Val::Auto),
-                                        top: Val::Px(
-                                            FIRST_BUTTON_TOP_VAL - BUTTON_SPACING * i as f32,
+                                        top: Val::Percent(
+                                            FIRST_BUTTON_TOP_PERCENT - BUTTON_SPACING * i as f32,
                                         ),
-                                        left: Val::Px(BUTTON_LEFT_VAL),
+                                        left: Val::Percent(BUTTON_LEFT_PERCENT),
                                         ..default()
                                     },
                                     background_color: NORMAL_BUTTON.into(),
@@ -398,7 +401,7 @@ pub fn create_dialog_panel(
                                         "",
                                         TextStyle {
                                             font: dialog_panel_resources.text_font.clone(),
-                                            // TODO: Find the correct value for the choice font size
+                                            // REFACTOR: dialog box - scale the text with the UI (shitty fix: use window height)
                                             font_size: 25.,
                                             color: Color::BLACK,
                                         },
@@ -406,7 +409,7 @@ pub fn create_dialog_panel(
                                     .with_alignment(TextAlignment::Left),
                                     style: Style {
                                         flex_wrap: FlexWrap::Wrap,
-                                        max_width: Val::Px(300.),
+                                        max_width: Val::Percent(100.),
                                         max_height: Val::Percent(100.),
                                         ..default()
                                     },

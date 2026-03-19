@@ -142,13 +142,17 @@ pub struct LocationSensor {
     pub location: Location,
 }
 
-/// TODO: make it work
+/// Put a transparency effect on the chandelier (ceiling object) when the player is under
+///
+/// ## Notes
+///
+/// FIXME: the transparency effect
 pub fn chandeliers_opacity(
     mut chandeliers_query: Query<(&mut Sprite, &Transform), With<Chandelier>>,
     player_query: Query<&Transform, With<Player>>,
 ) {
     let player_transform = player_query.single();
-    // OPTIMIZE: we could put the location in the Chandelier struct
+    // OPTIMIZE: we could also put the `Location` in the Chandelier struct
     // to first compare if we have to check the position
     for (mut sprite, chandelier_transform) in chandeliers_query.iter_mut() {
         sprite.color.set_a(

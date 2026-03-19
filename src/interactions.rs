@@ -40,9 +40,10 @@ pub struct InteractionIconEvent {
 /// # Constraint
 ///
 /// The first children must be the interaction sensor
+///
 /// REFACTOR: foolproof the children sensor obligation (by pointing at it directly)
 #[derive(Copy, Clone, Debug, Default, Component)]
-pub struct Interactible {
+pub struct Interactive {
     pub icon_translation: Vec3,
     pub interaction_id: u32,
     pub in_range: bool,
@@ -54,7 +55,7 @@ pub struct InteractionSensor;
 #[derive(Component)]
 pub struct InteractIcon;
 
-impl Interactible {
+impl Interactive {
     pub fn new(icon_translation: Vec3, interaction_id: u32) -> Self {
         Self {
             icon_translation,
@@ -78,7 +79,7 @@ pub struct InteractionResources {
 }
 
 pub fn setup_interactions(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let button = asset_server.load("textures/hud/interact_button.png");
+    let button = asset_server.load("textures/UI/HUD/dialog/interact_button.png");
     commands.insert_resource(InteractionResources {
         interact_button: button,
     });
@@ -93,7 +94,7 @@ fn interaction_icon_events(
     mut interaction_icon_event: EventWriter<InteractionIconEvent>,
 ) {
     for collision_event in collision_events.iter() {
-        // info!("{:#?}", collision_event);
+        // log::info!("{:#?}", collision_event);
         let (e1, e2) = collision_event.entities();
 
         if let (Ok(interacted), Err(_), Err(_), Ok(_)) | (Err(_), Ok(interacted), Ok(_), Err(_)) = (
@@ -113,7 +114,7 @@ fn interaction_icon_events(
 /// REFACTOR: don't (de)spawn the icon but (de)activate it
 pub fn interaction_icon(
     mut interaction_icon_events: EventReader<InteractionIconEvent>,
-    mut interactibles_query: Query<(&Children, &mut Interactible)>,
+    mut interactive_query: Query<(&Children, &mut Interactive)>,
     mut interact_icon_query: Query<&mut Visibility, With<InteractIcon>>,
 ) {
     for InteractionIconEvent {
@@ -121,8 +122,8 @@ pub fn interaction_icon(
         entity,
     } in interaction_icon_events.iter()
     {
-        let (children, mut interactible) = interactibles_query.get_mut(*entity).unwrap();
-        interactible.in_range = *entering_range;
+        let (children, mut interactive) = interactive_query.get_mut(*entity).unwrap();
+        interactive.in_range = *entering_range;
 
         let mut found = false;
         for child in children {
@@ -137,16 +138,16 @@ pub fn interaction_icon(
             }
         }
         if !found {
-            error!("Theres is no Interaction Icon in {:?}", *entity)
+            log::error!("Theres is no Interaction Icon in {:?}", *entity)
         }
     }
 }
 
-/// TODO: Only interact with the closest interactible
+/// TODO: Only interact with the closest interactive
 pub fn interaction(
     key_bindings: Res<KeyBindings>,
     keyboard_input: Res<Input<KeyCode>>,
-    interactibles_query: Query<(Entity, &Interactible)>,
+    interactive_query: Query<(Entity, &Interactive)>,
 
     temple_door_query: Query<Entity, With<TempleDoor>>,
     banner_door_query: Query<(Entity, &DoorState), With<SecretBanner>>,
@@ -157,9 +158,9 @@ pub fn interaction(
     mut character_interact_event: EventWriter<CharacterInteractionEvent>,
 ) {
     if keyboard_input.any_just_pressed(key_bindings.interact()) {
-        for (entity, interactible) in interactibles_query.iter() {
-            if interactible.in_range {
-                match interactible.interaction_id {
+        for (entity, interactive) in interactive_query.iter() {
+            if interactive.in_range {
+                match interactive.interaction_id {
                     BOX_INTERACTION_ID => {
                         props_interaction_event.send(PropsInteractionEvent);
                     }
@@ -181,7 +182,7 @@ pub fn interaction(
                     NPC_TALK_INTERACTION_ID => {
                         character_interact_event.send(CharacterInteractionEvent(entity));
                     }
-                    id => error!("Unknown interaction id {id}"),
+                    id => log::error!("Unknown interaction id {id}"),
                 }
             }
         }

@@ -95,12 +95,12 @@ pub fn jump_frame_character_state(
     >,
 ) {
     for (character, indices, mut sprite, character_state) in &mut query {
-        // info!("{character_state:#?}",);
-        let (first_indice, _, _) = &indices.get(character_state).unwrap();
-        sprite.index = *first_indice;
+        // log::info!("{character_state:#?}",);
+        let (start_anim, _, _) = &indices.get(character_state).unwrap();
+        sprite.index = *start_anim;
 
         match character_state {
-            // when running each time the anim loops it triggers this match arm
+            // when running each time the anim loops, it's back to the Idle State
             CharacterState::Idle => {
                 commands.entity(character).insert(TempoAnimation(Timer::new(
                     Duration::from_secs_f32(rand::thread_rng().gen_range(0.1..=5.)),
@@ -162,7 +162,7 @@ pub fn animate_character(
 
         if timer.just_finished() {
             let (_first_frame, last_frame, next_phase) = &indices.get(&character_state).unwrap();
-            // info!(
+            // log::info!(
             //     "({_first_frame}, {last_frame}, {next_phase:#?}): {}",
             //     sprite.index
             // );
@@ -177,7 +177,7 @@ pub fn animate_character(
             } else if sprite.index + 1 < texture_atlas.textures.len() {
                 sprite.index += 1;
             } else {
-                error!("anim limit reached: {}", name);
+                log::error!(target: "Animation", "anim limit reached: {name}");
                 // commands.entity(character).remove::<AnimationTimer>();
                 *character_state = *next_phase;
                 sprite.index = indices.get(next_phase).unwrap().0;
@@ -186,11 +186,15 @@ pub fn animate_character(
     }
 }
 
+/* -------------------------------------------------------------------------- */
+/*                           Title Screen Animation                           */
+/* -------------------------------------------------------------------------- */
+
 /// Jump directly to the correct frame when the state has changed.
 /// - If the state is the default one: `ManorLightsPattern::FullLights`,
-/// Then start a `TempoAnimation` Timer
-/// which will be taken care of in `sprite_sheet_animation::tempo_animation_timer`.
-/// - Else
+///   Then start a `TempoAnimation` Timer
+///   which will be taken care of in `sprite_sheet_animation::tempo_animation_timer`.
+/// - DOC: write the "Else" section
 pub fn jump_frame_manor_lights_state(
     mut commands: Commands,
     mut manor_lights_query: Query<
@@ -199,7 +203,7 @@ pub fn jump_frame_manor_lights_state(
     >,
 ) {
     for (manor_lights, mut sprite, manor_lights_state) in &mut manor_lights_query {
-        // info!("{manor_lights_state:#?}");
+        // log::info!("{manor_lights_state:#?}");
         sprite.index = MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_state) as usize].0;
 
         match manor_lights_state {
@@ -263,8 +267,8 @@ pub fn animate_ui_atlas(
 /// Only for the manor lights.
 /// When the `TempoAnimation` is finished,
 /// - Choose a random new lights pattern
-/// (except of `ManorLightsPattern::FullLights`,
-/// confers `Distribution<ManorLightsPattern>` custom implementation).
+///   (except of `ManorLightsPattern::FullLights`,
+///   confers `Distribution<ManorLightsPattern>` custom implementation).
 /// - Or animate the pattern.
 pub fn animate_manor_lights(
     time: Res<Time>,
@@ -288,7 +292,7 @@ pub fn animate_manor_lights(
                     *manor_lights_pattern = rand::thread_rng().gen::<ManorLightsPattern>()
                 }
                 _ => {
-                    // info!(
+                    // log::info!(
                     //     "atlas.index: {}/{}",
                     //     atlas_image.index,
                     //     MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_pattern) as usize].1
