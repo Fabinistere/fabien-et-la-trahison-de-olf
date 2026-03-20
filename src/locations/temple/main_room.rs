@@ -53,7 +53,7 @@ pub fn secret_banner_interaction(
     mut remove_secret_room_cover_event: EventWriter<RemoveSecretRoomCoverEvent>,
     mut add_secret_room_cover_event: EventWriter<AddSecretRoomCoverEvent>,
 ) {
-    for SecretBannerEvent(door_state) in secret_banner_event.iter() {
+    for SecretBannerEvent(door_state) in secret_banner_event.read() {
         if player_location_query.single() == &Location::Temple {
             match *door_state {
                 DoorState::Closed => {

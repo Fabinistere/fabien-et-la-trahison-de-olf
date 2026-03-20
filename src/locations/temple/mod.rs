@@ -208,7 +208,7 @@ pub fn location_event(
 
     mut player_location_query: Query<&mut Location, With<Player>>,
 ) {
-    for collision_event in collision_events.iter() {
+    for collision_event in collision_events.read() {
         match collision_event {
             CollisionEvent::Started(e1, e2, _) => {
                 match (
@@ -302,7 +302,7 @@ pub fn door_interact(
     for DoorInteractEvent {
         door_entity,
         open_delta_s,
-    } in door_interact_events.iter()
+    } in door_interact_events.read()
     {
         let (entity, mut door_state, door_interact) = doors_query.get_mut(*door_entity).unwrap();
 

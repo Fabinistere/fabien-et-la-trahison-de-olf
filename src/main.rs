@@ -20,12 +20,9 @@ mod locations;
 mod menu;
 mod ui;
 
-use std::time::Duration;
 // use std::io::Write; // for infox!
 
-use bevy::{
-    asset::ChangeWatcher, audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*,
-};
+use bevy::{audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*};
 use bevy_rapier2d::prelude::*;
 use cutscene::{cameras::PlayerCamera, PlayMode};
 /* ------------------------ LOGGING  ------------------------ */
@@ -110,10 +107,6 @@ fn main() {
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest())
-                .set(AssetPlugin {
-                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(200)),
-                    ..default()
-                })
                 //,
                 // .set(LogPlugin {
                 //     update_subscriber: Some(|subscriber| {

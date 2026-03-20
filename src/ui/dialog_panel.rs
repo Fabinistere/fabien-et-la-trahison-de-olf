@@ -132,7 +132,7 @@ pub fn despawn_dialog_panel(
     mut commands: Commands,
     mut completed_event: EventReader<TweenCompleted>,
 ) {
-    for TweenCompleted { entity, user_data } in completed_event.iter() {
+    for TweenCompleted { entity, user_data } in completed_event.read() {
         if *user_data == 0 {
             commands.entity(*entity).despawn_recursive();
         }

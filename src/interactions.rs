@@ -93,7 +93,7 @@ fn interaction_icon_events(
 
     mut interaction_icon_event: EventWriter<InteractionIconEvent>,
 ) {
-    for collision_event in collision_events.iter() {
+    for collision_event in collision_events.read() {
         // log::info!("{:#?}", collision_event);
         let (e1, e2) = collision_event.entities();
 
@@ -120,7 +120,7 @@ pub fn interaction_icon(
     for InteractionIconEvent {
         entering_range,
         entity,
-    } in interaction_icon_events.iter()
+    } in interaction_icon_events.read()
     {
         let (children, mut interactive) = interactive_query.get_mut(*entity).unwrap();
         interactive.in_range = *entering_range;

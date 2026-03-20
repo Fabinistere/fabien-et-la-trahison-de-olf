@@ -211,7 +211,7 @@ pub fn follow_event(
     target_children_query: Query<&Children>,
     character_hitbox_query: Query<Entity, With<CharacterHitbox>>,
 ) {
-    for FollowEvent { npc, target } in follow_event.iter() {
+    for FollowEvent { npc, target } in follow_event.read() {
         let (mut behavior, npc_children) = npc_query.get_mut(*npc).unwrap();
         let mut npc_follow_range: Result<Entity, _> = Err(QueryEntityError::NoSuchEntity(*npc));
         // FIXME: throw the correct error not this
@@ -435,7 +435,7 @@ pub fn chase_management(
     mut ev_combat: EventWriter<CombatEvent>,
     mut ev_stop_chase: EventWriter<StopChaseEvent>,
 ) {
-    for collision_event in collision_events.iter() {
+    for collision_event in collision_events.read() {
         // log::info!("{:#?}", collision_event);
         let (entity_1, entity_2) = collision_event.entities();
 

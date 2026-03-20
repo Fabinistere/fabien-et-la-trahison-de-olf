@@ -100,7 +100,7 @@ impl Landmark {
             .filter(|(_, landmark)| {
                 landmark.status == LandmarkStatus::Free && landmark.location == location
             })
-            .choose(&mut rand::thread_rng())
+            .choose(&mut rand::rng())
         {
             None => Err(LandmarkReservationError::NoFreeLandmarks),
             Some((free_random_landmark, mut landmark)) => {
@@ -135,7 +135,7 @@ fn landmark_arrival(
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
     // parent_query: Query<&Parent>,
 ) {
-    for collision_event in collision_events.iter() {
+    for collision_event in collision_events.read() {
         // log::info!("{:#?}", collision_event);
         let (entity_1, entity_2) = collision_event.entities();
 

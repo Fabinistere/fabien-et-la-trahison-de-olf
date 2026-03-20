@@ -6,8 +6,9 @@ use crate::{
 };
 use bevy::{input::keyboard::KeyboardInput, prelude::*, window::WindowResized};
 use rand::{
-    distributions::{Distribution, Standard},
+    distr::{Distribution, StandardUniform},
     Rng,
+    RngExt
 };
 use strum::IntoEnumIterator;
 
@@ -90,9 +91,9 @@ pub enum ManorLightsPattern {
 }
 
 /// Won't draw `ManorLightsPattern::FullLights`
-impl Distribution<ManorLightsPattern> for Standard {
+impl Distribution<ManorLightsPattern> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ManorLightsPattern {
-        match rng.gen_range(1..=5) {
+        match rng.random_range(1..=5) {
             1 => ManorLightsPattern::TowerReset,
             2 => ManorLightsPattern::SmallShutdown,
             3 => ManorLightsPattern::TopShutdown,
@@ -117,7 +118,7 @@ fn game_start(
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if game_state.get() == &GameState::Menu && keyboard_inputs.iter().next().is_some() {
+    if game_state.get() == &GameState::Menu && keyboard_inputs.read().next().is_some() {
         next_game_state.set(GameState::Playing);
     }
 }
@@ -187,7 +188,7 @@ fn language_changed(
     mut text_query: Query<(&mut Text, &DialogId)>,
     mut ui_image_query: Query<(&mut UiImage, &DialogId), With<Title>>,
 ) {
-    for LanguageChangedEvent in language_event.iter() {
+    for LanguageChangedEvent in language_event.read() {
         for (mut text, dialog_id) in &mut text_query {
             text.sections[0].value = dialogs.get(*dialog_id, *language);
         }
@@ -222,7 +223,7 @@ fn adjust_art_height(
         window: _,
         width,
         height,
-    } in resize_reader.iter()
+    } in resize_reader.read()
     {
         let mut style = query.single_mut();
         log::info!(
@@ -282,6 +283,7 @@ fn setup_menu(
             NodeBundle {
                 style: Style {
                     width: Val::Percent(100.),
+                    height: Val::Percent(100.),
                     // TODO: Animate Transi Start
                     // bottom: Val::Percent(-40.),
                     ..default()

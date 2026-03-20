@@ -85,7 +85,7 @@ use log4rs::{
 struct ColoredEncoder;
 
 impl Encode for ColoredEncoder {
-    fn encode(&self, w: &mut dyn Write, record: &log::Record) -> Result<(), bevy::asset::Error> {
+    fn encode(&self, w: &mut dyn Write, record: &log::Record) -> Result<(), anyhow::Error> {
         let level = match record.level() {
             log::Level::Error => format!("{:>5}", record.level()).red().bold(),
             log::Level::Warn => format!("{:>5}", record.level()).yellow().bold(),

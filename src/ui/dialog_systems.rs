@@ -4,7 +4,7 @@ use core::fmt;
 use std::{collections::BTreeMap, str::FromStr};
 
 use bevy::prelude::*;
-use rand::seq::SliceRandom;
+use rand::seq::IteratorRandom;
 use yml_dialog::{Content, DialogNode};
 
 use crate::{
@@ -116,7 +116,7 @@ pub fn trigger_event_handler(
 
     mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
-    for TriggerEvents(incoming_events) in trigger_event.iter() {
+    for TriggerEvents(incoming_events) in trigger_event.read() {
         for event_to_trigger in incoming_events {
             match WorldEvent::from_str(event_to_trigger) {
                 Err(_) => log::error!("{event_to_trigger} is not recognize as a WorldEvent"),
@@ -169,7 +169,7 @@ pub fn change_dialog_state(
     mut next_game_state: ResMut<NextState<HUDState>>,
     mut trigger_event: EventWriter<TriggerEvents>,
 ) {
-    for ChangeStateEvent(new_state) in change_state_event.iter() {
+    for ChangeStateEvent(new_state) in change_state_event.read() {
         if let Some(interlocutor) = current_interlocutor.interlocutor {
             if let Some((current_state, ref dialog)) = dialogs.get_mut(&interlocutor) {
                 match dialog.get(new_state) {
@@ -329,9 +329,9 @@ pub fn update_dialog_panel(
                                     }
                                 }
                                 if let Some(child_index) =
-                                    possible_choices_index.choose(&mut rand::thread_rng())
+                                    possible_choices_index.into_iter().choose(&mut rand::rng())
                                 {
-                                    change_state_event.send(ChangeStateEvent(*child_index))
+                                    change_state_event.send(ChangeStateEvent(child_index))
                                 } else {
                                     log::warn!("The NPC doesn't have a possible choice");
                                     // TODO: if `possible_choices_index.is_empty()`

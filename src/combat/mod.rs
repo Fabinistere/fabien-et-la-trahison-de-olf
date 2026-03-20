@@ -274,7 +274,7 @@ pub fn enter_combat(
     mut player_companie: Query<Entity, (With<NPC>, With<Recruted>)>,
     mut foes_query: Query<(Entity, Option<&GroupSize>), (With<NPC>, Without<Recruted>)>,
 ) {
-    for CombatEvent { entity } in ev_combat_enter.iter() {
+    for CombatEvent { entity } in ev_combat_enter.read() {
         log::info!("Combat Event");
         let player = player_query.single_mut();
 
@@ -319,7 +319,7 @@ pub fn spawn_party_members(
     // mut commands: Commands,
     mut ev_spawn_party_members: EventReader<SpawnCombatFoesEvent>,
 ) {
-    for _ev in ev_spawn_party_members.iter() {
+    for _ev in ev_spawn_party_members.read() {
         // ev.group_size
         // TODO: Spawn Party Member
     }

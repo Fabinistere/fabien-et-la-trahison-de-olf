@@ -58,7 +58,7 @@ pub struct PropsInteractionEvent;
 
 /// TODO: Lunch a dialog or smth
 pub fn props_interaction_event(mut props_interaction_events: EventReader<PropsInteractionEvent>) {
-    for PropsInteractionEvent in props_interaction_events.iter() {
+    for PropsInteractionEvent in props_interaction_events.read() {
         log::info!("interact with props");
     }
 }
@@ -73,7 +73,7 @@ pub fn remove_balcony_cover(
     mut balcony_cover_query: Query<(Entity, Option<&mut Fade>, &mut BalconyCover)>,
     mut balcony_door_query: Query<&mut Visibility, With<BalconyUpDoor>>,
 ) {
-    for collision_event in collision_events.iter() {
+    for collision_event in collision_events.read() {
         match collision_event {
             CollisionEvent::Started(e1, e2, _) => {
                 match (

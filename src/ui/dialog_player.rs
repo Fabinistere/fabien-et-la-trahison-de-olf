@@ -35,7 +35,7 @@ pub fn continue_monolog(
         key_code: _,
         state,
         window: _,
-    } in key_evr.iter()
+    } in key_evr.read()
     {
         if *state == ButtonState::Pressed {
             if current_monolog.texts.len() > 1 {

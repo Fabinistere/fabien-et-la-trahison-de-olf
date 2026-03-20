@@ -61,7 +61,7 @@ pub fn remove_secret_room_cover(
     mut commands: Commands,
     mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
 ) {
-    for RemoveSecretRoomCoverEvent in remove_secret_room_cover_event.iter() {
+    for RemoveSecretRoomCoverEvent in remove_secret_room_cover_event.read() {
         if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.get_single_mut() {
             if let Some(mut fade) = fade_opt {
                 fade.invert();
@@ -82,7 +82,7 @@ pub fn add_secret_room_cover(
     mut commands: Commands,
     mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
 ) {
-    for AddSecretRoomCoverEvent in add_secret_room_cover_event.iter() {
+    for AddSecretRoomCoverEvent in add_secret_room_cover_event.read() {
         if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.get_single_mut() {
             if let Some(mut fade) = fade_opt {
                 fade.invert();

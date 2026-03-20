@@ -55,7 +55,7 @@ pub fn follow_a_random_character(
             .remove::<CameraFocus>();
     }
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let (random_pop_star, pop_star_name) = characters_query.iter().choose(&mut rng).unwrap();
     log::info!("{pop_star_name:?} is the new pop star");
 

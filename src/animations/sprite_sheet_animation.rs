@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use rand::Rng;
+use rand::RngExt;
 use std::{collections::HashMap, time::Duration};
 
 use crate::{
@@ -103,7 +103,7 @@ pub fn jump_frame_character_state(
             // when running each time the anim loops, it's back to the Idle State
             CharacterState::Idle => {
                 commands.entity(character).insert(TempoAnimation(Timer::new(
-                    Duration::from_secs_f32(rand::thread_rng().gen_range(0.1..=5.)),
+                    Duration::from_secs_f32(rand::rng().random_range(0.1..=5.)),
                     TimerMode::Once,
                 )));
             }
@@ -212,7 +212,7 @@ pub fn jump_frame_manor_lights_state(
                 commands
                     .entity(manor_lights)
                     .insert(TempoAnimation(Timer::new(
-                        Duration::from_secs(rand::thread_rng().gen_range(2..=10)),
+                        Duration::from_secs(rand::rng().random_range(2..=10)),
                         TimerMode::Once,
                     )));
             }
@@ -222,7 +222,7 @@ pub fn jump_frame_manor_lights_state(
                 commands
                     .entity(manor_lights)
                     .insert(TempoAnimation(Timer::new(
-                        Duration::from_secs(rand::thread_rng().gen_range(3..=6)),
+                        Duration::from_secs(rand::rng().random_range(3..=6)),
                         TimerMode::Once,
                     )));
             }
@@ -252,7 +252,7 @@ pub fn animate_ui_atlas(
                     atlas_image.index = animation.start_index;
                     if smoke_query.get(entity).is_ok() {
                         commands.entity(entity).insert(TempoAnimation(Timer::new(
-                            Duration::from_secs(rand::thread_rng().gen_range(6..=15)),
+                            Duration::from_secs(rand::rng().random_range(6..=15)),
                             TimerMode::Once,
                         )));
                     }
@@ -289,7 +289,7 @@ pub fn animate_manor_lights(
         if manor_lights_timer.finished() {
             match *manor_lights_pattern {
                 ManorLightsPattern::FullLights => {
-                    *manor_lights_pattern = rand::thread_rng().gen::<ManorLightsPattern>()
+                    *manor_lights_pattern = rand::rng().random::<ManorLightsPattern>()
                 }
                 _ => {
                     // log::info!(

@@ -74,7 +74,7 @@ pub fn reset_dialog_box(
     for ResetDialogBoxEvent {
         dialog_box,
         text: event_text,
-    } in reset_event.iter()
+    } in reset_event.read()
     {
         let (potential_dialog_box, children) = dialog_box_query.get_mut(*dialog_box).unwrap();
         match potential_dialog_box {
