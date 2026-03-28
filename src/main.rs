@@ -22,7 +22,7 @@ mod ui;
 
 // use std::io::Write; // for infox!
 
-use bevy::{audio::VolumeLevel, ecs::schedule::ScheduleBuildSettings, prelude::*};
+use bevy::{ecs::schedule::ScheduleBuildSettings, prelude::*};
 use bevy_rapier2d::prelude::*;
 use cutscene::{cameras::PlayerCamera, PlayMode};
 /* ------------------------ LOGGING  ------------------------ */
@@ -88,11 +88,19 @@ fn main() {
     app.insert_resource(Msaa::Off)
         .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
         .insert_resource(controls::KeyBindings {
-            up: [Key(KeyCode::W), Key(KeyCode::Z), Key(KeyCode::Up)],
-            down: [Key(KeyCode::S), Key(KeyCode::Down)],
-            right: [Key(KeyCode::D), Key(KeyCode::Right)],
-            left: [Key(KeyCode::A), Key(KeyCode::Q), Key(KeyCode::Left)],
-            interact: [Key(KeyCode::E), Key(KeyCode::R)],
+            up: [
+                Key(KeyCode::KeyW),
+                Key(KeyCode::KeyZ),
+                Key(KeyCode::ArrowUp),
+            ],
+            down: [Key(KeyCode::KeyS), Key(KeyCode::ArrowDown)],
+            right: [Key(KeyCode::KeyD), Key(KeyCode::ArrowRight)],
+            left: [
+                Key(KeyCode::KeyA),
+                Key(KeyCode::KeyQ),
+                Key(KeyCode::ArrowLeft),
+            ],
+            interact: [Key(KeyCode::KeyE), Key(KeyCode::KeyR)],
         })
         .add_plugins((
             DefaultPlugins
@@ -145,8 +153,8 @@ fn main() {
             combat::CombatPlugin,
             ui::UiPlugin,
         ))
-        .add_state::<GameState>()
-        .add_state::<HUDState>()
+        .init_state::<GameState>()
+        .init_state::<HUDState>()
         .add_systems(Startup, (game_setup, music))
         .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 
@@ -165,6 +173,8 @@ fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfigurat
 
     let mut camera = Camera2dBundle::default();
     camera.projection.scale = 0.1;
+    // Higher order camera (UI is displayed onto this one)
+    camera.camera.order = 2;
     commands.spawn((camera, PlayerCamera));
 }
 
@@ -180,8 +190,7 @@ fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         AudioBundle {
             source: asset_server.load("sounds/FTO_Dracula_theme.ogg"),
-            settings: PlaybackSettings::LOOP
-                .with_volume(bevy::audio::Volume::Relative(VolumeLevel::new(0.10))),
+            settings: PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::new(0.10)),
         },
         CastleTheme,
     ));

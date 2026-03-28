@@ -237,7 +237,12 @@ fn spawn_characters(
         let npc = commands
             .spawn((
                 SpriteSheetBundle {
-                    texture_atlas: characters_spritesheet.texture_atlas.clone(),
+                    texture: characters_spritesheet.texture.clone(),
+                    atlas: TextureAtlas {
+                        layout: characters_spritesheet.atlas_handle.clone(),
+                        // idle start index
+                        index: global_animations_indices[spritesheet_line][1].0,
+                    },
                     transform: Transform {
                         translation: spawn_position.into(),
                         scale: Vec3::splat(NPC_SCALE),
@@ -384,7 +389,12 @@ fn spawn_villains(
         let npc = commands
             .spawn((
                 SpriteSheetBundle {
-                    texture_atlas: characters_spritesheet.texture_atlas.clone(),
+                    texture: characters_spritesheet.texture.clone(),
+                    atlas: TextureAtlas {
+                        layout: characters_spritesheet.atlas_handle.clone(),
+                        // idle start index
+                        index: global_animations_indices[spritesheet_line][1].0,
+                    },
                     transform: Transform {
                         translation: spawn_position.into(),
                         scale: Vec3::splat(NPC_SCALE),
@@ -515,7 +525,12 @@ fn spawn_cat(mut commands: Commands, characters_spritesheet: Res<CharacterSprite
     commands
         .spawn((
             SpriteSheetBundle {
-                texture_atlas: characters_spritesheet.texture_atlas.clone(),
+                texture: characters_spritesheet.texture.clone(),
+                atlas: TextureAtlas {
+                    layout: characters_spritesheet.atlas_handle.clone(),
+                    // idle start index
+                    index: BLACK_CAT_LINE * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
+                },
                 transform: Transform {
                     translation: OLF_CAT_POSITION.into(),
                     scale: Vec3::splat(OLF_CAT_SCALE),

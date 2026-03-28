@@ -246,15 +246,13 @@ pub fn animation(
         (
             &Velocity,
             &mut CharacterState,
-            &mut TextureAtlasSprite,
+            &mut Sprite,
             Option<&Direction>,
         ),
         (Or<(Changed<Velocity>, Changed<Direction>)>, With<NPC>),
     >,
 ) {
-    for (rb_vel, mut npc_state, mut texture_atlas_sprite, potential_forced_direction) in
-        &mut npc_query
-    {
+    for (rb_vel, mut npc_state, mut sprite, potential_forced_direction) in &mut npc_query {
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */
         /* -------------------------------------------------------------------------- */
@@ -278,12 +276,12 @@ pub fn animation(
         match potential_forced_direction {
             None => {
                 if rb_vel.linvel.x > 0. {
-                    texture_atlas_sprite.flip_x = false;
+                    sprite.flip_x = false;
                 } else if rb_vel.linvel.x < 0. {
-                    texture_atlas_sprite.flip_x = true;
+                    sprite.flip_x = true;
                 }
             }
-            Some(direction) => texture_atlas_sprite.flip_x = (*direction).into(),
+            Some(direction) => sprite.flip_x = (*direction).into(),
         }
     }
 }

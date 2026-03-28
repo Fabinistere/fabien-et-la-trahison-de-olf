@@ -20,7 +20,7 @@ pub struct CharacterHitbox;
 
 #[derive(Debug)]
 pub struct CharacterTexture {
-    pub normal: Handle<TextureAtlas>,
+    pub normal: Handle<TextureAtlasLayout>,
     pub icon: Handle<Image>,
 }
 

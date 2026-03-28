@@ -23,6 +23,7 @@ pub struct Cutscene {
 }
 
 impl Cutscene {
+    #[allow(unused)]
     pub fn new() -> Self {
         Self {
             frames: vec![

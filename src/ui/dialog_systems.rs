@@ -331,7 +331,7 @@ pub fn update_dialog_panel(
                                 if let Some(child_index) =
                                     possible_choices_index.into_iter().choose(&mut rand::rng())
                                 {
-                                    change_state_event.send(ChangeStateEvent(child_index))
+                                    change_state_event.send(ChangeStateEvent(child_index));
                                 } else {
                                     log::warn!("The NPC doesn't have a possible choice");
                                     // TODO: if `possible_choices_index.is_empty()`

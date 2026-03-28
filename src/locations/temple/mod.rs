@@ -16,8 +16,8 @@ pub mod hall;
 pub mod main_room;
 pub mod secret_room;
 
-#[derive(Component, Deref, DerefMut)]
-pub struct ZPosition(f32);
+// #[derive(Component, Deref, DerefMut)]
+// pub struct ZPosition(f32);
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, Component)]
 pub enum Location {
@@ -329,17 +329,16 @@ pub fn door_interact(
     }
 }
 
-/// FIXME: When spamming the door, an event can drop and the sprite.index can overflow
+/// TOTEST: FIXME: When spamming the door, an event can drop and the sprite.index can overflow
 pub fn open_close_door(
     time: Res<Time>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
+    texture_atlases: Res<Assets<TextureAtlasLayout>>,
     mut commands: Commands,
     mut doors_query: Query<(
         Entity,
         &mut DoorState,
         &mut DoorInteract,
-        &mut TextureAtlasSprite,
-        &Handle<TextureAtlas>,
+        &mut TextureAtlas,
         &Children,
     )>,
     door_collider_closed_query: Query<Entity, With<DoorColliderClosed>>,
@@ -347,24 +346,18 @@ pub fn open_close_door(
     mut temple_door_query: Query<&mut OverlappingEntity, With<TempleDoor>>,
     door_collider_opened_query: Query<Entity, With<DoorColliderOpened>>,
 ) {
-    for (
-        entity,
-        mut door_state,
-        mut door_interaction,
-        mut sprite,
-        texture_atlas_handle,
-        children,
-    ) in doors_query.iter_mut()
+    for (entity, mut door_state, mut door_interaction, mut atlas, children) in
+        doors_query.iter_mut()
     {
         door_interaction.timer.tick(time.delta());
 
         if door_interaction.timer.finished() {
-            let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+            let layout = texture_atlases.get(atlas.layout.clone()).unwrap();
 
             if *door_state == DoorState::Opening {
-                sprite.index += 1;
+                atlas.index = (atlas.index + 1) % layout.textures.len();
 
-                if sprite.index >= texture_atlas.len() - 1 {
+                if atlas.index >= layout.textures.len() - 1 {
                     commands.entity(entity).remove::<DoorInteract>();
 
                     for child in children {
@@ -376,14 +369,14 @@ pub fn open_close_door(
                     }
 
                     *door_state = DoorState::Opened;
-                    if let Ok(mut ovelapping_setting) = temple_door_query.get_mut(entity) {
-                        ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
+                    if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
+                        overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
                     }
                 }
             } else if *door_state == DoorState::Closing {
-                sprite.index -= 1;
+                atlas.index = (atlas.index + layout.textures.len() - 1) % layout.textures.len();
 
-                if sprite.index == 0 {
+                if atlas.index == 0 {
                     commands.entity(entity).remove::<DoorInteract>();
 
                     for child in children {
@@ -395,8 +388,8 @@ pub fn open_close_door(
                     }
 
                     *door_state = DoorState::Closed;
-                    if let Ok(mut ovelapping_setting) = temple_door_query.get_mut(entity) {
-                        ovelapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
+                    if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
+                        overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
                     }
                 }
             }

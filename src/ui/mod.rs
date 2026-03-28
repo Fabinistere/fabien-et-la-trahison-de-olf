@@ -70,5 +70,5 @@ impl Plugin for UiPlugin {
     }
 }
 
-#[derive(Component)]
-pub struct UiElement;
+// #[derive(Component)]
+// pub struct UiElement;

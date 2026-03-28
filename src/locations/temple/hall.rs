@@ -124,7 +124,7 @@ pub fn remove_balcony_cover(
 /// - cut the Hall floor and put it in the Temple Floor which will always be under
 pub fn setup_hall(
     mut commands: Commands,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
     interaction_resources: Res<InteractionResources>,
 ) {
@@ -145,13 +145,11 @@ pub fn setup_hall(
 
     let chandelier = asset_server.load("textures/v4.0.0/chandelier.png");
     let small_flame_spritesheet = asset_server.load("textures/v4.0.0/burning_loop_5.png");
-    let small_flame_texture_atlas =
-        TextureAtlas::from_grid(small_flame_spritesheet, Vec2::new(8., 8.), 4, 1, None, None);
+    let small_flame_layout = TextureAtlasLayout::from_grid(Vec2::new(8., 8.), 4, 1, None, None);
     let wall_light_support = asset_server.load("textures/v4.0.0/Hall/Light_support.png");
 
     let door_spritesheet = asset_server.load("textures/v4.0.0/Hall/door_spritesheet.png");
-    let door_texture_atlas =
-        TextureAtlas::from_grid(door_spritesheet, Vec2::new(20., 38.), 1, 8, None, None);
+    let door_layout = TextureAtlasLayout::from_grid(Vec2::new(20., 38.), 1, 8, None, None);
     let door_collider = asset_server.load("textures/v4.0.0/Hall/door_collider.png");
     let door_collider_opened_left =
         asset_server.load("textures/v4.0.0/Hall/door_collider_opened_left.png");
@@ -352,7 +350,11 @@ pub fn setup_hall(
             parent
                 .spawn((
                     SpriteSheetBundle {
-                        texture_atlas: texture_atlases.add(door_texture_atlas),
+                        atlas: TextureAtlas {
+                            layout: texture_atlases.add(door_layout),
+                            index: 0,
+                        },
+                        texture: door_spritesheet,
                         transform: Transform::from_translation(DOOR_POSITION.into()),
                         ..default()
                     },
@@ -475,13 +477,17 @@ pub fn setup_hall(
                 parent
                     .spawn((
                         SpriteSheetBundle {
-                            texture_atlas: texture_atlases.add(small_flame_texture_atlas.clone()),
+                            atlas: TextureAtlas {
+                                layout: texture_atlases.add(small_flame_layout.clone()),
+                                index: 0,
+                            },
+                            texture: small_flame_spritesheet.clone(),
                             transform: Transform::from_translation((*wall_light_position).into()),
                             ..default()
                         },
                         SpriteSheetAnimation {
                             start_index: 0,
-                            end_index: small_flame_texture_atlas.clone().len() - 1,
+                            end_index: small_flame_layout.clone().len() - 1,
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },
@@ -521,8 +527,11 @@ pub fn setup_hall(
                         {
                             parent.spawn((
                                 SpriteSheetBundle {
-                                    texture_atlas: texture_atlases
-                                        .add(small_flame_texture_atlas.clone()),
+                                    atlas: TextureAtlas {
+                                        layout: texture_atlases.add(small_flame_layout.clone()),
+                                        index: 0,
+                                    },
+                                    texture: small_flame_spritesheet.clone(),
                                     transform: Transform::from_translation(
                                         (*chandelier_flame_position).into(),
                                     ),
@@ -530,7 +539,7 @@ pub fn setup_hall(
                                 },
                                 SpriteSheetAnimation {
                                     start_index: 0,
-                                    end_index: small_flame_texture_atlas.clone().len() - 1,
+                                    end_index: small_flame_layout.clone().len() - 1,
                                     duration: AnimationDuration::Infinite,
                                     timer: Timer::new(
                                         Duration::from_millis(100),

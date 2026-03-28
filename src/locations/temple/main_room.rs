@@ -57,9 +57,11 @@ pub fn secret_banner_interaction(
         if player_location_query.single() == &Location::Temple {
             match *door_state {
                 DoorState::Closed => {
-                    remove_secret_room_cover_event.send(RemoveSecretRoomCoverEvent)
+                    remove_secret_room_cover_event.send(RemoveSecretRoomCoverEvent);
                 }
-                DoorState::Opened => add_secret_room_cover_event.send(AddSecretRoomCoverEvent),
+                DoorState::Opened => {
+                    add_secret_room_cover_event.send(AddSecretRoomCoverEvent);
+                }
                 _ => {}
             }
         }
@@ -73,7 +75,7 @@ pub fn secret_banner_interaction(
 // Spawns all entity related to the main room
 pub fn setup_main_room(
     mut commands: Commands,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     asset_server: Res<AssetServer>,
     interaction_resources: Res<InteractionResources>,
 ) {
@@ -99,8 +101,7 @@ pub fn setup_main_room(
 
     let chandelier = asset_server.load("textures/v4.0.0/chandelier.png");
     let small_flame_spritesheet = asset_server.load("textures/v4.0.0/burning_loop_5.png");
-    let small_flame_texture_atlas =
-        TextureAtlas::from_grid(small_flame_spritesheet, Vec2::new(8., 8.), 4, 1, None, None);
+    let small_flame_layout = TextureAtlasLayout::from_grid(Vec2::new(8., 8.), 4, 1, None, None);
 
     let plants = [
         asset_server.load("textures/v4.0.0/Temple/TL_plants.png"),
@@ -115,19 +116,11 @@ pub fn setup_main_room(
     let brazier_collider = asset_server.load("textures/v4.0.0/Temple/brazier_collider.png");
     let medium_flame_spritesheet =
         asset_server.load("textures/v4.0.0/Temple/fire_orange_medium.png");
-    let medium_flame_texture_atlas = TextureAtlas::from_grid(
-        medium_flame_spritesheet,
-        Vec2::new(11., 18.),
-        8,
-        1,
-        None,
-        None,
-    );
+    let medium_flame_layout = TextureAtlasLayout::from_grid(Vec2::new(11., 18.), 8, 1, None, None);
 
     let banner_spritesheet =
         asset_server.load("textures/v4.0.0/Temple/left_banner_spritesheet.png");
-    let banner_texture_atlas =
-        TextureAtlas::from_grid(banner_spritesheet, Vec2::new(21., 34.), 33, 1, None, None);
+    let banner_layout = TextureAtlasLayout::from_grid(Vec2::new(21., 34.), 33, 1, None, None);
     let banner_collider = asset_server.load("textures/v4.0.0/Temple/banner_collider.png");
 
     let cat_statue = asset_server.load("textures/v4.0.0/Temple/cat_statue.png");
@@ -227,7 +220,11 @@ pub fn setup_main_room(
             parent
                 .spawn((
                     SpriteSheetBundle {
-                        texture_atlas: texture_atlases.add(banner_texture_atlas),
+                        atlas: TextureAtlas {
+                            layout: texture_atlases.add(banner_layout),
+                            index: 0,
+                        },
+                        texture: banner_spritesheet,
                         transform: Transform::from_translation(BANNER_POSITION.into()),
                         ..default()
                     },
@@ -420,8 +417,11 @@ pub fn setup_main_room(
                         {
                             parent.spawn((
                                 SpriteSheetBundle {
-                                    texture_atlas: texture_atlases
-                                        .add(small_flame_texture_atlas.clone()),
+                                    atlas: TextureAtlas {
+                                        layout: texture_atlases.add(small_flame_layout.clone()),
+                                        index: 0,
+                                    },
+                                    texture: small_flame_spritesheet.clone(),
                                     transform: Transform::from_translation(
                                         (*chandelier_flame_position).into(),
                                     ),
@@ -429,7 +429,7 @@ pub fn setup_main_room(
                                 },
                                 SpriteSheetAnimation {
                                     start_index: 0,
-                                    end_index: small_flame_texture_atlas.clone().len() - 1,
+                                    end_index: small_flame_layout.clone().len() - 1,
                                     duration: AnimationDuration::Infinite,
                                     timer: Timer::new(
                                         Duration::from_millis(100),
@@ -489,14 +489,17 @@ pub fn setup_main_room(
                     .with_children(|parent| {
                         parent.spawn((
                             SpriteSheetBundle {
-                                texture_atlas: texture_atlases
-                                    .add(medium_flame_texture_atlas.clone()),
+                                atlas: TextureAtlas {
+                                    layout: texture_atlases.add(medium_flame_layout.clone()),
+                                    index: 0,
+                                },
+                                texture: medium_flame_spritesheet.clone(),
                                 transform: Transform::from_translation(BRAZIER_FLAME_OFFSET.into()),
                                 ..default()
                             },
                             SpriteSheetAnimation {
                                 start_index: 0,
-                                end_index: medium_flame_texture_atlas.clone().len() - 1,
+                                end_index: medium_flame_layout.clone().len() - 1,
                                 duration: AnimationDuration::Infinite,
                                 timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                             },

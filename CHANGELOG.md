@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ```text
 ERROR wgpu_hal::gles: wgpu-hal heuristics assumed that the view dimension will be equal to `D2` rather than `D2Array`.
-`D2` textures with `depth_or_array_layers == 1` are assumed to have view dimension `D2`
+`D2` textures with `depth_or_array_ blayers == 1` are assumed to have view dimension `D2`
 `D2` textures with `depth_or_array_layers > 1` are assumed to have view dimension `D2Array`
 `D2` textures with `depth_or_array_layers == 6` are assumed to have view dimension `Cube`
 `D2` textures with `depth_or_array_layers > 6 && depth_or_array_layers % 6 == 0` are assumed to have view dimension `CubeArray`
@@ -42,6 +42,145 @@ ERROR wgpu_hal::gles: wgpu-hal heuristics assumed that the view dimension will b
 [Migration Guide Bevy 0.12 -> 0.13](https://bevy.org/learn/migration-guides/0-12-to-0-13/)
 
 - Dependencies
+  - bevy_rapier_2d `0.25` - [changelog](https://github.com/dimforge/bevy_rapier/blob/master/CHANGELOG.md#v0250-19-feb-2024)
+    - Collisions between the character controller and sensors are now disabled by default.
+  - bevy-inspector-egui `0.24` - [changelog](https://github.com/jakobhellermann/bevy-inspector-egui/compare/v0.22.0...v0.24.0)
+- ECS
+  - [Ensure calls to `EventWriter::send` either handle the returned value, or suppress the result with `;`.](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#update-event-send-methods-to-return-eventid)
+  - [Replace `Option<With<T>>` with `Has<T>`](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#split-worldquery-into-querydata-and-queryfilter)
+  - [Rename `Input` to `ButtonInput`](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#rename-input-to-buttoninput)
+  - [Camera-driven UI](https://bevy.org/learn/migration-guides/0-12-to-0-13/#camera-driven-ui)
+
+  ```rust
+  // 0.12
+  commands.spawn(Camera3dBundle { ... });
+  commands.spawn(NodeBundle { ... });
+
+  // 0.13
+  let camera = commands.spawn(Camera3dBundle { ... }).id();
+  commands.spawn((TargetCamera(camera), NodeBundle { ... }));
+  ```
+
+  - [Texture Atlas rework](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#texture-atlas-rework)
+    - `SpriteSheetBundle` now uses a `Sprite` instead of a `TextureAtlasSprite` component
+
+    ```rust
+    // before
+    fn system_that_handle_animation(
+        texture_atlases: Res<Assets<TextureAtlas>>,
+        mut characters_query: Query<
+            (
+                Entity,
+                &AnimationIndices,
+                &mut AnimationTimer,
+                &mut TextureAtlas,
+                &Handle<TextureAtlas>,
+                &mut CharacterState,
+                &Name,
+            ),
+    ) {
+        for (
+            _character,
+            indices,
+            mut timer,
+            mut sprite,
+            texture_atlas_handle,
+            mut character_state,
+            name,
+        ) in &mut characters_query {
+                let texture_atlas = texture_atlases.get(texture_atlas_handle).unwrap();
+                sprite.index = (sprite.index + 1) % texture_atlas.textures.len();
+        }
+    }
+
+    // after
+    fn system_that_handle_animation(
+        texture_atlases: Res<Assets<TextureAtlasLayout>>, // TextureAtlasLayout
+        mut characters_query: Query<
+            (
+                Entity,
+                &AnimationIndices,
+                &mut AnimationTimer,
+                &mut TextureAtlas,
+                // &Handle<TextureAtlas>, // removed
+                &mut CharacterState,
+                &Name,
+            ),
+    ) {
+        for (
+            _character,
+            indices,
+            mut timer,
+            mut atlas, // renamed
+            // texture_atlas_handle, // removed
+            mut character_state,
+            name,
+        ) in &mut characters_query {
+            let layout = texture_atlases.get(atlas.layout.clone()).unwrap();
+            atlas.index = (atlas.index + 1) % layout.textures.len();
+        }
+    }
+    ```
+
+    - `TextureAtlas::from_grid` to `TextureAtlasLayout::from_grid` (remove the first argument, the spritesheet)
+
+    ```rust
+    // before
+    let manor_lights_spritesheet =
+        asset_server.load("textures/title_screen/manor_lights_sheet.png");
+    let layout =
+        TextureAtlas::from_grid(manor_lights_spritesheet, Vec2::new(426., 280.), 21, 1, None, None);
+    let layout_handle = texture_atlases.add(layout.clone());
+
+    commands.spawn(
+        AtlasImageBundle {
+            texture_atlas_image: UiTextureAtlasImage {
+                index: 0,
+                flip_x: false,
+                flip_y: false,
+            },
+            texture_atlas: layout_handle,
+            texture_atlas_image: UiTextureAtlasImage::default(), // removed
+            ..default()
+        }
+    )
+
+    // after
+    let manor_lights_spritesheet =
+        asset_server.load("textures/title_screen/manor_lights_sheet.png");
+    let layout =
+        TextureAtlasLayout::from_grid(Vec2::new(426., 280.), 21, 1, None, None);
+    let layout_handle = texture_atlases.add(layout.clone());
+
+     commands.spawn(
+        AtlasImageBundle {
+            texture_atlas: TextureAtlas {
+                layout: layout_handle,
+                index: 0
+            },
+            image: UiImage {
+                texture: manor_lights_spritesheet,
+                flip_x: false,
+                flip_y: false,
+            },
+            ..default()
+        }
+    )
+    ```
+
+    - `UiTextureAtlasImage` was removed. The `AtlasImageBundle` is now identical to `ImageBundle` with an additional `TextureAtlas`
+    `mut atlases: ResMut<Assets<TextureAtlas>>` to `mut atlases: ResMut<Assets<TextureAtlasLayout>>`
+      - `mut ui_anim_query: Query<&mut UiTextureAtlasImage>` to `mut ui_anim_query: Query<&mut ???>`
+  - [Renamed `App::add_state` to `init_state`.](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#add-insert-state-to-app)
+  - [`KeyCode` rename](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#update-winit-dependency-to-0-29)
+    - `KeyCode::W` -> `KeyCode::KeyW`
+    - `KeyCode::Up` -> `KeyCode::ArrowUp`
+    - `KeyCode::Key1` -> `KeyCode::Digit1`
+  - Remove the ability to ignore global volume. The option to ignore the global volume using `Volume::Absolute` has been removed and `Volume` now stores the volume level directly, removing the need for the `VolumeLevel` struct. `Volume::new_absolute` and `Volume::new_relative` were removed.
+  Use `Volume::new(0.5)`. `bevy::audio::Volume::Relative(VolumeLevel::new(0.10))` to `bevy::audio::Volume::new(0.10)`
+  - Rename `TextAlignment` to `JustifyText`.
+    - `Text::with_alignment` has been renamed to `Text::with_justify`
+  - `KeyboardInput.scan_code` renamed to `KeyboardInput.logical_key`
 
 ### Bevy `0.12`
 

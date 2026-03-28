@@ -180,6 +180,18 @@ pub fn setup_logging(log_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
                             .build(format!("{log_dir}/Error.log"))?,
                     ),
                 ),
+        )
+        .appender(
+            Appender::builder()
+                .filter(Box::new(ThresholdFilter::new(log::LevelFilter::Debug)))
+                .build(
+                    "debug_file",
+                    Box::new(
+                        FileAppender::builder()
+                            .encoder(Box::new(ColoredEncoder))
+                            .build(format!("{log_dir}/Debug.log"))?,
+                    ),
+                ),
         );
 
     /* -------- One appender + logger per target (generated) -------- */
@@ -199,7 +211,7 @@ pub fn setup_logging(log_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
                 Logger::builder()
                     .appender(&appender_name)
                     // .additive(false)
-                    .build(*target, log::LevelFilter::Info),
+                    .build(*target, log::LevelFilter::Debug),
             );
     }
 
@@ -219,7 +231,8 @@ pub fn setup_logging(log_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
             .appender("global_file")
             .appender("warn_file")
             .appender("error_file")
-            .build(log::LevelFilter::Info),
+            .appender("debug_file")
+            .build(log::LevelFilter::Debug),
     )?;
 
     log4rs::init_config(config)?;
@@ -245,6 +258,7 @@ pub fn setup_logging(log_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
 ///
 /// infox!(targets, "A nice log message with optional values: {}", optional_value);
 /// ```
+#[allow(unused_macros)]
 macro_rules! infox {
     ($targets:expr, $($arg:tt)*) => {
 

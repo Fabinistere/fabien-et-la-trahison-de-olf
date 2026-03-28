@@ -42,10 +42,10 @@ pub struct DialogPanel;
 pub fn load_textures(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    // mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     // let scroll_texture = asset_server.load("textures/UI/HUD/dialog/scroll_animation.png");
-    // let scroll_atlas = TextureAtlas::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45);
+    // let scroll_atlas = TextureAtlasLayout::from_grid(scroll_texture, SCROLL_SIZE.into(), 1, 45);
 
     let mut scroll_animation_frames = vec![];
     for i in 0..SCROLL_ANIMATION_FRAMES_NUMBER {
@@ -73,7 +73,7 @@ pub fn load_textures(
 ///
 /// FIXME: PB Spamming the ui key 'o'; ?throws an error
 pub fn create_dialog_panel_on_key_press(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     query: Query<(Entity, &Animator<Style>, &Style), With<DialogPanel>>,
 
     mut current_interlocutor: ResMut<CurrentInterlocutor>,
@@ -81,7 +81,7 @@ pub fn create_dialog_panel_on_key_press(
 
     mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::O) {
+    if keyboard_input.just_pressed(KeyCode::KeyO) {
         if let Ok((_entity, animator, _style)) = query.get_single() {
             if animator.tweenable().progress() >= 1. {
                 next_game_state.set(HUDState::Closed);
@@ -142,7 +142,7 @@ pub fn despawn_dialog_panel(
 pub fn create_dialog_panel(
     mut commands: Commands,
     mut _meshes: ResMut<Assets<Mesh>>,
-    _texture_atlases: Res<Assets<TextureAtlas>>,
+    _texture_atlases: Res<Assets<TextureAtlasLayout>>,
     dialog_panel_resources: Res<DialogPanelResources>,
     asset_server: Res<AssetServer>,
 ) {
@@ -216,6 +216,7 @@ pub fn create_dialog_panel(
             },
             DialogPanel,
             Animator::new(dialog_panel_tween),
+            // TargetCamera(player_camera),
             Name::new("UI Wall"),
         ))
         .with_children(|parent| {
@@ -306,7 +307,7 @@ pub fn create_dialog_panel(
                                 color: Color::BLACK,
                             },
                         )
-                        .with_alignment(TextAlignment::Left),
+                        .with_justify(JustifyText::Left),
                         style: Style {
                             flex_wrap: FlexWrap::Wrap,
                             top: Val::Percent(UPPER_TEXT_TOP),
@@ -406,7 +407,7 @@ pub fn create_dialog_panel(
                                             color: Color::BLACK,
                                         },
                                     )
-                                    .with_alignment(TextAlignment::Left),
+                                    .with_justify(JustifyText::Left),
                                     style: Style {
                                         flex_wrap: FlexWrap::Wrap,
                                         max_width: Val::Percent(100.),

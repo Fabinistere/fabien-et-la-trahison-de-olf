@@ -51,8 +51,8 @@ pub struct Player;
 #[derive(Component)]
 pub struct PlayerHitbox;
 
-#[derive(Component)]
-struct Immobilized;
+// #[derive(Component)]
+// struct Immobilized;
 
 #[derive(Component)]
 pub struct PlayerInteractionSensor;
@@ -62,12 +62,11 @@ pub struct PlayerCloseSensor;
 
 fn player_animation(
     mut player_query: Query<
-        (&Velocity, &mut TextureAtlasSprite, &mut CharacterState),
+        (&Velocity, &mut Sprite, &mut CharacterState),
         (Changed<Velocity>, With<Player>),
     >,
 ) {
-    if let Ok((rb_vel, mut texture_atlas_sprite, mut player_state)) = player_query.get_single_mut()
-    {
+    if let Ok((rb_vel, mut sprite, mut player_state)) = player_query.get_single_mut() {
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */
         /* -------------------------------------------------------------------------- */
@@ -90,9 +89,9 @@ fn player_animation(
         /* -------------------------------------------------------------------------- */
 
         if rb_vel.linvel.x > 0. {
-            texture_atlas_sprite.flip_x = false;
+            sprite.flip_x = false;
         } else if rb_vel.linvel.x < 0. {
-            texture_atlas_sprite.flip_x = true;
+            sprite.flip_x = true;
         }
     }
 }
@@ -102,18 +101,18 @@ fn player_animation(
 /// FIXME: bug - When pressing a move input into pressing down squat it goes through the whole spritesheet
 fn player_squat(
     mut commands: Commands,
-    mut player_query: Query<(Entity, &AnimationIndices, &mut TextureAtlasSprite), With<Player>>,
+    mut player_query: Query<(Entity, &AnimationIndices, &mut TextureAtlas), With<Player>>,
 ) {
-    if let Ok((player, indices, mut sprite)) = player_query.get_single_mut() {
+    if let Ok((player, indices, mut atlas)) = player_query.get_single_mut() {
         let (start_anim, _, _) = &indices.get(&CharacterState::Idle).unwrap();
-        sprite.index = *start_anim;
+        atlas.index = *start_anim;
         commands.entity(player).remove::<TempoAnimation>();
     }
 }
 
 fn player_movement(
     key_bindings: Res<KeyBindings>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut player_query: Query<(Entity, &Speed, &mut Velocity), With<Player>>,
 ) {
     if let Ok((_player, speed, mut rb_vel)) = player_query.get_single_mut() {
@@ -159,7 +158,12 @@ fn spawn_player(
     let player = commands
         .spawn((
             SpriteSheetBundle {
-                texture_atlas: characters_spritesheet.texture_atlas.clone(),
+                texture: characters_spritesheet.texture.clone(),
+                atlas: TextureAtlas {
+                    layout: characters_spritesheet.atlas_handle.clone(),
+                    // idle start index
+                    index: PLAYER_IDLE_FRAMES.0,
+                },
                 transform: Transform {
                     translation: THRONE_POSITION.into(), // PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),

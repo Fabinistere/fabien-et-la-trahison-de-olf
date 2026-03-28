@@ -54,26 +54,28 @@ impl Plugin for AnimationPlugin {
     }
 }
 
-#[derive(Deref, Clone, Resource)]
+#[derive(Clone, Resource)]
 pub struct CharacterSpriteSheet {
-    pub texture_atlas: Handle<TextureAtlas>,
+    pub texture: Handle<Image>,
+    pub atlas_handle: Handle<TextureAtlasLayout>,
 }
 
 impl FromWorld for CharacterSpriteSheet {
     fn from_world(world: &mut World) -> Self {
-        let texture_handle = world
+        let image = world
             .get_resource::<AssetServer>()
             .unwrap()
             .load("textures/characters/big_spritesheet_v6.png");
-        let atlas = TextureAtlas::from_grid(texture_handle, Vec2::splat(34.), 6, 16, None, None);
+        let atlas = TextureAtlasLayout::from_grid(Vec2::splat(34.), 6, 16, None, None);
 
         let atlas_handle = world
-            .get_resource_mut::<Assets<TextureAtlas>>()
+            .get_resource_mut::<Assets<TextureAtlasLayout>>()
             .unwrap()
             .add(atlas);
 
         CharacterSpriteSheet {
-            texture_atlas: atlas_handle,
+            texture: image,
+            atlas_handle,
         }
     }
 }

@@ -29,6 +29,8 @@ This project also follows to [A successful Git branching model](https://nvie.com
 
 ### Visualizing log files
 
+to see the debug log: `RUST_LOG=debug cargo run`
+
 - using less: `less -R logs/date/Global.log`
 - in neovim: you can use [baleia.nvim](https://github.com/m00qek/baleia.nvim)
 - in vscode: install [ANSI Colors](https://marketplace.visualstudio.com/items?itemName=iliazeus.vscode-ansi), and with your command palette `> ANSI Text: Open Preview`
@@ -53,7 +55,7 @@ All code in this repository is dual-licensed under either:
 - MIT License ([LICENSE-MIT](LICENSE-MIT) or [http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT))
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
 
-See the very good reasons for including both [here](https://github.com/bevyengine/bevy/issues/2373).
+See the very good reasons for including both [in the bevy's issue 2373](https://github.com/bevyengine/bevy/issues/2373).
 
 ## Note
 

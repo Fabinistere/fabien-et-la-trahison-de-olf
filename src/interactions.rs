@@ -146,7 +146,7 @@ pub fn interaction_icon(
 /// TODO: Only interact with the closest interactive
 pub fn interaction(
     key_bindings: Res<KeyBindings>,
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     interactive_query: Query<(Entity, &Interactive)>,
 
     temple_door_query: Query<Entity, With<TempleDoor>>,

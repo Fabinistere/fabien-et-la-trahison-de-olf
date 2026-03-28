@@ -7,8 +7,7 @@ use crate::{
 use bevy::{input::keyboard::KeyboardInput, prelude::*, window::WindowResized};
 use rand::{
     distr::{Distribution, StandardUniform},
-    Rng,
-    RngExt
+    Rng, RngExt,
 };
 use strum::IntoEnumIterator;
 
@@ -246,21 +245,19 @@ fn adjust_art_height(
 fn setup_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     dialogs: Res<Dialogs>,
     languages_button_colors: Res<LanguagesButtonColors>,
     current_language: Res<Language>,
 ) {
     let font = asset_server.load("fonts/dpcomic.ttf");
     let clouds_spritesheet = asset_server.load("textures/title_screen/clouds_sheet.png");
-    let clouds_texture_atlas =
-        TextureAtlas::from_grid(clouds_spritesheet, Vec2::new(426., 280.), 10, 1, None, None);
-    let clouds_texture_atlas_handle = texture_atlases.add(clouds_texture_atlas.clone());
+    let clouds_layout = TextureAtlasLayout::from_grid(Vec2::new(426., 280.), 10, 1, None, None);
+    let clouds_layout_handle = texture_atlases.add(clouds_layout.clone());
 
     let smoke_spritesheet = asset_server.load("textures/title_screen/smoke_sheet.png");
-    let smoke_texture_atlas =
-        TextureAtlas::from_grid(smoke_spritesheet, Vec2::new(426., 280.), 17, 1, None, None);
-    let smoke_texture_atlas_handle = texture_atlases.add(smoke_texture_atlas.clone());
+    let smoke_layout = TextureAtlasLayout::from_grid(Vec2::new(426., 280.), 17, 1, None, None);
+    let smoke_layout_handle = texture_atlases.add(smoke_layout.clone());
 
     let french_title = asset_server.load("textures/title_screen/Francais.png");
     let moon = asset_server.load("textures/title_screen/moon.png");
@@ -268,15 +265,9 @@ fn setup_menu(
     let foreground = asset_server.load("textures/title_screen/static_landscape_big_picture.png");
     let manor_lights_spritesheet =
         asset_server.load("textures/title_screen/manor_lights_sheet.png");
-    let manor_lights_texture_atlas = TextureAtlas::from_grid(
-        manor_lights_spritesheet,
-        Vec2::new(426., 280.),
-        21,
-        1,
-        None,
-        None,
-    );
-    let manor_lights_texture_atlas_handle = texture_atlases.add(manor_lights_texture_atlas.clone());
+    let manor_lights_layout =
+        TextureAtlasLayout::from_grid(Vec2::new(426., 280.), 21, 1, None, None);
+    let manor_lights_layout_handle = texture_atlases.add(manor_lights_layout.clone());
 
     commands
         .spawn((
@@ -284,7 +275,7 @@ fn setup_menu(
                 style: Style {
                     width: Val::Percent(100.),
                     height: Val::Percent(100.),
-                    // TODO: Animate Transi Start
+                    // TODO: Animate transition Start
                     // bottom: Val::Percent(-40.),
                     ..default()
                 },
@@ -304,13 +295,20 @@ fn setup_menu(
                             align_self: AlignSelf::FlexEnd,
                             ..default()
                         },
-                        texture_atlas: clouds_texture_atlas_handle,
-                        texture_atlas_image: UiTextureAtlasImage::default(),
+                        texture_atlas: TextureAtlas {
+                            layout: clouds_layout_handle,
+                            index: 0,
+                        },
+                        image: UiImage {
+                            texture: clouds_spritesheet,
+                            flip_x: false,
+                            flip_y: false,
+                        },
                         ..default()
                     },
                     SpriteSheetAnimation {
                         start_index: 0,
-                        end_index: clouds_texture_atlas.len() - 1,
+                        end_index: clouds_layout.len() - 1,
                         duration: AnimationDuration::Infinite,
                         timer: Timer::new(Duration::from_millis(150), TimerMode::Repeating),
                     },
@@ -327,13 +325,20 @@ fn setup_menu(
                                 align_self: AlignSelf::FlexEnd,
                                 ..default()
                             },
-                            texture_atlas: smoke_texture_atlas_handle,
-                            texture_atlas_image: UiTextureAtlasImage::default(),
+                            texture_atlas: TextureAtlas {
+                                layout: smoke_layout_handle,
+                                index: 0,
+                            },
+                            image: UiImage {
+                                texture: smoke_spritesheet,
+                                flip_x: false,
+                                flip_y: false,
+                            },
                             ..default()
                         },
                         SpriteSheetAnimation {
                             start_index: 0,
-                            end_index: smoke_texture_atlas.len() - 1,
+                            end_index: smoke_layout.len() - 1,
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },
@@ -421,8 +426,15 @@ fn setup_menu(
                                         align_self: AlignSelf::FlexEnd,
                                         ..default()
                                     },
-                                    texture_atlas: manor_lights_texture_atlas_handle,
-                                    texture_atlas_image: UiTextureAtlasImage::default(),
+                                    texture_atlas: TextureAtlas {
+                                        layout: manor_lights_layout_handle,
+                                        index: 0,
+                                    },
+                                    image: UiImage {
+                                        texture: manor_lights_spritesheet,
+                                        flip_x: false,
+                                        flip_y: false,
+                                    },
                                     ..default()
                                 },
                                 ManorLightsTimer {

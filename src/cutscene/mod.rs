@@ -10,7 +10,7 @@ pub struct CinematicPlugin;
 
 impl Plugin for CinematicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<PlayMode>()
+        app.init_state::<PlayMode>()
             .insert_resource(PlayerIsInControl::default())
             .add_systems(Startup, cameras::spawn_cinematic_camera)
             .add_systems(OnEnter(GameState::Playing), staging::spawn_cutscene)
@@ -18,7 +18,7 @@ impl Plugin for CinematicPlugin {
                 Update,
                 (
                     cameras::player_camera_follow,
-                    cameras::follow_a_random_character.run_if(input_just_pressed(KeyCode::C)),
+                    cameras::follow_a_random_character.run_if(input_just_pressed(KeyCode::KeyC)),
                     staging::run_cutscene.run_if(in_state(GameState::Playing)),
                     staging::frame_timer.run_if(in_state(GameState::Playing)),
                     staging::cutscene_characters_movement
@@ -57,9 +57,9 @@ pub enum CameraFocusType {
 
 #[derive(Component, Default)]
 pub struct CameraFocus {
-    pub focus_type: CameraFocusType,
+    pub _focus_type: CameraFocusType,
     /// REFACTOR: hum... why?
-    pub finished: bool,
+    pub _finished: bool,
 }
 
 #[derive(Resource)]

@@ -17,9 +17,9 @@ use crate::{
 /*                                 Components                                 */
 /* -------------------------------------------------------------------------- */
 
-/// Used to detect collision with player to manage the secret room cover.
-#[derive(Component)]
-pub struct SecretRoomSensor;
+// /// Used to detect collision with player to manage the secret room cover.
+// #[derive(Component)]
+// pub struct SecretRoomSensor;
 
 #[derive(Component)]
 pub struct SecretRoom;
@@ -42,7 +42,7 @@ pub struct SecondLayerFakeWall;
 
 #[derive(Event)]
 pub struct SecretRoomTriggerEvent {
-    pub started: bool,
+    pub _started: bool,
 }
 
 /// IDEA: Only remove the cover when entering the secret room
@@ -119,7 +119,7 @@ pub fn second_layer_fake_wall_visibility(
 pub fn setup_secret_room(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     /* -------------------------------------------------------------------------- */
     /*                                Assets Loader                               */
@@ -131,61 +131,38 @@ pub fn setup_secret_room(
 
     let first_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/1e_frame.png");
-    let first_flower_panel_texture_atlas = TextureAtlas::from_grid(
-        first_flower_panel_spritesheet,
-        Vec2::new(24., 39.),
-        16,
-        1,
-        None,
-        None,
-    );
+    let first_flower_panel_layout =
+        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
     let second_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/2e_frame.png");
-    let second_flower_panel_texture_atlas = TextureAtlas::from_grid(
-        second_flower_panel_spritesheet,
-        Vec2::new(24., 39.),
-        16,
-        1,
-        None,
-        None,
-    );
+    let second_flower_panel_layout =
+        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
     let third_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/3e_frame.png");
-    let third_flower_panel_texture_atlas = TextureAtlas::from_grid(
-        third_flower_panel_spritesheet,
-        Vec2::new(24., 39.),
-        16,
-        1,
-        None,
-        None,
-    );
+    let third_flower_panel_layout =
+        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
     let fourth_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/4e_frame.png");
-    let fourth_flower_panel_texture_atlas = TextureAtlas::from_grid(
-        fourth_flower_panel_spritesheet,
-        Vec2::new(24., 39.),
-        16,
-        1,
-        None,
-        None,
-    );
+    let fourth_flower_panel_layout =
+        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
     let repair_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/Repair_Frame.png");
-    let repair_flower_panel_texture_atlas = TextureAtlas::from_grid(
-        repair_flower_panel_spritesheet,
-        Vec2::new(24., 39.),
-        16,
-        1,
-        None,
-        None,
-    );
+    let repair_flower_panel_layout =
+        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
 
-    let flower_panel_texture_atlas = vec![
-        first_flower_panel_texture_atlas,
-        second_flower_panel_texture_atlas,
-        third_flower_panel_texture_atlas,
-        fourth_flower_panel_texture_atlas,
-        repair_flower_panel_texture_atlas,
+    let flower_panel_layouts = vec![
+        first_flower_panel_layout,
+        second_flower_panel_layout,
+        third_flower_panel_layout,
+        fourth_flower_panel_layout,
+        repair_flower_panel_layout,
+    ];
+    let flower_panel_spritesheet = [
+        first_flower_panel_spritesheet,
+        second_flower_panel_spritesheet,
+        third_flower_panel_spritesheet,
+        fourth_flower_panel_spritesheet,
+        repair_flower_panel_spritesheet,
     ];
     let flower_panel_collider_left =
         asset_server.load("textures/v4.0.0/Secret_Room/flower_panel_collider_left.png");
@@ -193,8 +170,7 @@ pub fn setup_secret_room(
         asset_server.load("textures/v4.0.0/Secret_Room/flower_panel_collider_right.png");
 
     let wall_pot_spritesheet = asset_server.load("textures/v4.0.0/Secret_Room/wall_pot.png");
-    let wall_pot_texture_atlas =
-        TextureAtlas::from_grid(wall_pot_spritesheet, Vec2::new(21., 11.), 16, 1, None, None);
+    let wall_pot_layout = TextureAtlasLayout::from_grid(Vec2::new(21., 11.), 16, 1, None, None);
 
     let second_layer_fake_wall =
         asset_server.load("textures/v4.0.0/Secret_Room/2nd_layer_fake_wall.png");
@@ -336,8 +312,11 @@ pub fn setup_secret_room(
                 parent
                     .spawn((
                         SpriteSheetBundle {
-                            texture_atlas: texture_atlases
-                                .add(flower_panel_texture_atlas[count].clone()),
+                            atlas: TextureAtlas {
+                                layout: texture_atlases.add(flower_panel_layouts[count].clone()),
+                                index: 0,
+                            },
+                            texture: flower_panel_spritesheet[count].clone(),
                             transform: Transform::from_translation(
                                 FLOWER_PANEL_POSITIONS[count].into(),
                             ),
@@ -345,7 +324,7 @@ pub fn setup_secret_room(
                         },
                         SpriteSheetAnimation {
                             start_index: 0,
-                            end_index: flower_panel_texture_atlas[count].clone().len() - 1,
+                            end_index: flower_panel_layouts[count].clone().len() - 1,
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },
@@ -384,13 +363,17 @@ pub fn setup_secret_room(
 
             parent.spawn((
                 SpriteSheetBundle {
-                    texture_atlas: texture_atlases.add(wall_pot_texture_atlas.clone()),
+                    atlas: TextureAtlas {
+                        layout: texture_atlases.add(wall_pot_layout.clone()),
+                        index: 0,
+                    },
+                    texture: wall_pot_spritesheet,
                     transform: Transform::from_translation(WALL_POT_POSITION.into()),
                     ..default()
                 },
                 SpriteSheetAnimation {
                     start_index: 0,
-                    end_index: wall_pot_texture_atlas.len() - 1,
+                    end_index: wall_pot_layout.len() - 1,
                     duration: AnimationDuration::Infinite,
                     timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                 },
