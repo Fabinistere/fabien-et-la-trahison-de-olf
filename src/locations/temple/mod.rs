@@ -329,7 +329,6 @@ pub fn door_interact(
     }
 }
 
-/// TOTEST: FIXME: When spamming the door, an event can drop and the sprite.index can overflow
 pub fn open_close_door(
     time: Res<Time>,
     texture_atlases: Res<Assets<TextureAtlasLayout>>,
@@ -355,7 +354,6 @@ pub fn open_close_door(
             let layout = texture_atlases.get(atlas.layout.clone()).unwrap();
 
             if *door_state == DoorState::Opening {
-                atlas.index = (atlas.index + 1) % layout.textures.len();
 
                 if atlas.index >= layout.textures.len() - 1 {
                     commands.entity(entity).remove::<DoorInteract>();
@@ -372,9 +370,11 @@ pub fn open_close_door(
                     if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
                         overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
                     }
+                } else {
+                    log::debug!(target: "Animation", "opening door: {} -> {}", atlas.index, (atlas.index + 1) % layout.textures.len());
+                    atlas.index = (atlas.index + 1) % layout.textures.len();
                 }
             } else if *door_state == DoorState::Closing {
-                atlas.index = (atlas.index + layout.textures.len() - 1) % layout.textures.len();
 
                 if atlas.index == 0 {
                     commands.entity(entity).remove::<DoorInteract>();
@@ -391,6 +391,9 @@ pub fn open_close_door(
                     if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
                         overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
                     }
+                } else {
+                    log::debug!(target: "Animation", "closing door: {} -> {}", atlas.index, (atlas.index + layout.textures.len() - 1) % layout.textures.len());
+                    atlas.index = (atlas.index + layout.textures.len() - 1) % layout.textures.len();
                 }
             }
         }
