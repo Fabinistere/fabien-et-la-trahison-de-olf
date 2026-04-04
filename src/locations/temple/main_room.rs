@@ -503,6 +503,7 @@ pub fn setup_main_room(
                                 duration: AnimationDuration::Infinite,
                                 timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                             },
+                            Flame,
                             Name::new(format!("Medium Flame°{}", count + 1)),
                         ));
 

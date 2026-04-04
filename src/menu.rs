@@ -30,7 +30,7 @@ impl Plugin for MenuPlugin {
 struct Menu;
 
 #[derive(Component)]
-struct ArtMenu;
+pub struct ArtMenu;
 
 #[derive(Component)]
 pub struct Title;
@@ -117,8 +117,18 @@ fn game_start(
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
-    if game_state.get() == &GameState::Menu && keyboard_inputs.read().next().is_some() {
-        next_game_state.set(GameState::Playing);
+    if game_state.get() == &GameState::Menu {
+        if let Some(KeyboardInput {
+            key_code,
+            logical_key: _,
+            state: _,
+            window: _,
+        }) = keyboard_inputs.read().next()
+        {
+            if *key_code == KeyCode::Space {
+                next_game_state.set(GameState::Playing);
+            }
+        }
     }
 }
 
@@ -373,7 +383,7 @@ fn setup_menu(
                                     flex_shrink: 0.,
                                     width: Val::Percent(100.),
                                     right: Val::Percent(200.),
-                                    bottom: Val::Px(750.),
+                                    bottom: Val::Percent(70.),
                                     align_self: AlignSelf::FlexEnd,
                                     ..default()
                                 },
@@ -388,11 +398,12 @@ fn setup_menu(
                                     image: french_title.into(),
                                     style: Style {
                                         flex_shrink: 0.,
+                                        width: Val::Percent(12.),
                                         ..default()
                                     },
                                     ..default()
                                 },
-                                Name::new("French Title"),
+                                Name::new("Actual Title"),
                                 Title,
                                 TitleState::FlexTop,
                                 DialogId::MenuTitle,

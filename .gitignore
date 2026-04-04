@@ -22,5 +22,6 @@ out
 index.html
 
 # Code Editor
+rusty-tags.vi
 .vscode/**
 

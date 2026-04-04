@@ -42,21 +42,16 @@ pub fn continue_monolog(
                 if let Some((_first, rem)) = current_monolog.texts.split_first() {
                     current_monolog.texts = rem.to_vec();
                 }
-            } else {
-                match current_interlocutor.interlocutor {
-                    None => {}
-                    Some(interlocutor) => {
-                        if let Some(&(current_state, ref dialog)) = dialogs.get(&interlocutor) {
-                            if let Some(current_node) = dialog.get(&current_state) {
-                                match current_node.content() {
-                                    Content::Choices(_) => {}
-                                    Content::Monolog {
-                                        text: _,
-                                        exit_state,
-                                    } => {
-                                        change_state_event.send(ChangeStateEvent(*exit_state));
-                                    }
-                                }
+            } else if let Some(interlocutor) = current_interlocutor.interlocutor {
+                if let Some(&(current_state, ref dialog)) = dialogs.get(&interlocutor) {
+                    if let Some(current_node) = dialog.get(&current_state) {
+                        match current_node.content() {
+                            Content::Choices(_) => {}
+                            Content::Monolog {
+                                text: _,
+                                exit_state,
+                            } => {
+                                change_state_event.send(ChangeStateEvent(*exit_state));
                             }
                         }
                     }

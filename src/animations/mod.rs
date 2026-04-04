@@ -45,7 +45,7 @@ impl Plugin for AnimationPlugin {
                     fade::fade_animations,
                     slide::slide_animations,
                     slide::ui_slide_animations,
-                    sprite_sheet_animation::animate_sprite_sheet,
+                    sprite_sheet_animation::animate_objects,
                     sprite_sheet_animation::jump_frame_character_state,
                     sprite_sheet_animation::tempo_animation_timer,
                     sprite_sheet_animation::animate_character,

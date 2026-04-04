@@ -15,7 +15,11 @@ use crate::{
         },
         FRAME_TIME,
     },
-    menu::{ManorLightsPattern, ManorLightsTimer, Smoke, Title, TitleState},
+    locations::temple::{
+        secret_room::{FlowerPanel, FlowerPot},
+        Flame,
+    },
+    menu::{ArtMenu, ManorLightsPattern, ManorLightsTimer, Smoke, Title, TitleState},
 };
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Reflect, Component)]
@@ -59,10 +63,17 @@ pub enum AnimationDuration {
 #[derive(Deref, DerefMut, Reflect, Component)]
 pub struct TempoAnimation(pub Timer);
 
-pub fn animate_sprite_sheet(
+/// For non-ui objects, flames, plants
+pub fn animate_objects(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut SpriteSheetAnimation, &mut TextureAtlas)>,
+    mut query: Query<
+        (Entity, &mut SpriteSheetAnimation, &mut TextureAtlas),
+        (
+            Without<TempoAnimation>,
+            Or<(With<Flame>, With<FlowerPot>, With<FlowerPanel>)>,
+        ),
+    >,
 ) {
     for (entity, mut animation, mut sprite) in query.iter_mut() {
         animation.timer.tick(time.delta());
@@ -226,12 +237,17 @@ pub fn jump_frame_manor_lights_state(
 }
 
 /// Don't affect the manor lights.
+/// Clouds, Smoke
 pub fn animate_ui_atlas(
     mut commands: Commands,
     time: Res<Time>,
     mut atlas_images: Query<
         (Entity, &mut SpriteSheetAnimation, &mut TextureAtlas),
-        (Without<TempoAnimation>, Without<ManorLightsPattern>),
+        (
+            Without<TempoAnimation>,
+            Without<ManorLightsPattern>,
+            Or<(With<Smoke>, With<ArtMenu>)>,
+        ),
     >,
     smoke_query: Query<Entity, With<Smoke>>,
 ) {

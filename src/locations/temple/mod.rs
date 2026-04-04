@@ -354,7 +354,6 @@ pub fn open_close_door(
             let layout = texture_atlases.get(atlas.layout.clone()).unwrap();
 
             if *door_state == DoorState::Opening {
-
                 if atlas.index >= layout.textures.len() - 1 {
                     commands.entity(entity).remove::<DoorInteract>();
 
@@ -371,11 +370,10 @@ pub fn open_close_door(
                         overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
                     }
                 } else {
-                    log::debug!(target: "Animation", "opening door: {} -> {}", atlas.index, (atlas.index + 1) % layout.textures.len());
+                    // log::debug!(target: "Animation", "opening door: {} -> {}", atlas.index, (atlas.index + 1) % layout.textures.len());
                     atlas.index = (atlas.index + 1) % layout.textures.len();
                 }
             } else if *door_state == DoorState::Closing {
-
                 if atlas.index == 0 {
                     commands.entity(entity).remove::<DoorInteract>();
 
@@ -392,7 +390,7 @@ pub fn open_close_door(
                         overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
                     }
                 } else {
-                    log::debug!(target: "Animation", "closing door: {} -> {}", atlas.index, (atlas.index + layout.textures.len() - 1) % layout.textures.len());
+                    // log::debug!(target: "Animation", "closing door: {} -> {}", atlas.index, (atlas.index + layout.textures.len() - 1) % layout.textures.len());
                     atlas.index = (atlas.index + layout.textures.len() - 1) % layout.textures.len();
                 }
             }
