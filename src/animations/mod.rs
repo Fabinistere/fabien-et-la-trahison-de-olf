@@ -66,7 +66,7 @@ impl FromWorld for CharacterSpriteSheet {
             .get_resource::<AssetServer>()
             .unwrap()
             .load("textures/characters/big_spritesheet_v6.png");
-        let atlas = TextureAtlasLayout::from_grid(Vec2::splat(34.), 6, 16, None, None);
+        let atlas = TextureAtlasLayout::from_grid(UVec2::splat(34), 6, 16, None, None);
 
         let atlas_handle = world
             .get_resource_mut::<Assets<TextureAtlasLayout>>()

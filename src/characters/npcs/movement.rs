@@ -38,7 +38,7 @@ use crate::{
 /*                                 Components                                 */
 /* -------------------------------------------------------------------------- */
 
-#[derive(PartialEq, Clone, Reflect, Component)]
+#[derive(PartialEq, Clone, Reflect, Component, Default)]
 pub enum NPCBehavior {
     /// The entity runs to a specify location and occupy this zone.
     /// Tourist butterfly.
@@ -48,6 +48,7 @@ pub enum NPCBehavior {
     /// NOTE: we opt to include the timer in the option to really associate the two `None` and `Timer`
     /// but we could have an `Option<(Entity, Location)>` + add another component Timer (less readability but optimized)
     LandmarkSeeking(LandmarkSeekingStatus),
+    #[default]
     Camping,
     Follow {
         target: Entity,
@@ -72,12 +73,6 @@ impl NPCBehavior {
                 Ok(landmark) => LandmarkSeekingStatus::Location(landmark, location),
             },
         )
-    }
-}
-
-impl Default for NPCBehavior {
-    fn default() -> Self {
-        Self::Camping
     }
 }
 

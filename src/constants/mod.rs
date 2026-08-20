@@ -4,12 +4,12 @@ pub mod title_screen;
 pub mod ui;
 
 // dark blue #213757 = 33/255, 55/255, 87/255
-pub const BACKGROUND_COLOR_INMENU: bevy::render::color::Color =
-    bevy::render::color::Color::rgb(33. / 255., 55. / 255., 87. / 255.);
+pub const BACKGROUND_COLOR_INMENU: bevy::color::Color =
+    bevy::color::Color::srgb(33. / 255., 55. / 255., 87. / 255.);
 // dark purple #25131a = 39/255, 19/255, 26/255
-pub const BACKGROUND_COLOR_INGAME: bevy::render::color::Color =
-    bevy::render::color::Color::rgb(0.153, 0.07, 0.102);
-// pub const BACKGROUND_COLOR: bevy::render::color::Color = bevy::render::color::Color::Rgba {
+pub const BACKGROUND_COLOR_INGAME: bevy::color::Color =
+    bevy::color::Color::srgb(0.153, 0.07, 0.102);
+// pub const BACKGROUND_COLOR: bevy::color::Color = bevy::color::Color::Rgba {
 //     red: 58. / 256.,
 //     green: 36. / 256.,
 //     blue: 48. / 256.,

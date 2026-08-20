@@ -19,10 +19,9 @@ use crate::{
     },
     controls::KeyBindings,
     cutscene::player_is_in_control,
-    hud_closed,
     locations::temple::Location,
     ui::dialog_systems::DialogMap,
-    GameState,
+    GameState, HUDState,
 };
 
 use super::{movement::CharacterCloseSensor, Character};
@@ -36,7 +35,8 @@ impl Plugin for PlayerPlugin {
                 Update,
                 (
                     player_movement
-                        .run_if(hud_closed)
+                        // .run_if(hud_closed)
+                        .run_if(in_state(HUDState::Closed))
                         .run_if(player_is_in_control),
                     player_animation,
                     player_squat.run_if(input_just_pressed(KeyCode::ControlLeft)),
@@ -157,19 +157,19 @@ fn spawn_player(
 
     let player = commands
         .spawn((
-            SpriteSheetBundle {
+            SpriteBundle {
                 texture: characters_spritesheet.texture.clone(),
-                atlas: TextureAtlas {
-                    layout: characters_spritesheet.atlas_handle.clone(),
-                    // idle start index
-                    index: PLAYER_IDLE_FRAMES.0,
-                },
                 transform: Transform {
                     translation: THRONE_POSITION.into(), // PLAYER_SPAWN.into(),
                     scale: Vec3::splat(PLAYER_SCALE),
                     ..Transform::default()
                 },
                 ..default()
+            },
+            TextureAtlas {
+                layout: characters_spritesheet.atlas_handle.clone(),
+                // idle start index
+                index: PLAYER_IDLE_FRAMES.0,
             },
             Name::new("Player"),
             Character,

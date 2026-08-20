@@ -171,7 +171,7 @@ pub fn animate_character(
             // );
             // eprintln!("{:#?}", atlas);
 
-            if let Some(layout) = texture_atlases.get(atlas.layout.clone()) {
+            if let Some(layout) = texture_atlases.get(&atlas.layout) {
                 if atlas.index == *last_frame {
                     // update state
                     atlas.index = indices.get(next_phase).unwrap().0;

@@ -145,11 +145,11 @@ pub fn setup_hall(
 
     let chandelier = asset_server.load("textures/v4.0.0/chandelier.png");
     let small_flame_spritesheet = asset_server.load("textures/v4.0.0/burning_loop_5.png");
-    let small_flame_layout = TextureAtlasLayout::from_grid(Vec2::new(8., 8.), 4, 1, None, None);
+    let small_flame_layout = TextureAtlasLayout::from_grid(UVec2::new(8, 8), 4, 1, None, None);
     let wall_light_support = asset_server.load("textures/v4.0.0/Hall/Light_support.png");
 
     let door_spritesheet = asset_server.load("textures/v4.0.0/Hall/door_spritesheet.png");
-    let door_layout = TextureAtlasLayout::from_grid(Vec2::new(20., 38.), 1, 8, None, None);
+    let door_layout = TextureAtlasLayout::from_grid(UVec2::new(20, 38), 1, 8, None, None);
     let door_collider = asset_server.load("textures/v4.0.0/Hall/door_collider.png");
     let door_collider_opened_left =
         asset_server.load("textures/v4.0.0/Hall/door_collider_opened_left.png");
@@ -349,14 +349,14 @@ pub fn setup_hall(
 
             parent
                 .spawn((
-                    SpriteSheetBundle {
-                        atlas: TextureAtlas {
-                            layout: texture_atlases.add(door_layout),
-                            index: 0,
-                        },
+                    SpriteBundle {
                         texture: door_spritesheet,
                         transform: Transform::from_translation(DOOR_POSITION.into()),
                         ..default()
+                    },
+                    TextureAtlas {
+                        layout: texture_atlases.add(door_layout),
+                        index: 0,
                     },
                     TempleDoor,
                     DoorState::Closed,
@@ -476,14 +476,14 @@ pub fn setup_hall(
             for (count, wall_light_position) in WALL_LIGHT_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
-                        SpriteSheetBundle {
-                            atlas: TextureAtlas {
-                                layout: texture_atlases.add(small_flame_layout.clone()),
-                                index: 0,
-                            },
+                        SpriteBundle {
                             texture: small_flame_spritesheet.clone(),
                             transform: Transform::from_translation((*wall_light_position).into()),
                             ..default()
+                        },
+                        TextureAtlas {
+                            layout: texture_atlases.add(small_flame_layout.clone()),
+                            index: 0,
                         },
                         SpriteSheetAnimation {
                             start_index: 0,
@@ -526,16 +526,16 @@ pub fn setup_hall(
                             CHANDELIER_FLAME_POSITIONS.iter().enumerate()
                         {
                             parent.spawn((
-                                SpriteSheetBundle {
-                                    atlas: TextureAtlas {
-                                        layout: texture_atlases.add(small_flame_layout.clone()),
-                                        index: 0,
-                                    },
+                                SpriteBundle {
                                     texture: small_flame_spritesheet.clone(),
                                     transform: Transform::from_translation(
                                         (*chandelier_flame_position).into(),
                                     ),
                                     ..default()
+                                },
+                                TextureAtlas {
+                                    layout: texture_atlases.add(small_flame_layout.clone()),
+                                    index: 0,
                                 },
                                 SpriteSheetAnimation {
                                     start_index: 0,

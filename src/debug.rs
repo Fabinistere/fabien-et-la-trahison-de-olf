@@ -24,6 +24,8 @@ impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         if cfg!(debug_assertions) {
             app.add_plugins((WorldInspectorPlugin::new(),))
+                // UI gismos
+                // .add_plugins(bevy::dev_tools::ui_debug_overlay::DebugUiPlugin)
                 .register_type::<GameState>()
                 .register_type::<HUDState>()
                 .register_type::<PlayMode>()

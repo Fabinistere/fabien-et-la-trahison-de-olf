@@ -155,7 +155,7 @@ pub fn chandeliers_opacity(
     // OPTIMIZE: we could also put the `Location` in the Chandelier struct
     // to first compare if we have to check the position
     for (mut sprite, chandelier_transform) in chandeliers_query.iter_mut() {
-        sprite.color.set_a(
+        sprite.color.set_alpha(
             if chandelier_transform.translation.x - CHANDELIER_SIZE.0 / 2.
                 >= player_transform.translation.x
                 && player_transform.translation.x
@@ -351,7 +351,7 @@ pub fn open_close_door(
         door_interaction.timer.tick(time.delta());
 
         if door_interaction.timer.finished() {
-            let layout = texture_atlases.get(atlas.layout.clone()).unwrap();
+            let layout = texture_atlases.get(&atlas.layout).unwrap();
 
             if *door_state == DoorState::Opening {
                 if atlas.index >= layout.textures.len() - 1 {

@@ -20,7 +20,6 @@ use crate::{
         character::{npcs::*, player::PLAYER_SPAWN, *},
         interactions::INTERACT_BUTTON_SCALE,
     },
-    hud_opened,
     interactions::{InteractIcon, InteractionResources, InteractionSensor, Interactive},
     locations::{
         landmarks::Landmark,
@@ -90,7 +89,8 @@ impl Plugin for NPCPlugin {
                     idle::flexing_timer
                         .in_set(NPCSystems::Idle)
                         .after(NPCSystems::Movement),
-                    freeze_player_in_dialog.run_if(hud_opened),
+                    freeze_player_in_dialog.run_if(not(in_state(HUDState::Closed))),
+                    // freeze_player_in_dialog.run_if(hud_opened),
                 )
                     .run_if(in_state(GameState::Playing)),
             )
@@ -236,19 +236,20 @@ fn spawn_characters(
 
         let npc = commands
             .spawn((
-                SpriteSheetBundle {
+                SpriteBundle {
                     texture: characters_spritesheet.texture.clone(),
-                    atlas: TextureAtlas {
-                        layout: characters_spritesheet.atlas_handle.clone(),
-                        // idle start index
-                        index: global_animations_indices[spritesheet_line][1].0,
-                    },
+
                     transform: Transform {
                         translation: spawn_position.into(),
                         scale: Vec3::splat(NPC_SCALE),
                         ..default()
                     },
                     ..default()
+                },
+                TextureAtlas {
+                    layout: characters_spritesheet.atlas_handle.clone(),
+                    // idle start index
+                    index: global_animations_indices[spritesheet_line][1].0,
                 },
                 Name::new(format!("NPC {name}")),
                 Character,
@@ -388,19 +389,20 @@ fn spawn_villains(
 
         let npc = commands
             .spawn((
-                SpriteSheetBundle {
+                SpriteBundle {
                     texture: characters_spritesheet.texture.clone(),
-                    atlas: TextureAtlas {
-                        layout: characters_spritesheet.atlas_handle.clone(),
-                        // idle start index
-                        index: global_animations_indices[spritesheet_line][1].0,
-                    },
+
                     transform: Transform {
                         translation: spawn_position.into(),
                         scale: Vec3::splat(NPC_SCALE),
                         ..default()
                     },
                     ..default()
+                },
+                TextureAtlas {
+                    layout: characters_spritesheet.atlas_handle.clone(),
+                    // idle start index
+                    index: global_animations_indices[spritesheet_line][1].0,
                 },
                 Name::new(format!("NPC {name}")),
                 Character,
@@ -524,19 +526,20 @@ fn spawn_cat(mut commands: Commands, characters_spritesheet: Res<CharacterSprite
     // TEMP: Static Olf cat
     commands
         .spawn((
-            SpriteSheetBundle {
+            SpriteBundle {
                 texture: characters_spritesheet.texture.clone(),
-                atlas: TextureAtlas {
-                    layout: characters_spritesheet.atlas_handle.clone(),
-                    // idle start index
-                    index: BLACK_CAT_LINE * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
-                },
+
                 transform: Transform {
                     translation: OLF_CAT_POSITION.into(),
                     scale: Vec3::splat(OLF_CAT_SCALE),
                     ..Transform::default()
                 },
                 ..default()
+            },
+            TextureAtlas {
+                layout: characters_spritesheet.atlas_handle.clone(),
+                // idle start index
+                index: BLACK_CAT_LINE * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
             },
             Name::new("Olf Cat"),
             OlfCat,

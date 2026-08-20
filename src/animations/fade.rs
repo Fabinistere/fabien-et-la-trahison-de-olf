@@ -59,7 +59,7 @@ pub fn fade_animations(
             t = 1. - t;
         }
 
-        sprite.color.set_a((fade_data.animation_fn)(t));
+        sprite.color.set_alpha((fade_data.animation_fn)(t));
 
         if fade_data.elapsed >= fade_data.duration {
             commands.entity(entity).remove::<Fade>();

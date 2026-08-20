@@ -15,16 +15,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - bevy_rapier_2d `0.27` - [bevy_rapier changelog](https://github.com/dimforge/bevy_rapier/blob/master/CHANGELOG.md#v0270-07-july-2024) and [rapier changelog `0.18` to `0.21`](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md#v0210-23-june-2024)
     - `Rapier_Configuration` doesn't derive `Default`
   - bevy-inspector-egui `0.25` - [changelog](https://github.com/jakobhellermann/bevy-inspector-egui/compare/v0.24.0...v0.25.0)
+  - bevy_tweening `0.11`
+  - `use bevy::state::app::AppExtStates as _;` to derive States in our dependencies setup
 - ECS
   - Colors
     - [colors import](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/#css-constants)
+
+    ```rs
+    // 0.13
+    let color = Color::BLUE;
+
+    // 0.14
+    use bevy::color::palettes::css::BLUE;
+    let color = BLUE;
+    ```
+
     - [`rgb` to `srgb`](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/#color-methods)
+    - `set_a` to `set_alpha`
   - [Deprecate `SpriteSheetBundle` and `AtlasImageBundle`](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/#deprecate-spritesheetbundle-and-atlasimagebundle)
   - [Use `UVec2` when working with texture dimensions](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/#use-uvec2-when-working-with-texture-dimensions)
   - [Schedules `Startup` runs after `OnEnter`](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/#onenter-state-schedules-now-run-before-startup-schedules)
     We don't have anything to change as we have only Startup system `spawn_camera`; the camera will only be use in `Update`.
     Note that you can create `SubState` with a source.
   - [ECS observers were introduced: mechanisms for immediately responding to events in the world.](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/#generalised-ecs-reactivity-with-observers)
+    - [Component Lifecycle Hooks](https://bevy.org/news/bevy-0-14/#ecs-hooks-and-observers): to ???
+- States
+  - [Derive States requires to add the feature `bevy_state`](https://bevy.org/learn/migration-guides/0-13-to-0-14/#move-state-initialization-methods-to-bevy-state): `bevy = { version = "0.14", features = ["bevy_state"] }` or [`default_features`](https://bevy.org/learn/migration-guides/0-13-to-0-14/#separate-states-from-core-ecs)
+    - **If we use `bevy_ecs` directly, we need to add `bevy_state` as dependency**
   - [Make `apply_state_transition` private](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/#make-apply-state-transition-private)
 
 #### WGPU error
@@ -46,6 +63,7 @@ ERROR wgpu_hal::gles: wgpu-hal heuristics assumed that the view dimension will b
     - Collisions between the character controller and sensors are now disabled by default.
   - bevy-inspector-egui `0.24` - [changelog](https://github.com/jakobhellermann/bevy-inspector-egui/compare/v0.22.0...v0.24.0)
 - ECS
+
   - [Ensure calls to `EventWriter::send` either handle the returned value, or suppress the result with `;`.](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#update-event-send-methods-to-return-eventid)
   - [Replace `Option<With<T>>` with `Has<T>`](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#split-worldquery-into-querydata-and-queryfilter)
   - [Rename `Input` to `ButtonInput`](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#rename-input-to-buttoninput)
@@ -62,6 +80,7 @@ ERROR wgpu_hal::gles: wgpu-hal heuristics assumed that the view dimension will b
   ```
 
   - [Texture Atlas rework](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#texture-atlas-rework)
+
     - `SpriteSheetBundle` now uses a `Sprite` instead of a `TextureAtlasSprite` component
 
     ```rust
@@ -169,15 +188,16 @@ ERROR wgpu_hal::gles: wgpu-hal heuristics assumed that the view dimension will b
     ```
 
     - `UiTextureAtlasImage` was removed. The `AtlasImageBundle` is now identical to `ImageBundle` with an additional `TextureAtlas`
-    `mut atlases: ResMut<Assets<TextureAtlas>>` to `mut atlases: ResMut<Assets<TextureAtlasLayout>>`
+      `mut atlases: ResMut<Assets<TextureAtlas>>` to `mut atlases: ResMut<Assets<TextureAtlasLayout>>`
       - `mut ui_anim_query: Query<&mut UiTextureAtlasImage>` to `mut ui_anim_query: Query<&mut ???>`
+
   - [Renamed `App::add_state` to `init_state`.](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#add-insert-state-to-app)
   - [`KeyCode` rename](https://bevyengine.org/learn/migration-guides/0-12-to-0-13/#update-winit-dependency-to-0-29)
     - `KeyCode::W` -> `KeyCode::KeyW`
     - `KeyCode::Up` -> `KeyCode::ArrowUp`
     - `KeyCode::Key1` -> `KeyCode::Digit1`
   - Remove the ability to ignore global volume. The option to ignore the global volume using `Volume::Absolute` has been removed and `Volume` now stores the volume level directly, removing the need for the `VolumeLevel` struct. `Volume::new_absolute` and `Volume::new_relative` were removed.
-  Use `Volume::new(0.5)`. `bevy::audio::Volume::Relative(VolumeLevel::new(0.10))` to `bevy::audio::Volume::new(0.10)`
+    Use `Volume::new(0.5)`. `bevy::audio::Volume::Relative(VolumeLevel::new(0.10))` to `bevy::audio::Volume::new(0.10)`
   - Rename `TextAlignment` to `JustifyText`.
     - `Text::with_alignment` has been renamed to `Text::with_justify`
   - `KeyboardInput.scan_code` renamed to `KeyboardInput.logical_key`
@@ -254,11 +274,11 @@ ERROR wgpu_hal::gles: wgpu-hal heuristics assumed that the view dimension will b
 - Detection Behavior
   - `TargetSeeker`
   - `DetectionRangeSensor` used to analyze all entering characters' hitbox and compare with their `TargetType`
-    - if it correpond: Deactivate this sensor and start the Chase Behavior with the component `Chaser`.
+    - if it correspond: Deactivate this sensor and start the Chase Behavior with the component `Chaser`.
 - Chase Behavior
   - `Chaser`
   - `PursuitRangeSensor` used to analyze all exiting characters' hitbox and compare with their `Chaser`'s `target`
-    - if it correpond: Deactivate this sensor and remove the Chase Behavior.
+    - if it correspond: Deactivate this sensor and remove the Chase Behavior.
   - The `CharacterCloseSensor` used to detect all entering `Chaser`s hitbox and start a Combat if the `Chaser`'s `target` is the parent of the `CharacterCloseSensor`.
 
 ## Map, Title Screen and Animation Update - [v0.3.9](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.9) - 2023-08-31
@@ -319,7 +339,7 @@ The Title screen (you can zoom) and the music doesn't quite work in the [web dem
     - Locations Sensor to detect a location change
     - add Balcony Cover
   - Sprite are now 1pixel scale
-    The camera has been adpated to this size
+    The camera has been adapted to this size
 
 ### Fixed
 
@@ -347,8 +367,8 @@ The Title screen (you can zoom) and the music doesn't quite work in the [web dem
 - UI
   - Flatten UI Style properties that use Size + remove Size
     - The `size`, `min_size`, `max_size`, and `gap` properties have been replaced by the `width`, `height`, `min_width`, `min_height`, `max_width`, `max_height`, `row_gap`, and `column_gap` properties. Use the new properties instead.
-  - [Remove `Val::Undefinded`](https://bevyengine.org/learn/migration-guides/0.10-0.11/#remove-val-undefined)
-    - `Val::Undefined` has been removed. Bevy UI’s behaviour with default values should remain the same.
+  - [Remove `Val::Undefined`](https://bevyengine.org/learn/migration-guides/0.10-0.11/#remove-val-undefined)
+    - `Val::Undefined` has been removed. Bevy UI’s behavior with default values should remain the same.
       The default values of `UiRect`’s fields have been changed to `Val::Px(0.)`.
       `Style`’s position field has been removed. Its `left`, `right`, `top` and `bottom` fields have been added to `Style` directly.
       For the `size`, `margin`, `border`, and `padding` fields of `Style`, `Val::Undefined` should be replaced with `Val::Px(0.)`.

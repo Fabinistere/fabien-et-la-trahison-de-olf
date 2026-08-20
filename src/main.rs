@@ -22,6 +22,7 @@ mod ui;
 
 // use std::io::Write; // for infox!
 
+use bevy::state::app::AppExtStates as _;
 use bevy::{ecs::schedule::ScheduleBuildSettings, prelude::*};
 use bevy_rapier2d::prelude::*;
 use cutscene::{cameras::PlayerCamera, PlayMode};
@@ -41,7 +42,7 @@ use crate::{
     dialogs::{DialogId, Dialogs, Language},
 };
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
+#[derive(States, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect)]
 pub enum GameState {
     #[default]
     Menu,
@@ -50,11 +51,12 @@ pub enum GameState {
     Playing,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, Reflect, States)]
+#[derive(SubStates, Clone, Eq, PartialEq, Debug, Hash, Default, Reflect)]
+#[source(GameState = GameState::Playing)]
 pub enum HUDState {
     #[default]
     Closed,
-    // /// is also the Team's Inventory
+    /// is also the Team's Inventory
     CombatWall,
     // LogCave,
     DialogWall,
@@ -71,6 +73,8 @@ pub enum HUDState {
 //             .with_line_number(true)
 //             .boxed())
 // }
+
+// BUG: problem in character run anim after going into the secret room? - env stop anim
 
 fn main() {
     let mut app = App::new();
@@ -154,7 +158,7 @@ fn main() {
             ui::UiPlugin,
         ))
         .init_state::<GameState>()
-        .init_state::<HUDState>()
+        .add_sub_state::<HUDState>()
         .add_systems(Startup, (game_setup, music))
         .add_systems(OnEnter(GameState::Playing), setup_background_playing);
 
@@ -217,10 +221,12 @@ pub fn in_cutscene(play_mode: Res<State<PlayMode>>) -> bool {
     play_mode.get() == &PlayMode::InCinematic
 }
 
+/// replaced by `in_state(HUDState::Closed)`
 pub fn hud_closed(hud_state: Res<State<HUDState>>) -> bool {
     hud_state.get() == &HUDState::Closed
 }
 
+/// replaced by `not(in_state(HUDState::Closed))`
 pub fn hud_opened(hud_state: Res<State<HUDState>>) -> bool {
     hud_state.get() != &HUDState::Closed
 }

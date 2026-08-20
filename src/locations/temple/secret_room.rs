@@ -132,25 +132,25 @@ pub fn setup_secret_room(
     let first_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/1e_frame.png");
     let first_flower_panel_layout =
-        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(24, 39), 16, 1, None, None);
     let second_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/2e_frame.png");
     let second_flower_panel_layout =
-        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(24, 39), 16, 1, None, None);
     let third_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/3e_frame.png");
     let third_flower_panel_layout =
-        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(24, 39), 16, 1, None, None);
     let fourth_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/4e_frame.png");
     let fourth_flower_panel_layout =
-        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(24, 39), 16, 1, None, None);
     let repair_flower_panel_spritesheet =
         asset_server.load("textures/v4.0.0/Secret_Room/Repair_Frame.png");
     let repair_flower_panel_layout =
-        TextureAtlasLayout::from_grid(Vec2::new(24., 39.), 16, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(24, 39), 16, 1, None, None);
 
-    let flower_panel_layouts = vec![
+    let flower_panel_layouts = [
         first_flower_panel_layout,
         second_flower_panel_layout,
         third_flower_panel_layout,
@@ -170,7 +170,7 @@ pub fn setup_secret_room(
         asset_server.load("textures/v4.0.0/Secret_Room/flower_panel_collider_right.png");
 
     let wall_pot_spritesheet = asset_server.load("textures/v4.0.0/Secret_Room/wall_pot.png");
-    let wall_pot_layout = TextureAtlasLayout::from_grid(Vec2::new(21., 11.), 16, 1, None, None);
+    let wall_pot_layout = TextureAtlasLayout::from_grid(UVec2::new(21, 11), 16, 1, None, None);
 
     let second_layer_fake_wall =
         asset_server.load("textures/v4.0.0/Secret_Room/2nd_layer_fake_wall.png");
@@ -311,16 +311,16 @@ pub fn setup_secret_room(
             for count in 0..5 {
                 parent
                     .spawn((
-                        SpriteSheetBundle {
-                            atlas: TextureAtlas {
-                                layout: texture_atlases.add(flower_panel_layouts[count].clone()),
-                                index: 0,
-                            },
+                        SpriteBundle {
                             texture: flower_panel_spritesheet[count].clone(),
                             transform: Transform::from_translation(
                                 FLOWER_PANEL_POSITIONS[count].into(),
                             ),
                             ..default()
+                        },
+                        TextureAtlas {
+                            layout: texture_atlases.add(flower_panel_layouts[count].clone()),
+                            index: 0,
                         },
                         SpriteSheetAnimation {
                             start_index: 0,
@@ -362,14 +362,14 @@ pub fn setup_secret_room(
             ));
 
             parent.spawn((
-                SpriteSheetBundle {
-                    atlas: TextureAtlas {
-                        layout: texture_atlases.add(wall_pot_layout.clone()),
-                        index: 0,
-                    },
+                SpriteBundle {
                     texture: wall_pot_spritesheet,
                     transform: Transform::from_translation(WALL_POT_POSITION.into()),
                     ..default()
+                },
+                TextureAtlas {
+                    layout: texture_atlases.add(wall_pot_layout.clone()),
+                    index: 0,
                 },
                 SpriteSheetAnimation {
                     start_index: 0,

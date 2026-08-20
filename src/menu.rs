@@ -4,7 +4,9 @@ use crate::{
     animations::sprite_sheet_animation::{AnimationDuration, SpriteSheetAnimation},
     in_menu, DialogId, Dialogs, GameState, Language,
 };
-use bevy::{input::keyboard::KeyboardInput, prelude::*, window::WindowResized};
+use bevy::{
+    color::palettes::css::YELLOW, input::keyboard::KeyboardInput, prelude::*, window::WindowResized,
+};
 use rand::{
     distr::{Distribution, StandardUniform},
     Rng, RngExt,
@@ -65,10 +67,10 @@ struct LanguagesButtonColors {
 impl Default for LanguagesButtonColors {
     fn default() -> Self {
         LanguagesButtonColors {
-            normal: Color::rgb(0.9, 0.9, 0.9),
-            hovered: Color::rgb(0.8, 0.8, 0.8),
-            selected: Color::rgb(1., 0.9, 0.),
-            hovered_selected: Color::rgb(0.9, 0.8, 0.),
+            normal: Color::srgb(0.9, 0.9, 0.9),
+            hovered: Color::srgb(0.8, 0.8, 0.8),
+            selected: Color::srgb(1., 0.9, 0.),
+            hovered_selected: Color::srgb(0.9, 0.8, 0.),
         }
     }
 }
@@ -262,11 +264,11 @@ fn setup_menu(
 ) {
     let font = asset_server.load("fonts/dpcomic.ttf");
     let clouds_spritesheet = asset_server.load("textures/title_screen/clouds_sheet.png");
-    let clouds_layout = TextureAtlasLayout::from_grid(Vec2::new(426., 280.), 10, 1, None, None);
+    let clouds_layout = TextureAtlasLayout::from_grid(UVec2::new(426, 280), 10, 1, None, None);
     let clouds_layout_handle = texture_atlases.add(clouds_layout.clone());
 
     let smoke_spritesheet = asset_server.load("textures/title_screen/smoke_sheet.png");
-    let smoke_layout = TextureAtlasLayout::from_grid(Vec2::new(426., 280.), 17, 1, None, None);
+    let smoke_layout = TextureAtlasLayout::from_grid(UVec2::new(426, 280), 17, 1, None, None);
     let smoke_layout_handle = texture_atlases.add(smoke_layout.clone());
 
     let french_title = asset_server.load("textures/title_screen/Francais.png");
@@ -276,7 +278,7 @@ fn setup_menu(
     let manor_lights_spritesheet =
         asset_server.load("textures/title_screen/manor_lights_sheet.png");
     let manor_lights_layout =
-        TextureAtlasLayout::from_grid(Vec2::new(426., 280.), 21, 1, None, None);
+        TextureAtlasLayout::from_grid(UVec2::new(426, 280), 21, 1, None, None);
     let manor_lights_layout_handle = texture_atlases.add(manor_lights_layout.clone());
 
     commands
@@ -297,7 +299,7 @@ fn setup_menu(
         .with_children(|parent| {
             parent
                 .spawn((
-                    AtlasImageBundle {
+                    ImageBundle {
                         style: Style {
                             width: Val::Percent(100.),
                             // height: Val::Percent(100.),
@@ -305,16 +307,15 @@ fn setup_menu(
                             align_self: AlignSelf::FlexEnd,
                             ..default()
                         },
-                        texture_atlas: TextureAtlas {
-                            layout: clouds_layout_handle,
-                            index: 0,
-                        },
                         image: UiImage {
                             texture: clouds_spritesheet,
-                            flip_x: false,
-                            flip_y: false,
+                            ..default()
                         },
                         ..default()
+                    },
+                    TextureAtlas {
+                        layout: clouds_layout_handle,
+                        index: 0,
                     },
                     SpriteSheetAnimation {
                         start_index: 0,
@@ -327,7 +328,7 @@ fn setup_menu(
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        AtlasImageBundle {
+                        ImageBundle {
                             style: Style {
                                 width: Val::Percent(100.),
                                 top: Val::Percent(16.5),
@@ -335,16 +336,16 @@ fn setup_menu(
                                 align_self: AlignSelf::FlexEnd,
                                 ..default()
                             },
-                            texture_atlas: TextureAtlas {
-                                layout: smoke_layout_handle,
-                                index: 0,
-                            },
+
                             image: UiImage {
                                 texture: smoke_spritesheet,
-                                flip_x: false,
-                                flip_y: false,
+                                ..default()
                             },
                             ..default()
+                        },
+                        TextureAtlas {
+                            layout: smoke_layout_handle,
+                            index: 0,
                         },
                         SpriteSheetAnimation {
                             start_index: 0,
@@ -430,23 +431,22 @@ fn setup_menu(
                         ))
                         .with_children(|parent| {
                             parent.spawn((
-                                AtlasImageBundle {
+                                ImageBundle {
                                     style: Style {
                                         width: Val::Percent(100.),
                                         flex_shrink: 0.,
                                         align_self: AlignSelf::FlexEnd,
                                         ..default()
                                     },
-                                    texture_atlas: TextureAtlas {
-                                        layout: manor_lights_layout_handle,
-                                        index: 0,
-                                    },
                                     image: UiImage {
                                         texture: manor_lights_spritesheet,
-                                        flip_x: false,
-                                        flip_y: false,
+                                        ..default()
                                     },
                                     ..default()
+                                },
+                                TextureAtlas {
+                                    layout: manor_lights_layout_handle,
+                                    index: 0,
                                 },
                                 ManorLightsTimer {
                                     timer: Timer::new(
@@ -532,7 +532,7 @@ fn setup_menu(
                                 TextStyle {
                                     font: font.clone(),
                                     font_size: 30.,
-                                    color: Color::YELLOW,
+                                    color: Color::Srgba(YELLOW),
                                 },
                             ),
                             ..default()

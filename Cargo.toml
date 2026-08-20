@@ -16,28 +16,27 @@ edition = "2021" # 2024
 resolver = "2"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-bevy = { version = "0.13", features = ["dynamic_linking"] }
-bevy_ecs = "0.13"
-bevy_reflect = "0.13"
+bevy = { version = "0.14", features = ["dynamic_linking"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-bevy = "0.13"
-bevy_ecs = "0.13"
-bevy_reflect = "0.13"
+bevy = { version = "0.14" }
 # wasm-bindgen = "0.2"
 
 
 [dependencies]
 # ----------- Common ----------
-# bevy = "0.13"
-bevy_tweening = "0.10"
+# bevy = "0.14"
+bevy_ecs = "0.14"
+bevy_state = "0.14"
+bevy_reflect = "0.14"
+bevy_tweening = "0.11"
 
 # ---------- Dialog -----------
 yml_dialog = "0.2"
 serde_yaml = "0.9"
 
 # ----- Hitbox - Velocity -----
-bevy_rapier2d = { version = "0.25", features = [
+bevy_rapier2d = { version = "0.27", features = [
     "simd-stable",
     "debug-render-2d",
 ] }
@@ -56,7 +55,7 @@ rand = { version = "0.10", features = ["thread_rng"] }
 anyhow = "1"
 
 # ----------- Debug -----------
-bevy-inspector-egui = "0.24"
+bevy-inspector-egui = "0.25"
 log = "0.4"
 log4rs = "1.4"
 colored = "3"
