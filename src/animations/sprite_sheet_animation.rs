@@ -68,7 +68,7 @@ pub fn animate_objects(
     mut commands: Commands,
     time: Res<Time>,
     mut query: Query<
-        (Entity, &mut SpriteSheetAnimation, &mut TextureAtlas),
+        (Entity, &mut SpriteSheetAnimation, &mut Sprite),
         (
             Without<TempoAnimation>,
             Or<(With<Flame>, With<FlowerPot>, With<FlowerPanel>)>,
@@ -79,14 +79,16 @@ pub fn animate_objects(
         animation.timer.tick(time.delta());
 
         if animation.timer.finished() {
-            if sprite.index >= animation.end_index {
-                if animation.duration == AnimationDuration::Once {
-                    commands.entity(entity).remove::<SpriteSheetAnimation>();
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                if atlas.index >= animation.end_index {
+                    if animation.duration == AnimationDuration::Once {
+                        commands.entity(entity).remove::<SpriteSheetAnimation>();
+                    } else {
+                        sprite.texture_atlas.as_mut().unwrap().index = animation.start_index;
+                    }
                 } else {
-                    sprite.index = animation.start_index;
+                    atlas.index += 1;
                 }
-            } else {
-                sprite.index += 1;
             }
         }
     }
@@ -96,19 +98,16 @@ pub fn animate_objects(
 pub fn jump_frame_character_state(
     mut commands: Commands,
     mut query: Query<
-        (
-            Entity,
-            &AnimationIndices,
-            &mut TextureAtlas,
-            &CharacterState,
-        ),
+        (Entity, &AnimationIndices, &mut Sprite, &CharacterState),
         Changed<CharacterState>,
     >,
 ) {
-    for (character, indices, mut atlas, character_state) in &mut query {
+    for (character, indices, mut sprite, character_state) in &mut query {
         // log::info!("{character_state:#?}",);
         let (start_anim, _, _) = &indices.get(character_state).unwrap();
-        atlas.index = *start_anim;
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = *start_anim;
+        }
 
         match character_state {
             // when running each time the anim loops, it's back to the Idle State
@@ -148,7 +147,7 @@ pub fn animate_character(
             Entity,
             &AnimationIndices,
             &mut AnimationTimer,
-            &mut TextureAtlas,
+            &mut Sprite,
             &mut CharacterState,
             &Name,
         ),
@@ -158,7 +157,7 @@ pub fn animate_character(
         ),
     >,
 ) {
-    for (_character, indices, mut timer, mut atlas, mut character_state, name) in
+    for (_character, indices, mut timer, mut sprite, mut character_state, name) in
         &mut characters_query
     {
         timer.tick(time.delta());
@@ -171,21 +170,23 @@ pub fn animate_character(
             // );
             // eprintln!("{:#?}", atlas);
 
-            if let Some(layout) = texture_atlases.get(&atlas.layout) {
-                if atlas.index == *last_frame {
-                    // update state
-                    atlas.index = indices.get(next_phase).unwrap().0;
-                    *character_state = *next_phase;
-                } else if atlas.index + 1 < layout.textures.len() {
-                    atlas.index += 1;
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                if let Some(layout) = texture_atlases.get(&atlas.layout) {
+                    if atlas.index == *last_frame {
+                        // update state
+                        atlas.index = indices.get(next_phase).unwrap().0;
+                        *character_state = *next_phase;
+                    } else if atlas.index + 1 < layout.textures.len() {
+                        atlas.index += 1;
+                    } else {
+                        log::error!(target: "Animation", "anim limit reached: {name}");
+                        // commands.entity(character).remove::<AnimationTimer>();
+                        *character_state = *next_phase;
+                        atlas.index = indices.get(next_phase).unwrap().0;
+                    }
                 } else {
-                    log::error!(target: "Animation", "anim limit reached: {name}");
-                    // commands.entity(character).remove::<AnimationTimer>();
-                    *character_state = *next_phase;
-                    atlas.index = indices.get(next_phase).unwrap().0;
+                    log::error!(target: "Animation", "this character doesn't have an atlas: {name}");
                 }
-            } else {
-                log::error!(target: "Animation", "this character doesn't have an atlas: {name}");
             }
         }
     }
@@ -203,13 +204,15 @@ pub fn animate_character(
 pub fn jump_frame_manor_lights_state(
     mut commands: Commands,
     mut manor_lights_query: Query<
-        (Entity, &mut TextureAtlas, &ManorLightsPattern),
+        (Entity, &mut Sprite, &ManorLightsPattern),
         Changed<ManorLightsPattern>,
     >,
 ) {
-    for (manor_lights, mut atlas, manor_lights_state) in &mut manor_lights_query {
+    for (manor_lights, mut sprite, manor_lights_state) in &mut manor_lights_query {
         // log::info!("{manor_lights_state:#?}");
-        atlas.index = MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_state) as usize].0;
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_state) as usize].0;
+        }
 
         match manor_lights_state {
             // when running each time the anim loops it triggers this match arm
@@ -242,7 +245,7 @@ pub fn animate_ui_atlas(
     mut commands: Commands,
     time: Res<Time>,
     mut atlas_images: Query<
-        (Entity, &mut SpriteSheetAnimation, &mut TextureAtlas),
+        (Entity, &mut SpriteSheetAnimation, &mut Sprite),
         (
             Without<TempoAnimation>,
             Without<ManorLightsPattern>,
@@ -251,24 +254,26 @@ pub fn animate_ui_atlas(
     >,
     smoke_query: Query<Entity, With<Smoke>>,
 ) {
-    for (entity, mut animation, mut atlas) in atlas_images.iter_mut() {
+    for (entity, mut animation, mut sprite) in atlas_images.iter_mut() {
         animation.timer.tick(time.delta());
 
         if animation.timer.finished() {
-            if atlas.index >= animation.end_index {
-                if animation.duration == AnimationDuration::Once {
-                    commands.entity(entity).remove::<SpriteSheetAnimation>();
-                } else {
-                    atlas.index = animation.start_index;
-                    if smoke_query.get(entity).is_ok() {
-                        commands.entity(entity).insert(TempoAnimation(Timer::new(
-                            Duration::from_secs(rand::rng().random_range(6..=15)),
-                            TimerMode::Once,
-                        )));
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                if atlas.index >= animation.end_index {
+                    if animation.duration == AnimationDuration::Once {
+                        commands.entity(entity).remove::<SpriteSheetAnimation>();
+                    } else {
+                        atlas.index = animation.start_index;
+                        if smoke_query.get(entity).is_ok() {
+                            commands.entity(entity).insert(TempoAnimation(Timer::new(
+                                Duration::from_secs(rand::rng().random_range(6..=15)),
+                                TimerMode::Once,
+                            )));
+                        }
                     }
+                } else {
+                    atlas.index += 1;
                 }
-            } else {
-                atlas.index += 1;
             }
         }
     }
@@ -283,15 +288,11 @@ pub fn animate_ui_atlas(
 pub fn animate_manor_lights(
     time: Res<Time>,
     mut manor_lights_query: Query<
-        (
-            &mut TextureAtlas,
-            &mut ManorLightsTimer,
-            &mut ManorLightsPattern,
-        ),
+        (&mut Sprite, &mut ManorLightsTimer, &mut ManorLightsPattern),
         Without<TempoAnimation>,
     >,
 ) {
-    for (mut atlas, mut manor_lights_timer, mut manor_lights_pattern) in &mut manor_lights_query {
+    for (mut sprite, mut manor_lights_timer, mut manor_lights_pattern) in &mut manor_lights_query {
         manor_lights_timer.tick(time.delta());
 
         if manor_lights_timer.finished() {
@@ -306,12 +307,14 @@ pub fn animate_manor_lights(
                     //     MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_pattern) as usize].1
                     // );
 
-                    if atlas.index
-                        >= MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_pattern) as usize].1
-                    {
-                        *manor_lights_pattern = ManorLightsPattern::FullLights;
-                    } else {
-                        atlas.index += 1;
+                    if let Some(atlas) = &mut sprite.texture_atlas {
+                        if atlas.index
+                            >= MANOR_LIGHTS_PATTERN_INDEXES[(*manor_lights_pattern) as usize].1
+                        {
+                            *manor_lights_pattern = ManorLightsPattern::FullLights;
+                        } else {
+                            atlas.index += 1;
+                        }
                     }
                 }
             };
@@ -322,7 +325,7 @@ pub fn animate_manor_lights(
 pub fn flexing_title(
     mut commands: Commands,
     mut title_query: Query<
-        (Entity, &mut Style, &mut TitleState),
+        (Entity, &mut Node, &mut TitleState),
         (With<Title>, Without<TempoAnimation>),
     >,
 ) {

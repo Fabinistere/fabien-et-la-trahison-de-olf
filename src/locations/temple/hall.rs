@@ -198,57 +198,42 @@ pub fn setup_hall(
 
     commands
         .spawn((
-            SpriteBundle {
-                texture: hall,
-                transform: Transform::from_xyz(0., 0., HALL_Z),
-                ..default()
-            },
+            Sprite::from_image(hall),
+            Transform::from_xyz(0., 0., HALL_Z),
             Hall,
             RigidBody::Fixed,
             Name::new("Hall"),
         ))
         .with_children(|parent| {
             parent.spawn((
-                SpriteBundle {
-                    texture: hall_up_door,
-                    transform: Transform::from_xyz(0., 0., UP_DOOR_Z),
-                    ..default()
-                },
+                Sprite::from_image(hall_up_door),
+                Transform::from_xyz(0., 0., UP_DOOR_Z),
                 Name::new("Hall Up Doors"),
             ));
 
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: balcony,
-                        transform: Transform::from_translation(BALCONY_POSITION.into()),
-                        ..default()
-                    },
+                    Sprite::from_image(balcony),
+                    Transform::from_translation(BALCONY_POSITION.into()),
                     Name::new("Balcony"),
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        SpriteBundle {
-                            transform: Transform::from_translation(BALCONY_COVER_POSITION.into()),
-                            sprite: Sprite {
-                                custom_size: Some(BALCONY_COVER_SIZE.into()),
-                                color: BACKGROUND_COLOR_INGAME, // Color::WHITE, //
-                                ..default()
-                            },
+                        Sprite {
+                            color: BACKGROUND_COLOR_INGAME, // Color::WHITE, //
+                            custom_size: Some(BALCONY_COVER_SIZE.into()),
                             ..default()
                         },
+                        Transform::from_translation(BALCONY_COVER_POSITION.into()),
                         BalconyCover { on: true },
                         Name::new("Balcony Cover"),
                     ));
 
                     // TODO: Change Balcony Up door when Balcony Sensor
                     parent.spawn((
-                        SpriteBundle {
-                            texture: balcony_up_door,
-                            transform: Transform::from_translation(UP_DOOR_POSITION.into()),
-                            visibility: Visibility::Hidden,
-                            ..default()
-                        },
+                        Sprite::from_image(balcony_up_door),
+                        Transform::from_translation(UP_DOOR_POSITION.into()),
+                        Visibility::Hidden,
                         BalconyUpDoor,
                         Name::new("Balcony Up Door"),
                     ));
@@ -281,7 +266,7 @@ pub fn setup_hall(
 
             parent
                 .spawn((
-                    TransformBundle::default(),
+                    Transform::default(),
                     RigidBody::Fixed,
                     Name::new("Wall Colliders"),
                 ))
@@ -303,11 +288,8 @@ pub fn setup_hall(
 
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: props,
-                        transform: Transform::from_translation(BOX_POSITION.into()),
-                        ..default()
-                    },
+                    Sprite::from_image(props),
+                    Transform::from_translation(BOX_POSITION.into()),
                     OverlappingEntity::default(),
                     Interactive::new(BOX_INTERACT_BUTTON_POSITION.into(), BOX_INTERACTION_ID),
                     RigidBody::Fixed,
@@ -322,16 +304,13 @@ pub fn setup_hall(
                     ));
 
                     parent.spawn((
-                        SpriteBundle {
-                            texture: interaction_resources.interact_button.clone(),
-                            transform: Transform {
-                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
-                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
-                                ..default()
-                            },
-                            visibility: Visibility::Hidden,
+                        Sprite::from_image(interaction_resources.interact_button.clone()),
+                        Transform {
+                            translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },
+                        Visibility::Hidden,
                         InteractIcon,
                     ));
 
@@ -349,15 +328,15 @@ pub fn setup_hall(
 
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: door_spritesheet,
-                        transform: Transform::from_translation(DOOR_POSITION.into()),
+                    Sprite {
+                        image: door_spritesheet,
+                        texture_atlas: Some(TextureAtlas {
+                            layout: texture_atlases.add(door_layout),
+                            index: 0,
+                        }),
                         ..default()
                     },
-                    TextureAtlas {
-                        layout: texture_atlases.add(door_layout),
-                        index: 0,
-                    },
+                    Transform::from_translation(DOOR_POSITION.into()),
                     TempleDoor,
                     DoorState::Closed,
                     OverlappingEntity::new(TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED),
@@ -374,16 +353,13 @@ pub fn setup_hall(
                     ));
 
                     parent.spawn((
-                        SpriteBundle {
-                            texture: interaction_resources.interact_button.clone(),
-                            transform: Transform {
-                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
-                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
-                                ..default()
-                            },
-                            visibility: Visibility::Hidden,
+                        Sprite::from_image(interaction_resources.interact_button.clone()),
+                        Transform {
+                            translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },
+                        Visibility::Hidden,
                         InteractIcon,
                     ));
 
@@ -426,11 +402,8 @@ pub fn setup_hall(
 
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: statue,
-                        transform: Transform::from_translation(STATUE_POSITION.into()),
-                        ..default()
-                    },
+                    Sprite::from_image(statue),
+                    Transform::from_translation(STATUE_POSITION.into()),
                     OverlappingEntity::default(),
                     Interactive::new(
                         STATUE_INTERACT_BUTTON_POSITION.into(),
@@ -448,16 +421,13 @@ pub fn setup_hall(
                     ));
 
                     parent.spawn((
-                        SpriteBundle {
-                            texture: interaction_resources.interact_button.clone(),
-                            transform: Transform {
-                                translation: BOX_INTERACT_BUTTON_POSITION.into(),
-                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
-                                ..default()
-                            },
-                            visibility: Visibility::Hidden,
+                        Sprite::from_image(interaction_resources.interact_button.clone()),
+                        Transform {
+                            translation: BOX_INTERACT_BUTTON_POSITION.into(),
+                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },
+                        Visibility::Hidden,
                         InteractIcon,
                     ));
 
@@ -476,15 +446,15 @@ pub fn setup_hall(
             for (count, wall_light_position) in WALL_LIGHT_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
-                        SpriteBundle {
-                            texture: small_flame_spritesheet.clone(),
-                            transform: Transform::from_translation((*wall_light_position).into()),
+                        Sprite {
+                            image: small_flame_spritesheet.clone(),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: texture_atlases.add(small_flame_layout.clone()),
+                                index: 0,
+                            }),
                             ..default()
                         },
-                        TextureAtlas {
-                            layout: texture_atlases.add(small_flame_layout.clone()),
-                            index: 0,
-                        },
+                        Transform::from_translation((*wall_light_position).into()),
                         SpriteSheetAnimation {
                             start_index: 0,
                             end_index: small_flame_layout.clone().len() - 1,
@@ -496,11 +466,8 @@ pub fn setup_hall(
                     ))
                     .with_children(|parent| {
                         parent.spawn((
-                            SpriteBundle {
-                                texture: wall_light_support.clone(),
-                                transform: Transform::from_translation(LIGHT_SUPPORT_OFFSET.into()),
-                                ..default()
-                            },
+                            Sprite::from_image(wall_light_support.clone()),
+                            Transform::from_translation(LIGHT_SUPPORT_OFFSET.into()),
                             Name::new("Light support"),
                         ));
                     });
@@ -509,12 +476,9 @@ pub fn setup_hall(
             for (count, hall_chandelier_position) in HALL_CHANDELIER_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
-                        SpriteBundle {
-                            texture: chandelier.clone(),
-                            transform: Transform {
-                                translation: (*hall_chandelier_position).into(),
-                                ..default()
-                            },
+                        Sprite::from_image(chandelier.clone()),
+                        Transform {
+                            translation: (*hall_chandelier_position).into(),
                             ..default()
                         },
                         Chandelier,
@@ -526,17 +490,15 @@ pub fn setup_hall(
                             CHANDELIER_FLAME_POSITIONS.iter().enumerate()
                         {
                             parent.spawn((
-                                SpriteBundle {
-                                    texture: small_flame_spritesheet.clone(),
-                                    transform: Transform::from_translation(
-                                        (*chandelier_flame_position).into(),
-                                    ),
+                                Sprite {
+                                    image: small_flame_spritesheet.clone(),
+                                    texture_atlas: Some(TextureAtlas {
+                                        layout: texture_atlases.add(small_flame_layout.clone()),
+                                        index: 0,
+                                    }),
                                     ..default()
                                 },
-                                TextureAtlas {
-                                    layout: texture_atlases.add(small_flame_layout.clone()),
-                                    index: 0,
-                                },
+                                Transform::from_translation((*chandelier_flame_position).into()),
                                 SpriteSheetAnimation {
                                     start_index: 0,
                                     end_index: small_flame_layout.clone().len() - 1,

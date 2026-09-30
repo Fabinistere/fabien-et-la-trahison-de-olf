@@ -74,7 +74,7 @@ pub fn load_textures(
 /// FIXME: PB Spamming the ui key 'o'; ?throws an error
 pub fn create_dialog_panel_on_key_press(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    query: Query<(Entity, &Animator<Style>, &Style), With<DialogPanel>>,
+    query: Query<(Entity, &Animator<Node>, &Node), With<DialogPanel>>,
 
     mut current_interlocutor: ResMut<CurrentInterlocutor>,
     player_query: Query<Entity, With<Player>>,
@@ -97,7 +97,7 @@ pub fn create_dialog_panel_on_key_press(
 
 pub fn close_dialog_panel(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Animator<Style>, &Style), With<DialogPanel>>,
+    mut query: Query<(Entity, &mut Animator<Node>, &Node), With<DialogPanel>>,
 ) {
     // log::info!("close dialog event");
     if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
@@ -123,7 +123,7 @@ pub fn close_dialog_panel(
 
         commands
             .entity(entity)
-            .remove::<Animator<Style>>()
+            .remove::<Animator<Node>>()
             .insert(Animator::new(dialog_panel_tween));
     }
 }
@@ -170,7 +170,7 @@ pub fn create_dialog_panel(
 
     // Windows' motion
     let panels_tween = Tween::new(
-        EaseMethod::Linear,
+        EaseMethod::EaseFunction(EaseFunction::Linear),
         Duration::from_millis(1000),
         UiPositionLens {
             start: UiRect {
@@ -190,29 +190,29 @@ pub fn create_dialog_panel(
             // To hide the windows' panels when reaching
             // the top of the window.
             // Because the main Wall Background is above these panels.
-            ImageBundle {
-                image: dialog_panel_resources.apartments.clone().into(),
-                style: Style {
-                    display: Display::Flex,
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    position_type: PositionType::Relative,
+            ImageNode {
+                image: dialog_panel_resources.apartments.clone(),
+                ..default()
+            },
+            Node {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                position_type: PositionType::Relative,
+                top: Val::Px(0.),
+                right: Val::Px(DIALOG_PANEL_ANIMATION_OFFSET),
+                bottom: Val::Px(0.),
+                margin: UiRect {
+                    left: Val::Auto,
+                    right: Val::Px(0.),
                     top: Val::Px(0.),
-                    right: Val::Px(DIALOG_PANEL_ANIMATION_OFFSET),
                     bottom: Val::Px(0.),
-                    margin: UiRect {
-                        left: Val::Auto,
-                        right: Val::Px(0.),
-                        top: Val::Px(0.),
-                        bottom: Val::Px(0.),
-                    },
-                    width: Val::Auto,
-                    height: Val::Percent(100.),
-                    aspect_ratio: Some(284. / 400.),
-                    ..Style::default()
                 },
-                ..ImageBundle::default()
+                width: Val::Auto,
+                height: Val::Percent(100.),
+                aspect_ratio: Some(284. / 400.),
+                ..default()
             },
             DialogPanel,
             Animator::new(dialog_panel_tween),
@@ -220,48 +220,48 @@ pub fn create_dialog_panel(
             Name::new("UI Wall"),
         ))
         .with_children(|parent| {
-            let child_sprite_style = Style {
+            let child_sprite_style = Node {
                 position_type: PositionType::Absolute,
                 width: Val::Percent(100.),
                 height: Val::Percent(100.),
-                ..Style::default()
+                ..default()
             };
 
             // panels under the wall to prevent them from sticking out of the window after being lifted.
             parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.stained_glass_panels.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
+                ImageNode {
+                    image: dialog_panel_resources.stained_glass_panels.clone(),
+                    ..default()
                 },
+                child_sprite_style.clone(),
                 Animator::new(panels_tween),
                 Name::new("Stained Glass Panel"),
             ));
 
             parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.background.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
+                ImageNode {
+                    image: dialog_panel_resources.background.clone(),
+                    ..default()
                 },
+                child_sprite_style.clone(),
                 Name::new("Wall Background"),
             ));
 
             parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.stained_glass_opened.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
+                ImageNode {
+                    image: dialog_panel_resources.stained_glass_opened.clone(),
+                    ..default()
                 },
+                child_sprite_style.clone(),
                 Name::new("Stained Glass Static"),
             ));
 
             parent.spawn((
-                ImageBundle {
-                    image: dialog_panel_resources.chandelier.clone().into(),
-                    style: child_sprite_style.clone(),
-                    ..ImageBundle::default()
+                ImageNode {
+                    image: dialog_panel_resources.chandelier.clone(),
+                    ..default()
                 },
+                child_sprite_style.clone(),
                 Name::new("Light"),
             ));
 
@@ -271,20 +271,20 @@ pub fn create_dialog_panel(
 
             parent
                 .spawn((
-                    ImageBundle {
+                    ImageNode {
                         // REFACTOR: Replace by a spritesheet
-                        image: dialog_panel_resources.scroll_animation[0].clone().into(),
-                        style: Style {
-                            position_type: PositionType::Absolute,
-                            width: Val::Percent(100.),
-                            height: Val::Percent(100.),
-                            display: Display::Flex,
-                            flex_direction: FlexDirection::Column,
-                            align_items: AlignItems::FlexStart,
-                            justify_content: JustifyContent::FlexEnd,
-                            ..Style::default()
-                        },
-                        ..ImageBundle::default()
+                        image: dialog_panel_resources.scroll_animation[0].clone(),
+                        ..default()
+                    },
+                    Node {
+                        position_type: PositionType::Absolute,
+                        width: Val::Percent(100.),
+                        height: Val::Percent(100.),
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::FlexStart,
+                        justify_content: JustifyContent::FlexEnd,
+                        ..default()
                     },
                     Scroll {
                         current_frame: 0,
@@ -298,17 +298,16 @@ pub fn create_dialog_panel(
                     Name::new("Upper Scroll"),
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle {
-                        text: Text::from_section(
-                            "",
-                            TextStyle {
-                                font: dialog_panel_resources.text_font.clone(),
-                                font_size: 30.,
-                                color: Color::BLACK,
-                            },
-                        )
-                        .with_justify(JustifyText::Left),
-                        style: Style {
+                    parent.spawn((
+                        Text::new(""),
+                        TextFont {
+                            font: dialog_panel_resources.text_font.clone(),
+                            font_size: 30.,
+                            ..default()
+                        },
+                        TextColor(Color::BLACK),
+                        TextLayout::new_with_justify(JustifyText::Left),
+                        Node {
                             flex_wrap: FlexWrap::Wrap,
                             top: Val::Percent(UPPER_TEXT_TOP),
                             margin: UiRect {
@@ -317,10 +316,9 @@ pub fn create_dialog_panel(
                             },
                             width: Val::Percent(100.),
                             height: Val::Percent(100.),
-                            ..Style::default()
-                        },
-                        ..TextBundle::default()
-                    });
+                            ..default()
+                        }
+                    ));
                 })
                 // .insert(DialogBox::new(dialog[0].clone(), DIALOG_BOX_UPDATE_DELTA_S))
                 ;
@@ -346,19 +344,19 @@ pub fn create_dialog_panel(
 
             parent
                 .spawn((
-                    ImageBundle {
-                        image: player_scroll_img.clone().into(),
-                        style: Style {
-                            // REFACTOR: Player Choice Panel's Style
-                            position_type: PositionType::Absolute,
-                            width: Val::Percent(100.),
-                            height: Val::Percent(100.),
-                            display: Display::Flex,
-                            flex_direction: FlexDirection::Column,
-                            align_items: AlignItems::FlexStart,
-                            justify_content: JustifyContent::FlexEnd,
-                            ..default()
-                        },
+                    ImageNode {
+                        image: player_scroll_img.clone(),
+                        ..default()
+                    },
+                    Node {
+                        // REFACTOR: Player Choice Panel's Style
+                        position_type: PositionType::Absolute,
+                        width: Val::Percent(100.),
+                        height: Val::Percent(100.),
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::FlexStart,
+                        justify_content: JustifyContent::FlexEnd,
                         ..default()
                     },
                     Scroll {
@@ -378,44 +376,37 @@ pub fn create_dialog_panel(
                     for i in 0..3 {
                         parent
                             .spawn((
-                                ButtonBundle {
-                                    style: Style {
-                                        width: Val::Percent(BUTTON_WIDTH),
-                                        height: Val::Percent(3.5),
-                                        margin: UiRect::all(Val::Auto),
-                                        top: Val::Percent(
-                                            FIRST_BUTTON_TOP_PERCENT - BUTTON_SPACING * i as f32,
-                                        ),
-                                        left: Val::Percent(BUTTON_LEFT_PERCENT),
-                                        ..default()
-                                    },
-                                    background_color: NORMAL_BUTTON.into(),
-                                    visibility: Visibility::Hidden,
+                                Button,
+                                ImageNode {
+                                    color: NORMAL_BUTTON,
+                                    ..default()
+                                },
+                                Visibility::Hidden,
+                                Node {
+                                    width: Val::Percent(BUTTON_WIDTH),
+                                    height: Val::Percent(3.5),
+                                    margin: UiRect::all(Val::Auto),
+                                    top: Val::Percent(
+                                        FIRST_BUTTON_TOP_PERCENT - BUTTON_SPACING * i as f32,
+                                    ),
+                                    left: Val::Percent(BUTTON_LEFT_PERCENT),
                                     ..default()
                                 },
                                 Name::new(format!("Choice n°{i}")),
                                 ButtonChoice::new(i),
                             ))
                             .with_children(|parent| {
-                                parent.spawn(TextBundle {
-                                    text: Text::from_section(
-                                        "",
-                                        TextStyle {
-                                            font: dialog_panel_resources.text_font.clone(),
-                                            // REFACTOR: dialog box - scale the text with the UI (shitty fix: use window height)
-                                            font_size: 25.,
-                                            color: Color::BLACK,
-                                        },
-                                    )
-                                    .with_justify(JustifyText::Left),
-                                    style: Style {
-                                        flex_wrap: FlexWrap::Wrap,
-                                        max_width: Val::Percent(100.),
-                                        max_height: Val::Percent(100.),
+                                parent.spawn((
+                                    Text::new(""),
+                                    TextFont {
+                                        font: dialog_panel_resources.text_font.clone(),
+                                        // REFACTOR: dialog box - scale the text with the UI (shitty fix: use window height)
+                                        font_size: 25.,
                                         ..default()
                                     },
-                                    ..default()
-                                });
+                                    TextColor(Color::BLACK),
+                                    TextLayout::new_with_justify(JustifyText::Left),
+                                ));
                             });
                     }
                 });

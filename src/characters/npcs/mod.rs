@@ -236,20 +236,19 @@ fn spawn_characters(
 
         let npc = commands
             .spawn((
-                SpriteBundle {
-                    texture: characters_spritesheet.texture.clone(),
-
-                    transform: Transform {
-                        translation: spawn_position.into(),
-                        scale: Vec3::splat(NPC_SCALE),
-                        ..default()
-                    },
+                Sprite {
+                    texture_atlas: Some(TextureAtlas {
+                        layout: characters_spritesheet.atlas_handle.clone(),
+                        // idle start index
+                        index: global_animations_indices[spritesheet_line][1].0,
+                    }),
+                    image: characters_spritesheet.texture.clone(),
                     ..default()
                 },
-                TextureAtlas {
-                    layout: characters_spritesheet.atlas_handle.clone(),
-                    // idle start index
-                    index: global_animations_indices[spritesheet_line][1].0,
+                Transform {
+                    translation: spawn_position.into(),
+                    scale: Vec3::splat(NPC_SCALE),
+                    ..default()
                 },
                 Name::new(format!("NPC {name}")),
                 Character,
@@ -278,14 +277,11 @@ fn spawn_characters(
                 ));
 
                 parent.spawn((
-                    SpriteBundle {
-                        texture: interaction_resources.interact_button.clone(),
-                        transform: Transform {
-                            translation: interactive.icon_translation,
-                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
-                            ..default()
-                        },
-                        visibility: Visibility::Hidden,
+                    Sprite::from_image(interaction_resources.interact_button.clone()),
+                    Visibility::Hidden,
+                    Transform {
+                        translation: interactive.icon_translation,
+                        scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                         ..default()
                     },
                     InteractIcon,
@@ -389,20 +385,19 @@ fn spawn_villains(
 
         let npc = commands
             .spawn((
-                SpriteBundle {
-                    texture: characters_spritesheet.texture.clone(),
-
-                    transform: Transform {
-                        translation: spawn_position.into(),
-                        scale: Vec3::splat(NPC_SCALE),
-                        ..default()
-                    },
+                Sprite {
+                    image: characters_spritesheet.texture.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: characters_spritesheet.atlas_handle.clone(),
+                        // idle start index
+                        index: global_animations_indices[spritesheet_line][1].0,
+                    }),
                     ..default()
                 },
-                TextureAtlas {
-                    layout: characters_spritesheet.atlas_handle.clone(),
-                    // idle start index
-                    index: global_animations_indices[spritesheet_line][1].0,
+                Transform {
+                    translation: spawn_position.into(),
+                    scale: Vec3::splat(NPC_SCALE),
+                    ..default()
                 },
                 Name::new(format!("NPC {name}")),
                 Character,
@@ -432,16 +427,13 @@ fn spawn_villains(
                 ));
 
                 parent.spawn((
-                    SpriteBundle {
-                        texture: interaction_resources.interact_button.clone(),
-                        transform: Transform {
-                            translation: interactive.icon_translation,
-                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
-                            ..default()
-                        },
-                        visibility: Visibility::Hidden,
+                    Sprite::from_image(interaction_resources.interact_button.clone()),
+                    Transform {
+                        translation: interactive.icon_translation,
+                        scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                         ..default()
                     },
+                    Visibility::Hidden,
                     InteractIcon,
                 ));
 
@@ -526,20 +518,19 @@ fn spawn_cat(mut commands: Commands, characters_spritesheet: Res<CharacterSprite
     // TEMP: Static Olf cat
     commands
         .spawn((
-            SpriteBundle {
-                texture: characters_spritesheet.texture.clone(),
-
-                transform: Transform {
-                    translation: OLF_CAT_POSITION.into(),
-                    scale: Vec3::splat(OLF_CAT_SCALE),
-                    ..Transform::default()
-                },
+            Sprite {
+                image: characters_spritesheet.texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: characters_spritesheet.atlas_handle.clone(),
+                    // idle start index
+                    index: BLACK_CAT_LINE * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
+                }),
                 ..default()
             },
-            TextureAtlas {
-                layout: characters_spritesheet.atlas_handle.clone(),
-                // idle start index
-                index: BLACK_CAT_LINE * SPRITESHEET_COLUMN_NUMBER + COLUMN_FRAME_IDLE_START,
+            Transform {
+                translation: OLF_CAT_POSITION.into(),
+                scale: Vec3::splat(OLF_CAT_SCALE),
+                ..Transform::default()
             },
             Name::new("Olf Cat"),
             OlfCat,

@@ -2,7 +2,7 @@
 //!
 //! This is a re-export of [`bevy_rapier2d`] and [`bevy_retrograde`] with some of our own utilities added.
 
-use bevy::{prelude::*, render::texture::Image};
+use bevy::{image::Image, prelude::*};
 use bevy_rapier2d::prelude::*;
 use density_mesh_core::prelude::GenerateDensityMeshSettings;
 use density_mesh_core::prelude::PointsSeparation;

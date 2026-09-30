@@ -125,6 +125,7 @@ fn game_start(
             logical_key: _,
             state: _,
             window: _,
+            repeat: _,
         }) = keyboard_inputs.read().next()
         {
             if *key_code == KeyCode::Space {
@@ -144,7 +145,7 @@ fn language_button_interactions(
         >,
         Query<(&mut Selected, &Children)>,
     )>,
-    mut text_query: Query<&mut Text>,
+    mut text_query: Query<&mut TextColor>,
     mut language_event_writer: EventWriter<LanguageChangedEvent>,
 ) {
     let mut reset_selected = false;
@@ -159,7 +160,7 @@ fn language_button_interactions(
         for (mut selected, children) in buttons_query.p1().iter_mut() {
             selected.0 = false;
             let mut text = text_query.get_mut(children[0]).unwrap();
-            text.sections[0].style.color = button_colors.normal;
+            text.0 = button_colors.normal;
         }
     }
 
@@ -168,22 +169,22 @@ fn language_button_interactions(
         match *interaction {
             Interaction::Pressed => {
                 selected.0 = true;
-                text.sections[0].style.color = button_colors.selected;
+                text.0 = button_colors.selected;
                 *language = *button_language;
                 language_event_writer.send(LanguageChangedEvent);
             }
             Interaction::Hovered => {
                 if selected.0 {
-                    text.sections[0].style.color = button_colors.hovered_selected;
+                    text.0 = button_colors.hovered_selected;
                 } else {
-                    text.sections[0].style.color = button_colors.hovered;
+                    text.0 = button_colors.hovered;
                 }
             }
             Interaction::None => {
                 if selected.0 {
-                    text.sections[0].style.color = button_colors.selected;
+                    text.0 = button_colors.selected;
                 } else {
-                    text.sections[0].style.color = button_colors.normal;
+                    text.0 = button_colors.normal;
                 }
             }
         }
@@ -197,24 +198,20 @@ fn language_changed(
     asset_server: Res<AssetServer>,
 
     mut text_query: Query<(&mut Text, &DialogId)>,
-    mut ui_image_query: Query<(&mut UiImage, &DialogId), With<Title>>,
+    mut ui_image_query: Query<(&mut ImageNode, &DialogId), With<Title>>,
 ) {
     for LanguageChangedEvent in language_event.read() {
         for (mut text, dialog_id) in &mut text_query {
-            text.sections[0].value = dialogs.get(*dialog_id, *language);
+            text.0 = dialogs.get(*dialog_id, *language);
         }
-        for (mut image, dialog_id) in &mut ui_image_query {
+        for (mut node, dialog_id) in &mut ui_image_query {
             if *dialog_id == DialogId::MenuTitle {
-                *image = match *language {
-                    Language::Francais => asset_server
-                        .load("textures/title_screen/Francais.png")
-                        .into(),
-                    Language::English => asset_server
-                        .load("textures/title_screen/English.png")
-                        .into(),
-                    Language::FabienAncien => asset_server
-                        .load("textures/title_screen/Fabien Ancien.png")
-                        .into(),
+                node.image = match *language {
+                    Language::Francais => asset_server.load("textures/title_screen/Francais.png"),
+                    Language::English => asset_server.load("textures/title_screen/English.png"),
+                    Language::FabienAncien => {
+                        asset_server.load("textures/title_screen/Fabien Ancien.png")
+                    }
                 }
             }
         }
@@ -228,7 +225,7 @@ fn language_changed(
 /// So, `bottom` never above 5.5 (or 0 if we keep the `top` in the setup style).
 fn adjust_art_height(
     mut resize_reader: EventReader<WindowResized>,
-    mut query: Query<&mut Style, With<ArtMenu>>,
+    mut query: Query<&mut Node, With<ArtMenu>>,
 ) {
     for WindowResized {
         window: _,
@@ -265,11 +262,13 @@ fn setup_menu(
     let font = asset_server.load("fonts/dpcomic.ttf");
     let clouds_spritesheet = asset_server.load("textures/title_screen/clouds_sheet.png");
     let clouds_layout = TextureAtlasLayout::from_grid(UVec2::new(426, 280), 10, 1, None, None);
-    let clouds_layout_handle = texture_atlases.add(clouds_layout.clone());
+    let clouds_size = clouds_layout.len();
+    let clouds_layout = texture_atlases.add(clouds_layout);
 
     let smoke_spritesheet = asset_server.load("textures/title_screen/smoke_sheet.png");
     let smoke_layout = TextureAtlasLayout::from_grid(UVec2::new(426, 280), 17, 1, None, None);
-    let smoke_layout_handle = texture_atlases.add(smoke_layout.clone());
+    let smoke_size = smoke_layout.len();
+    let smoke_layout = texture_atlases.add(smoke_layout);
 
     let french_title = asset_server.load("textures/title_screen/Francais.png");
     let moon = asset_server.load("textures/title_screen/moon.png");
@@ -279,18 +278,15 @@ fn setup_menu(
         asset_server.load("textures/title_screen/manor_lights_sheet.png");
     let manor_lights_layout =
         TextureAtlasLayout::from_grid(UVec2::new(426, 280), 21, 1, None, None);
-    let manor_lights_layout_handle = texture_atlases.add(manor_lights_layout.clone());
+    let manor_lights_layout = texture_atlases.add(manor_lights_layout);
 
     commands
         .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.),
-                    height: Val::Percent(100.),
-                    // TODO: Animate transition Start
-                    // bottom: Val::Percent(-40.),
-                    ..default()
-                },
+            Node {
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                // TODO: Animate transition Start
+                // bottom: Val::Percent(-40.),
                 ..default()
             },
             Name::new("Menu"),
@@ -299,27 +295,24 @@ fn setup_menu(
         .with_children(|parent| {
             parent
                 .spawn((
-                    ImageBundle {
-                        style: Style {
-                            width: Val::Percent(100.),
-                            // height: Val::Percent(100.),
-                            flex_shrink: 0.,
-                            align_self: AlignSelf::FlexEnd,
-                            ..default()
-                        },
-                        image: UiImage {
-                            texture: clouds_spritesheet,
-                            ..default()
-                        },
+                    ImageNode {
+                        image: clouds_spritesheet,
+                        texture_atlas: Some(TextureAtlas {
+                            layout: clouds_layout,
+                            index: 0,
+                        }),
                         ..default()
                     },
-                    TextureAtlas {
-                        layout: clouds_layout_handle,
-                        index: 0,
+                    Node {
+                        width: Val::Percent(100.),
+                        // height: Val::Percent(100.),
+                        flex_shrink: 0.,
+                        align_self: AlignSelf::FlexEnd,
+                        ..default()
                     },
                     SpriteSheetAnimation {
                         start_index: 0,
-                        end_index: clouds_layout.len() - 1,
+                        end_index: clouds_size - 1,
                         duration: AnimationDuration::Infinite,
                         timer: Timer::new(Duration::from_millis(150), TimerMode::Repeating),
                     },
@@ -328,28 +321,25 @@ fn setup_menu(
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        ImageBundle {
-                            style: Style {
-                                width: Val::Percent(100.),
-                                top: Val::Percent(16.5),
-                                flex_shrink: 0.,
-                                align_self: AlignSelf::FlexEnd,
-                                ..default()
-                            },
-
-                            image: UiImage {
-                                texture: smoke_spritesheet,
-                                ..default()
-                            },
+                        ImageNode {
+                            image: smoke_spritesheet,
+                            texture_atlas: Some(TextureAtlas {
+                                layout: smoke_layout,
+                                index: 0,
+                            }),
                             ..default()
                         },
-                        TextureAtlas {
-                            layout: smoke_layout_handle,
-                            index: 0,
+                        Node {
+                            width: Val::Percent(100.),
+                            top: Val::Percent(16.5),
+                            flex_shrink: 0.,
+                            align_self: AlignSelf::FlexEnd,
+
+                            ..default()
                         },
                         SpriteSheetAnimation {
                             start_index: 0,
-                            end_index: smoke_layout.len() - 1,
+                            end_index: smoke_size - 1,
                             duration: AnimationDuration::Infinite,
                             timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
                         },
@@ -359,16 +349,16 @@ fn setup_menu(
 
                     // TODO: Test Anim Moon
                     parent.spawn((
-                        ImageBundle {
-                            image: moon.into(),
-                            style: Style {
-                                flex_shrink: 0.,
-                                width: Val::Percent(100.),
-                                right: Val::Percent(53.55),
-                                bottom: Val::Percent(50.5),
-                                align_self: AlignSelf::FlexEnd,
-                                ..default()
-                            },
+                        ImageNode {
+                            image: moon,
+                            ..default()
+                        },
+                        Node {
+                            flex_shrink: 0.,
+                            width: Val::Percent(100.),
+                            right: Val::Percent(53.55),
+                            bottom: Val::Percent(50.5),
+                            align_self: AlignSelf::FlexEnd,
                             ..default()
                         },
                         Name::new("Moon"),
@@ -376,32 +366,29 @@ fn setup_menu(
 
                     parent
                         .spawn((
-                            NodeBundle {
-                                style: Style {
-                                    flex_direction: FlexDirection::Column,
-                                    align_items: AlignItems::Center,
-                                    justify_content: JustifyContent::Center,
-                                    flex_shrink: 0.,
-                                    width: Val::Percent(100.),
-                                    right: Val::Percent(200.),
-                                    bottom: Val::Percent(70.),
-                                    align_self: AlignSelf::FlexEnd,
-                                    ..default()
-                                },
-                                transform: Transform::from_scale((4., 4., 4.).into()),
+                            Node {
+                                flex_direction: FlexDirection::Column,
+                                align_items: AlignItems::Center,
+                                justify_content: JustifyContent::Center,
+                                flex_shrink: 0.,
+                                width: Val::Percent(100.),
+                                right: Val::Percent(200.),
+                                bottom: Val::Percent(70.),
+                                align_self: AlignSelf::FlexEnd,
                                 ..default()
                             },
+                            Transform::from_scale((4., 4., 4.).into()),
                             Name::new("Title Node"),
                         ))
                         .with_children(|parent| {
                             parent.spawn((
-                                ImageBundle {
-                                    image: french_title.into(),
-                                    style: Style {
-                                        flex_shrink: 0.,
-                                        width: Val::Percent(12.),
-                                        ..default()
-                                    },
+                                ImageNode {
+                                    image: french_title,
+                                    ..default()
+                                },
+                                Node {
+                                    flex_shrink: 0.,
+                                    width: Val::Percent(12.),
                                     ..default()
                                 },
                                 Name::new("Actual Title"),
@@ -413,40 +400,37 @@ fn setup_menu(
                     // REFACTOR: foreground mounts and background (title in between fade in + bottom raising at start)
                     parent
                         .spawn((
-                            ImageBundle {
-                                image: foreground.into(),
-                                style: Style {
-                                    flex_shrink: 0.,
-                                    width: Val::Percent(100.),
-                                    // min_height: Val::Px(1200.),
-                                    // max_height: Val::Px(1200.),
-                                    right: Val::Percent(300.),
-                                    top: Val::Percent(16.5),
-                                    align_self: AlignSelf::FlexEnd,
-                                    ..default()
-                                },
+                            ImageNode {
+                                image: foreground,
+                                ..default()
+                            },
+                            Node {
+                                flex_shrink: 0.,
+                                width: Val::Percent(100.),
+                                // min_height: Val::Px(1200.),
+                                // max_height: Val::Px(1200.),
+                                right: Val::Percent(300.),
+                                top: Val::Percent(16.5),
+                                align_self: AlignSelf::FlexEnd,
                                 ..default()
                             },
                             Name::new("Foreground - Mounts and Manor"),
                         ))
                         .with_children(|parent| {
                             parent.spawn((
-                                ImageBundle {
-                                    style: Style {
-                                        width: Val::Percent(100.),
-                                        flex_shrink: 0.,
-                                        align_self: AlignSelf::FlexEnd,
-                                        ..default()
-                                    },
-                                    image: UiImage {
-                                        texture: manor_lights_spritesheet,
-                                        ..default()
-                                    },
+                                ImageNode {
+                                    image: manor_lights_spritesheet,
+                                    texture_atlas: Some(TextureAtlas {
+                                        layout: manor_lights_layout,
+                                        index: 0,
+                                    }),
                                     ..default()
                                 },
-                                TextureAtlas {
-                                    layout: manor_lights_layout_handle,
-                                    index: 0,
+                                Node {
+                                    width: Val::Percent(100.),
+                                    flex_shrink: 0.,
+                                    align_self: AlignSelf::FlexEnd,
+                                    ..default()
                                 },
                                 ManorLightsTimer {
                                     timer: Timer::new(
@@ -462,16 +446,13 @@ fn setup_menu(
 
             parent
                 .spawn((
-                    NodeBundle {
-                        style: Style {
-                            align_items: AlignItems::Center,
-                            flex_direction: FlexDirection::ColumnReverse,
-                            flex_shrink: 0.,
-                            width: Val::Percent(100.),
-                            // height: Val::Percent(100.),
-                            right: Val::Percent(100.),
-                            ..default()
-                        },
+                    Node {
+                        align_items: AlignItems::Center,
+                        flex_direction: FlexDirection::ColumnReverse,
+                        flex_shrink: 0.,
+                        width: Val::Percent(100.),
+                        // height: Val::Percent(100.),
+                        right: Val::Percent(100.),
                         ..default()
                     },
                     Name::new("UI - TitleScreen"),
@@ -480,18 +461,19 @@ fn setup_menu(
                     for (i, language) in Language::iter().enumerate() {
                         parent
                             .spawn((
-                                ButtonBundle {
-                                    style: Style {
-                                        width: Val::Px(100.),
-                                        height: Val::Px(20.),
-                                        justify_content: JustifyContent::Center,
-                                        align_items: AlignItems::Center,
-                                        position_type: PositionType::Absolute,
-                                        right: Val::Px(15.),
-                                        bottom: Val::Px(i as f32 * 40. + 5.),
-                                        ..default()
-                                    },
-                                    background_color: Color::NONE.into(),
+                                Button,
+                                ImageNode {
+                                    color: Color::NONE,
+                                    ..default()
+                                },
+                                Node {
+                                    width: Val::Px(100.),
+                                    height: Val::Px(20.),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    position_type: PositionType::Absolute,
+                                    right: Val::Px(15.),
+                                    bottom: Val::Px(i as f32 * 40. + 5.),
                                     ..default()
                                 },
                                 Selected(Language::default() == language),
@@ -499,42 +481,36 @@ fn setup_menu(
                                 Name::new(language.to_string()),
                             ))
                             .with_children(|parent| {
-                                parent.spawn(TextBundle {
-                                    text: Text::from_section(
-                                        language.to_string(),
-                                        TextStyle {
-                                            font: font.clone(),
-                                            font_size: 20.,
-                                            color: if *current_language == language {
-                                                languages_button_colors.selected
-                                            } else {
-                                                languages_button_colors.normal
-                                            },
-                                        },
-                                    ),
-                                    ..default()
-                                });
+                                parent.spawn((
+                                    Text::new(language.to_string()),
+                                    TextFont {
+                                        font: font.clone(),
+                                        font_size: 20.,
+                                        ..default()
+                                    },
+                                    TextColor(if *current_language == language {
+                                        languages_button_colors.selected
+                                    } else {
+                                        languages_button_colors.normal
+                                    }),
+                                ));
                             });
                     }
 
                     parent.spawn((
-                        TextBundle {
-                            style: Style {
-                                margin: UiRect {
-                                    top: Val::Auto,
-                                    bottom: Val::Percent(5.),
-                                    ..default()
-                                },
+                        Text::new(dialogs.get(DialogId::MenuPlay, *current_language)),
+                        TextFont {
+                            font: font.clone(),
+                            font_size: 30.,
+                            ..default()
+                        },
+                        TextColor(Color::Srgba(YELLOW)),
+                        Node {
+                            margin: UiRect {
+                                top: Val::Auto,
+                                bottom: Val::Percent(5.),
                                 ..default()
                             },
-                            text: Text::from_section(
-                                dialogs.get(DialogId::MenuPlay, *current_language),
-                                TextStyle {
-                                    font: font.clone(),
-                                    font_size: 30.,
-                                    color: Color::Srgba(YELLOW),
-                                },
-                            ),
                             ..default()
                         },
                         DialogId::MenuPlay,

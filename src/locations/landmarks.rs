@@ -231,7 +231,7 @@ fn landmark_arrival(
 
 fn spawn_landmarks(mut commands: Commands) {
     commands
-        .spawn((TransformBundle::default(), Name::new("Landmarks")))
+        .spawn((Transform::default(), Name::new("Landmarks")))
         .with_children(|parent| {
             let landmark_sensor = (
                 Collider::ball(LANDMARK_SENSOR_SIZE),
@@ -265,23 +265,21 @@ fn spawn_landmarks(mut commands: Commands) {
 
             for (name, location, groups, singletons) in zone_landmarks {
                 parent
-                    .spawn((TransformBundle::default(), Name::new(name)))
+                    .spawn((Transform::default(), Name::new(name)))
                     .with_children(|parent| {
                         // ----- Groups -----
                         for (group, group_name) in groups {
                             parent
                                 .spawn((
                                     LandmarkGroup,
-                                    TransformBundle::default(),
+                                    Transform::default(),
                                     Name::new(format!("{group_name} Discussion Group")),
                                 ))
                                 .with_children(|parent| {
                                     for (position, landmark_name, landmark_direction) in group {
                                         parent.spawn((
                                             Landmark::new(location, landmark_direction),
-                                            TransformBundle::from_transform(
-                                                Transform::from_translation(position.into()),
-                                            ),
+                                            Transform::from_translation(position.into()),
                                             Name::new(format!(
                                                 "Landmark {group_name} {landmark_name}"
                                             )),
@@ -295,9 +293,7 @@ fn spawn_landmarks(mut commands: Commands) {
                         for (position, landmark_name, landmark_direction) in singletons {
                             parent.spawn((
                                 Landmark::new(location, landmark_direction),
-                                TransformBundle::from_transform(Transform::from_translation(
-                                    position.into(),
-                                )),
+                                Transform::from_translation(position.into()),
                                 Name::new(format!("Landmark {landmark_name}")),
                                 landmark_sensor.clone(),
                             ));
@@ -307,7 +303,7 @@ fn spawn_landmarks(mut commands: Commands) {
                             for (landmarks, pillar_name) in main_room::landmarks::LANDMARK_PILLARS {
                                 parent
                                     .spawn((
-                                        TransformBundle::default(),
+                                        Transform::default(),
                                         Name::new(format!("{pillar_name}'s landmarks")),
                                     ))
                                     .with_children(|parent| {
@@ -316,9 +312,7 @@ fn spawn_landmarks(mut commands: Commands) {
                                         {
                                             parent.spawn((
                                                 Landmark::new(location, landmark_direction),
-                                                TransformBundle::from_transform(
-                                                    Transform::from_translation(position.into()),
-                                                ),
+                                                Transform::from_translation(position.into()),
                                                 Name::new(format!(
                                                     "Landmark {pillar_name} {landmark_name}"
                                                 )),

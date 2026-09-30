@@ -89,8 +89,7 @@ fn main() {
     setup_logging(&log_dir).expect("Failed to init logging");
     /* ---------------------------------------------------------- */
 
-    app.insert_resource(Msaa::Off)
-        .insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
+    app.insert_resource(ClearColor(BACKGROUND_COLOR_INMENU))
         .insert_resource(controls::KeyBindings {
             up: [
                 Key(KeyCode::KeyW),
@@ -172,14 +171,24 @@ fn main() {
     app.run();
 }
 
-fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+fn game_setup(mut commands: Commands, mut rapier_config: Query<&mut RapierConfiguration>) {
+    let mut rapier_config = rapier_config.single_mut();
     rapier_config.gravity = Vect::ZERO;
 
-    let mut camera = Camera2dBundle::default();
-    camera.projection.scale = 0.1;
-    // Higher order camera (UI is displayed onto this one)
-    camera.camera.order = 2;
-    commands.spawn((camera, PlayerCamera));
+    commands.spawn((
+        Camera2d,
+        // Higher order camera (UI is displayed onto this one)
+        Camera {
+            order: 2,
+            ..default()
+        },
+        Projection::from(OrthographicProjection {
+            scale: 0.1,
+            ..OrthographicProjection::default_2d()
+        }),
+        Msaa::Off,
+        PlayerCamera,
+    ));
 }
 
 fn setup_background_playing(mut clear_color: ResMut<ClearColor>) {
@@ -192,10 +201,8 @@ struct CastleTheme;
 
 fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
-        AudioBundle {
-            source: asset_server.load("sounds/FTO_Dracula_theme.ogg"),
-            settings: PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::new(0.10)),
-        },
+        AudioPlayer::<AudioSource>(asset_server.load("sounds/FTO_Dracula_theme.ogg")),
+        PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::new(0.10)),
         CastleTheme,
     ));
 

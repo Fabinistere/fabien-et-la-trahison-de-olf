@@ -5,7 +5,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_ecs::query::QueryEntityError;
 use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, RapierContext, Sensor, Velocity,
+    ActiveEvents, Collider, CollisionEvent, ReadDefaultRapierContext, Sensor, Velocity,
 };
 
 use crate::{
@@ -199,7 +199,7 @@ pub fn npc_behavior_change(
 
 pub fn follow_event(
     mut follow_event: EventReader<FollowEvent>,
-    rapier_context: Res<RapierContext>,
+    rapier_context: ReadDefaultRapierContext,
 
     mut npc_query: Query<(&mut NPCBehavior, &Children), With<NPC>>,
     follow_sensor_query: Query<Entity, (With<FollowRangeSensor>, With<Collider>, With<Sensor>)>,
@@ -388,7 +388,7 @@ pub fn npc_movement(
 ///   seeking of targets, the npc will engage with the character.
 pub fn chase_management(
     mut collision_events: EventReader<CollisionEvent>,
-    // rapier_context: Res<RapierContext>,
+    // rapier_context: ReadDefaultRapierContext,
     character_hitbox_query: Query<(&Parent, &Name), With<CharacterHitbox>>,
     player_query: Query<Entity, With<Player>>,
     mut npc_query: Query<(&mut NPCBehavior, Option<&mut Chaser>, &Name), With<NPC>>,

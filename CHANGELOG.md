@@ -5,14 +5,443 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Bevy 0.18
+## The great migration - Bevy 0.18
+
+### Bevy `0.15`
+
+[Migration Guide Bevy 0.14 -> 0.15](https://bevy.org/learn/migration-guides/0-14-to-0-15/)
+
+#### regressions
+
+- language buttons aren't vertically centered
+- no animation in the title screen
+- the z of characters are off; hide behind cover now offset the character's z (example: fake plant wall or north hall's walls)
+- `MultipleEntities(ui::dialog_scrolls::MonologPanel)` when pressing the interactive key too fast after the dialog wall opened
+
+#### changes
+
+- Dependencies
+  - bevy_rapier_2d `0.28` - [bevy changelog](https://github.com/dimforge/bevy_rapier/blob/v0.28.0/CHANGELOG.md#v0280-09-december-2024) and [changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md#v0280-08-august-2025)
+    - `ResMut<mut RapierContext>` -> `WriteDefaultRapierContext`
+    - `Res<RapierContext>` -> `ReadDefaultRapierContext`
+    - Access to `RapierConfiguration` and `SimulationToRenderTime` should query for it on the responsible entity owning the `RenderContext`.
+
+    ```rs
+    // 0.14
+    fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+        rapier_config.gravity = Vect::ZERO;
+    }
+
+    // 0.15
+    fn game_setup(mut commands: Commands, mut rapier_config: Query<&mut RapierConfiguration>) {
+        let mut rapier_config = rapier_config.single_mut();
+        rapier_config.gravity = Vect::ZERO;
+    }
+    ```
+
+  - bevy-inspector-egui `0.30` - [changelog](https://github.com/jakobhellermann/bevy-inspector-egui/compare/v0.25.0...v0.30.0)
+  - bevy_tweening `0.12` - [changelog](https://github.com/djeedai/bevy_tweening/blob/main/CHANGELOG.md#0120---2024-12-07)
+    - Replaced `interpolation::EaseFunction` with `bevy_math::EaseFunction`, and removed the `interpolation` crate dependency.
+- ECS
+- Assets
+  - [Split `TextureAtlasSources` out of `TextureAtlasLayout` and make `TextureAtlasLayout` serializable](https://bevy.org/learn/migration-guides/0-14-to-0-15/#split-textureatlassources-out-of-textureatlaslayout-and-make-textureatlaslayout-serializable)
+
+    ```rs
+    // instead of performing a reverse-lookup from the layout, like so:
+    let atlas_layout = TextureAtlasLayout::from_grid(UVec2::new(426, 280), 10, 1, None, None);
+    let atlas_layout_handle = texture_atlases.add(atlas_layout.clone());
+    let index = atlas_layout.get_texture_index(&my_handle);
+    let handle = TextureAtlas {
+        layout: atlas_layout_handle,
+        index,
+    };
+
+    // You can perform the lookup from the sources instead:
+    let atlas_layout = TextureAtlasLayout::from_grid(UVec2::new(426, 280), 10, 1, None, None);
+    let atlas_layout = texture_atlases.add(atlas_layout);
+    let index = atlas_sources.get_texture_index(&my_handle);
+    let handle = TextureAtlas {
+        layout: atlas_layout,
+        index,
+    };
+    ```
+
+    - use of `Handle<Image>` and `TextureAtlas` as components on sprite entities will NO LONGER WORK. Use the fields on `Sprite` instead.
+
+   ```rs
+   // 0.14
+    pub fn system(
+        mut query: Query<(Entity, &mut TextureAtlas)>,
+    ) {
+        for (character, mut atlas) in &mut query {
+            let (start_anim, _, _) = &indices.get(character_state).unwrap();
+            atlas.index = *start_anim;
+        }
+    }
+
+   // 0.15
+    pub fn system(
+        mut query: Query<(Entity, &mut Sprite)>,
+    ) {
+        for (character, mut sprite) in &mut query {
+            let (start_anim, _, _) = &indices.get(character_state).unwrap();
+
+            // from [this example](https://bevy.org/examples/2d-rendering/sprite-animation/)
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                atlas.index = *start_anim;
+            }
+            // or
+            // sprite.texture_atlas.as_mut().unwrap().index = *start_anim;
+        }
+    }
+    ```
+
+  - `SpriteBundle` -> `Sprite`
+
+    ```rs
+    // 0.14 
+    SpriteBundle {
+        texture: hall_up_door,
+        transform: Transform::from_xyz(0., 0., UP_DOOR_Z),
+        visibility: Visibility::Hidden,
+        ..default()
+    },
+
+    // 0.15
+    Sprite::from_image(hall_up_door),
+    Transform::from_xyz(0., 0., UP_DOOR_Z),
+    Visibility::Hidden,
+    ```
+
+    regex find and replace:
+
+    ```regex
+    find:
+    Sprite \{[\n\s]+texture: ([^,]*),[\n\s]+transform: (Transform \{[^\}]*[\n\s]+\},)[\n\s]+visibility: (Visibility::\w+,)[\n\s]+..default\(\)[\n\s]+\},
+
+
+    replace:
+    Sprite::from_image($1),
+    $2
+    $3
+
+    # with no visibility
+    Sprite \{[\n\s]+texture: ([^,]*),[\n\s]+transform: (Transform[^\n]*,[\n\s]+)..default\(\)[\n\s]+\},
+
+    Sprite::from_image($1),
+    $2
+    ```
+
+    ```rs
+    // 0.14
+    SpriteBundle {
+        texture: characters_spritesheet.texture.clone(),
+
+        transform: Transform {
+            translation: spawn_position.into(),
+            scale: Vec3::splat(NPC_SCALE),
+            ..default()
+        },
+        ..default()
+    },
+    TextureAtlas {
+        layout: characters_spritesheet.atlas_handle.clone(),
+        // idle start index
+        index: global_animations_indices[spritesheet_line][1].0,
+    },
+    
+    // 0.15
+    Sprite {
+        texture_atlas: Some(TextureAtlas {
+            layout: characters_spritesheet.atlas_handle.clone(),
+            // idle start index
+            index: global_animations_indices[spritesheet_line][1].0,
+        }),
+        image: characters_spritesheet.texture.clone(),
+        ..default()
+    },
+    Transform {
+        translation: spawn_position.into(),
+        scale: Vec3::splat(NPC_SCALE),
+        ..default()
+    },
+    ```
+
+    regex find and replace:
+
+    ```regex
+    find:
+    Sprite \{[\n\s]+texture: ([^,]*),[\n\s]+transform: (Transform[^,]+,)[\n\s]+..default\(\)[\n\s]+\},[\n\s]+(TextureAtlas \{[^\}]*\},)
+
+    replace:
+    Sprite {
+        image: $1,
+        texture_atlas: Some($3),
+        ..default()
+    },
+    $2
+    ```
+
+    - `TextureAtlasLayout`
+
+    ```rs
+    // 0.14
+    SpriteSheetAnimation {
+        start_index: 0,
+        end_index: smoke_layout.len() - 1,
+        duration: AnimationDuration::Infinite,
+        timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
+    },
+
+    // 0.15
+    SpriteSheetAnimation {
+        start_index: 0,
+        end_index: AA
+        duration: AnimationDuration::Infinite,
+        timer: Timer::new(Duration::from_millis(100), TimerMode::Repeating),
+    },
+    ```
+
+- Audio
+  - `AudioBundle` -> `AudioPlayer`
+
+    ```rs
+    // 0.14
+    commands.spawn((
+        AudioBundle {
+            source: asset_server.load("sounds/FTO_Dracula_theme.ogg"),
+            settings: PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::new(0.10)),
+        },
+        CastleTheme,
+    ));
+
+    // 0.15
+    commands.spawn((
+        AudioPlayer::<AudioSource>(asset_server.load("sounds/FTO_Dracula_theme.ogg")),
+        // PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::new(0.10))
+        CastleTheme,
+    ));
+    ```
+
+- Core
+  - [Don't re-export `bevy_image` from `bevy_render`](https://bevy.org/learn/migration-guides/0-14-to-0-15/#don-t-re-export-bevy-image-from-bevy-render)
+  
+    ```rs
+    // 0.14
+    use bevy::render::texture::Image;
+    // 0.15
+    use bevy::image::Image;
+    ```
+
+- Rendering
+  - [Move `Msaa` to component](https://bevy.org/learn/migration-guides/0-14-to-0-15/#move-msaa-to-component)
+
+    ```rs
+    // 0.14
+    app.insert_resource(Msaa::Off);
+
+    // 0.15
+    commands.spawn((Camera2dBundle::default(), Msaa::Off, PlayerCamera));
+    ```
+
+- Text
+  - [split up `TextStyle`](https://bevy.org/learn/migration-guides/0-14-to-0-15/#split-up-textstyle): `TextStyle` has been renamed to `TextFont` and its color field has been moved to a separate component named `TextColor` which newtypes Color.
+
+    ```rs
+    // 0.14
+    TextBundle {
+        style: Style {
+            margin: UiRect {
+                top: Val::Auto,
+                bottom: Val::Percent(5.),
+                ..default()
+            },
+            ..default()
+        },
+        text: Text::from_section(
+            dialogs.get(DialogId::MenuPlay, *current_language),
+            TextStyle {
+                font: font.clone(),
+                font_size: 30.,
+                color: Color::Srgba(YELLOW),
+            },
+        )
+        .with_justify(Justify::Left),
+        ..default()
+    },
+    
+    // 0.15
+    Text::new(dialogs.get(DialogId::MenuPlay, *current_language)),
+    TextFont {
+        font: font.clone(),
+        font_size: 30.,
+        ..default()
+    },
+    TextColor(Color::Srgba(YELLOW)),
+    TextLayout::new_with_justify(JustifyText::Left),
+    Node {
+        margin: UiRect {
+            top: Val::Auto,
+            bottom: Val::Percent(5.),
+            ..default()
+        },
+        ..default()
+    }
+    ```
+
+- UI
+  - Camera
+
+    ```rs
+    // 0.14
+    fn game_setup(mut commands: Commands, mut rapier_config: ResMut<RapierConfiguration>) {
+        rapier_config.gravity = Vect::ZERO;
+
+        let mut camera = Camera2dBundle::default();
+        camera.projection.scale = 0.1;
+        // Higher order camera (UI is displayed onto this one)
+        camera.camera.order = 2;
+        commands.spawn((camera, PlayerCamera));
+    }
+
+    // 0.15
+    fn game_setup(mut commands: Commands, mut rapier_config: Query<&mut RapierConfiguration>) {
+        let mut rapier_config = rapier_config.single_mut();
+        rapier_config.gravity = Vect::ZERO;
+
+        commands.spawn((
+            Camera2d,
+            // Higher order camera (UI is displayed onto this one)
+            Camera {
+                order: 2,
+                ..default()
+            },
+            Projection::from(OrthographicProjection {
+                scale: 0.1,
+                ..OrthographicProjection::default_2d()
+            }),
+            Msaa::Off,
+            PlayerCamera,
+        ));
+    }
+    ```
+
+  - `UiImage` -> `ImageNode`
+  
+    ```rs
+    // 0.14
+    ImageBundle {
+        style: Style {
+            width: Val::Percent(100.),
+            // height: Val::Percent(100.),
+            flex_shrink: 0.,
+            align_self: AlignSelf::FlexEnd,
+            ..default()
+        },
+        image: UiImage {
+            texture: clouds_spritesheet,
+            ..default()
+        },
+        ..default()
+    },
+    
+    // 0.15
+    ImageNode {
+        image: clouds_spritesheet,
+        ..default()
+    },
+    Node {
+        width: Val::Percent(100.),
+        // height: Val::Percent(100.),
+        flex_shrink: 0.,
+        align_self: AlignSelf::FlexEnd,
+        ..default()
+    },
+    ```
+
+    ```rs
+    // 0.14
+    mut scroll_query: Query<
+        (&mut UiImage, &mut Scroll, &mut ScrollTimer, Entity),
+        (With<MonologPanel>, Without<PlayerChoicePanel>),
+    >,
+
+    image = x;
+
+    // 0.15
+    mut scroll_query: Query<
+        (&mut ImageNode, &mut Scroll, &mut ScrollTimer, Entity),
+        (With<MonologPanel>, Without<PlayerChoicePanel>),
+    >,
+
+    node.image = x;
+    ```
+
+    - `BackgroundColor` no longer tints the color of images in `ImageBundle` or `ButtonBundle`. Set `UiImage::color` to tint images instead.
+  
+    ```rs
+    // 0.14
+    commands.spawn((
+        Button {
+            background_color: NORMAL_BUTTON.into(),
+            visibility: Visibility::Hidden,
+            ..default()
+        }
+    ));
+
+    // 0.15
+    commands.spawn((
+        Button,
+        ImageNode {
+            color: NORMAL_BUTTON.into(),
+            ..default()
+        },
+        Visibility::Hidden,
+    ));
+    ```
+
+  - [Migrate UI bundles to required components](https://bevy.org/learn/migration-guides/0-14-to-0-15/#migrate-ui-bundles-to-required-components)
+  It will be easiest to migrate if you replace `Node` with `ComputedNode` first, then `Style` with `Node`, and finally `NodeBundle` with `Node`.
+
+    ```rs
+    // 0.14
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                 width: Val::Percent(100.),
+                 align_items: AlignItems::Center,
+                 justify_content: JustifyContent::Center,
+                 ..default()
+             },
+            ..default()
+        });
+    
+    // 0.15
+    commands
+        .spawn(Node {
+            width: Val::Percent(100.),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            ..default()
+        });
+    ```
+
+    for systems:
+
+    ```rs
+    // 0.14
+    mut title_query: Query<(Entity, &mut Style)>,
+    
+    // 0.15
+    mut title_query: Query<(Entity, &mut Node)>,
+    ```
 
 ### Bevy `0.14`
 
-[Migration Guide Bevy 0.13 -> 0.14](https://bevyengine.org/learn/migration-guides/0.13-0.14/)
+[Migration Guide Bevy 0.13 -> 0.14](https://bevyengine.org/learn/migration-guides/0-13-to-0-14/)
 
 - Dependencies
-  - bevy_rapier_2d `0.27` - [bevy_rapier changelog](https://github.com/dimforge/bevy_rapier/blob/master/CHANGELOG.md#v0270-07-july-2024) and [rapier changelog `0.18` to `0.21`](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md#v0210-23-june-2024)
+  - bevy_rapier_2d `0.27` - [bevy_rapier changelog](https://github.com/dimforge/bevy_rapier/blob/v0.36.0/CHANGELOG.md#v0270-07-july-2024) and [rapier changelog `0.18` to `0.21`](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md#v0210-23-june-2024)
     - `Rapier_Configuration` doesn't derive `Default`
   - bevy-inspector-egui `0.25` - [changelog](https://github.com/jakobhellermann/bevy-inspector-egui/compare/v0.24.0...v0.25.0)
   - bevy_tweening `0.11`
@@ -350,65 +779,65 @@ The Title screen (you can zoom) and the music doesn't quite work in the [web dem
 [![v0.3.8](https://img.shields.io/badge/v0.2.0alpha-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.8)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.3.8)
 [![**Full Commits History**](https://img.shields.io/badge/GitHubLog-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/fabinistere/fabien-et-la-trahison-de-olf/commits/v0.3.8)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf/commits/v0.3.8)
 
-- [Migration Guide Bevy 0.10 -> 0.11](https://bevyengine.org/learn/migration-guides/0.10-0.11/)
+- [Migration Guide Bevy 0.10 -> 0.11](https://bevyengine.org/learn/migration-guides/0-10-to-0-11/)
 - _not needed_ [Changelog Bevy Rapier 0.21 -> 0.22](https://github.com/dimforge/bevy_rapier/blob/master/CHANGELOG.md#0220-10-july-2023)
 
 ### Added
 
 - [![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf#license)
 
-### [Bevy 0.11](https://bevyengine.org/learn/migration-guides/0.10-0.11/) Migration
+### [Bevy 0.11](https://bevyengine.org/learn/migration-guides/0-10-to-0-11/) Migration
 
 - ECS
   - `in_set(OnUpdate(*))` -> `run_if(in_state(*))`
   - Add the `#[derive(Event)]` macro for events.
   - Allow tuples and single plugins in `add_plugins`, deprecate `add_plugin`
-  - [Schedule-First: the new and improved `add_systems`](https://bevyengine.org/learn/migration-guides/0.10-0.11/#schedule-first-the-new-and-improved-add-systems)
+  - [Schedule-First: the new and improved `add_systems`](https://bevyengine.org/learn/migration-guides/0-10-to-0-11/#schedule-first-the-new-and-improved-add-systems)
 - UI
   - Flatten UI Style properties that use Size + remove Size
     - The `size`, `min_size`, `max_size`, and `gap` properties have been replaced by the `width`, `height`, `min_width`, `min_height`, `max_width`, `max_height`, `row_gap`, and `column_gap` properties. Use the new properties instead.
-  - [Remove `Val::Undefined`](https://bevyengine.org/learn/migration-guides/0.10-0.11/#remove-val-undefined)
+  - [Remove `Val::Undefined`](https://bevyengine.org/learn/migration-guides/0-10-to-0-11/#remove-val-undefined)
     - `Val::Undefined` has been removed. Bevy UI’s behavior with default values should remain the same.
       The default values of `UiRect`’s fields have been changed to `Val::Px(0.)`.
       `Style`’s position field has been removed. Its `left`, `right`, `top` and `bottom` fields have been added to `Style` directly.
       For the `size`, `margin`, `border`, and `padding` fields of `Style`, `Val::Undefined` should be replaced with `Val::Px(0.)`.
       For the `min_size`, `max_size`, `left`, `right`, `top` and `bottom` fields of `Style`, `Val::Undefined` should be replaced with `Val::Auto`
-  - [Rename keys like `LAlt` to `AltLeft`](https://bevyengine.org/learn/migration-guides/0.10-0.11/#rename-keys-like-lalt-to-altleft)
-  - [Delay asset hot reloading](https://bevyengine.org/learn/migration-guides/0.10-0.11/#delay-asset-hot-reloading)
-  - [`Interaction::Clicked` replaced by `Interaction::Pressed`](https://bevyengine.org/learn/migration-guides/0.10-0.11/#rename-interaction-clicked-interaction-pressed)
+  - [Rename keys like `LAlt` to `AltLeft`](https://bevyengine.org/learn/migration-guides/0-10-to-0-11/#rename-keys-like-lalt-to-altleft)
+  - [Delay asset hot reloading](https://bevyengine.org/learn/migration-guides/0-10-to-0-11/#delay-asset-hot-reloading)
+  - [`Interaction::Clicked` replaced by `Interaction::Pressed`](https://bevyengine.org/learn/migration-guides/0-10-to-0-11/#rename-interaction-clicked-interaction-pressed)
 - Dependencies
   - bevy_rapier_2d `0.22`
   - bevy_tweening `0.8`
 
-### [Bevy 0.10](https://bevyengine.org/learn/migration-guides/0.9-0.10/) Migration
+### [Bevy 0.10](https://bevyengine.org/learn/migration-guides/0-9-to-0-10/) Migration
 
 - Dependencies
   - bevy_rapier2d [0.21](https://github.com/dimforge/bevy_rapier/blob/master/CHANGELOG.md#0210--07-march-2023)
     - feature `debug-render` change to `debug-render-2d`
   - Remove bevy-web-resizer dependency: [Note: this functionality is now built into Bevy and this crate will no longer be maintained.](https://github.com/frewsxcv/bevy-web-resizer#readme)
 - ECS
-  - [Migrate engine to Schedule v3 (stageless)](https://bevyengine.org/learn/migration-guides/0.9-0.10/#migrate-engine-to-schedule-v3-stageless)
-  - [System sets (Bevy 0.9)](https://bevyengine.org/learn/migration-guides/0.9-0.10/#system-sets-bevy-0-9)
-  - [States](https://bevyengine.org/learn/migration-guides/0.9-0.10/#states)
+  - [Migrate engine to Schedule v3 (stageless)](https://bevyengine.org/learn/migration-guides/0-9-to-0-10/#migrate-engine-to-schedule-v3-stageless)
+  - [System sets (Bevy 0.9)](https://bevyengine.org/learn/migration-guides/0-9-to-0-10/#system-sets-bevy-0-9)
+  - [States](https://bevyengine.org/learn/migration-guides/0-9-to-0-10/#states)
 - UI
-  - [Windows as Entities](https://bevyengine.org/learn/migration-guides/0.9-0.10/#windows-as-entities)
-  - [Remove VerticalAlign from TextAlignment](https://bevyengine.org/learn/migration-guides/0.9-0.10/#remove-verticalalign-from-textalignment)
-  - [Remove the `GlobalTransform::translation_mut` method](https://bevyengine.org/learn/migration-guides/0.9-0.10/#remove-the-globaltransform-translation-mut-method)
+  - [Windows as Entities](https://bevyengine.org/learn/migration-guides/0-9-to-0-10/#windows-as-entities)
+  - [Remove VerticalAlign from TextAlignment](https://bevyengine.org/learn/migration-guides/0-9-to-0-10/#remove-verticalalign-from-textalignment)
+  - [Remove the `GlobalTransform::translation_mut` method](https://bevyengine.org/learn/migration-guides/0-9-to-0-10/#remove-the-globaltransform-translation-mut-method)
 
-### [Bevy 0.9](https://bevyengine.org/learn/migration-guides/0.8-0.9/) Migration
+### [Bevy 0.9](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/) Migration
 
 - ECS
-  - [Make `Resource` trait opt-in, requiring `#[derive(Resource)]` V2](https://bevyengine.org/learn/migration-guides/0.8-0.9/#make-resource-trait-opt-in-requiring-derive-resource-v2)
-  - [Spawn now takes a Bundle](https://bevyengine.org/learn/migration-guides/0.8-0.9/#spawn-now-takes-a-bundle)
-  - [Accept Bundles for insert and remove. Deprecate `insert`/`remove_bundle`](https://bevyengine.org/learn/migration-guides/0.8-0.9/#accept-bundles-for-insert-and-remove-deprecate-insert-remove-bundle)
-  - [Replace the `bool` argument of `Timer` with `TimerMode`](https://bevyengine.org/learn/migration-guides/0.8-0.9/#replace-the-bool-argument-of-timer-with-timermode)
-  - [Add global time scaling](https://bevyengine.org/learn/migration-guides/0.8-0.9/#add-global-time-scaling)
+  - [Make `Resource` trait opt-in, requiring `#[derive(Resource)]` V2](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#make-resource-trait-opt-in-requiring-derive-resource-v2)
+  - [Spawn now takes a Bundle](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#spawn-now-takes-a-bundle)
+  - [Accept Bundles for insert and remove. Deprecate `insert`/`remove_bundle`](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#accept-bundles-for-insert-and-remove-deprecate-insert-remove-bundle)
+  - [Replace the `bool` argument of `Timer` with `TimerMode`](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#replace-the-bool-argument-of-timer-with-timermode)
+  - [Add global time scaling](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#add-global-time-scaling)
 - UI
-  - TODO: [Change UI coordinate system to have origin at top left corner](https://bevyengine.org/learn/migration-guides/0.8-0.9/#change-ui-coordinate-system-to-have-origin-at-top-left-corner)
-  - [Rename `UiColor` to `BackgroundColor`](https://bevyengine.org/learn/migration-guides/0.8-0.9/#rename-uicolor-to-backgroundcolor)
-  - [Make the default background color of `NodeBundle` transparent](https://bevyengine.org/learn/migration-guides/0.8-0.9/#make-the-default-background-color-of-nodebundle-transparent)
+  - TODO: [Change UI coordinate system to have origin at top left corner](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#change-ui-coordinate-system-to-have-origin-at-top-left-corner)
+  - [Rename `UiColor` to `BackgroundColor`](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#rename-uicolor-to-backgroundcolor)
+  - [Make the default background color of `NodeBundle` transparent](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#make-the-default-background-color-of-nodebundle-transparent)
     - remove useless field (completed by `..NodeBundle::default()`)
-  - [Merge TextureAtlas::from_grid_with_padding into TextureAtlas::from_grid through option arguments](https://bevyengine.org/learn/migration-guides/0.8-0.9/#merge-textureatlas-from-grid-with-padding-into-textureatlas-from-grid-through-option-arguments)
+  - [Merge TextureAtlas::from_grid_with_padding into TextureAtlas::from_grid through option arguments](https://bevyengine.org/learn/migration-guides/0-8-to-0-9/#merge-textureatlas-from-grid-with-padding-into-textureatlas-from-grid-through-option-arguments)
 - Dependency
   - bevy_tweening 0.6
     - [Removed the `tweening_type` parameter from the signature of `Tween<T>::new()`; use `with_repeat_count()` and `with_repeat_strategy()` instead.](https://github.com/djeedai/bevy_tweening/blob/main/CHANGELOG.md#changed-2)

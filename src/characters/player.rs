@@ -101,11 +101,14 @@ fn player_animation(
 /// FIXME: bug - When pressing a move input into pressing down squat it goes through the whole spritesheet
 fn player_squat(
     mut commands: Commands,
-    mut player_query: Query<(Entity, &AnimationIndices, &mut TextureAtlas), With<Player>>,
+    mut player_query: Query<(Entity, &AnimationIndices, &mut Sprite), With<Player>>,
 ) {
-    if let Ok((player, indices, mut atlas)) = player_query.get_single_mut() {
+    if let Ok((player, indices, mut sprite)) = player_query.get_single_mut() {
         let (start_anim, _, _) = &indices.get(&CharacterState::Idle).unwrap();
-        atlas.index = *start_anim;
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            atlas.index = *start_anim;
+        }
+
         commands.entity(player).remove::<TempoAnimation>();
     }
 }
@@ -157,19 +160,19 @@ fn spawn_player(
 
     let player = commands
         .spawn((
-            SpriteBundle {
-                texture: characters_spritesheet.texture.clone(),
-                transform: Transform {
-                    translation: THRONE_POSITION.into(), // PLAYER_SPAWN.into(),
-                    scale: Vec3::splat(PLAYER_SCALE),
-                    ..Transform::default()
-                },
+            Sprite {
+                image: characters_spritesheet.texture.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: characters_spritesheet.atlas_handle.clone(),
+                    // idle start index
+                    index: PLAYER_IDLE_FRAMES.0,
+                }),
                 ..default()
             },
-            TextureAtlas {
-                layout: characters_spritesheet.atlas_handle.clone(),
-                // idle start index
-                index: PLAYER_IDLE_FRAMES.0,
+            Transform {
+                translation: THRONE_POSITION.into(), // PLAYER_SPAWN.into(),
+                scale: Vec3::splat(PLAYER_SCALE),
+                ..Transform::default()
             },
             Name::new("Player"),
             Character,

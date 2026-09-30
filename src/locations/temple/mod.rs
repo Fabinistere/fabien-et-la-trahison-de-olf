@@ -337,7 +337,7 @@ pub fn open_close_door(
         Entity,
         &mut DoorState,
         &mut DoorInteract,
-        &mut TextureAtlas,
+        &mut Sprite,
         &Children,
     )>,
     door_collider_closed_query: Query<Entity, With<DoorColliderClosed>>,
@@ -345,53 +345,56 @@ pub fn open_close_door(
     mut temple_door_query: Query<&mut OverlappingEntity, With<TempleDoor>>,
     door_collider_opened_query: Query<Entity, With<DoorColliderOpened>>,
 ) {
-    for (entity, mut door_state, mut door_interaction, mut atlas, children) in
+    for (entity, mut door_state, mut door_interaction, mut sprite, children) in
         doors_query.iter_mut()
     {
         door_interaction.timer.tick(time.delta());
 
         if door_interaction.timer.finished() {
-            let layout = texture_atlases.get(&atlas.layout).unwrap();
+            if let Some(atlas) = &mut sprite.texture_atlas {
+                let layout = texture_atlases.get(&atlas.layout).unwrap();
 
-            if *door_state == DoorState::Opening {
-                if atlas.index >= layout.textures.len() - 1 {
-                    commands.entity(entity).remove::<DoorInteract>();
+                if *door_state == DoorState::Opening {
+                    if atlas.index >= layout.textures.len() - 1 {
+                        commands.entity(entity).remove::<DoorInteract>();
 
-                    for child in children {
-                        if let Ok(collider) = door_collider_closed_query.get(*child) {
-                            commands.entity(collider).insert(Sensor);
-                        } else if let Ok(collider) = door_collider_opened_query.get(*child) {
-                            commands.entity(collider).remove::<Sensor>();
+                        for child in children {
+                            if let Ok(collider) = door_collider_closed_query.get(*child) {
+                                commands.entity(collider).insert(Sensor);
+                            } else if let Ok(collider) = door_collider_opened_query.get(*child) {
+                                commands.entity(collider).remove::<Sensor>();
+                            }
                         }
-                    }
 
-                    *door_state = DoorState::Opened;
-                    if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
-                        overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
-                    }
-                } else {
-                    // log::debug!(target: "Animation", "opening door: {} -> {}", atlas.index, (atlas.index + 1) % layout.textures.len());
-                    atlas.index = (atlas.index + 1) % layout.textures.len();
-                }
-            } else if *door_state == DoorState::Closing {
-                if atlas.index == 0 {
-                    commands.entity(entity).remove::<DoorInteract>();
-
-                    for child in children {
-                        if let Ok(collider) = door_collider_closed_query.get(*child) {
-                            commands.entity(collider).remove::<Sensor>();
-                        } else if let Ok(collider) = door_collider_opened_query.get(*child) {
-                            commands.entity(collider).insert(Sensor);
+                        *door_state = DoorState::Opened;
+                        if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
+                            overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_OPENED;
                         }
+                    } else {
+                        // log::debug!(target: "Animation", "opening door: {} -> {}", atlas.index, (atlas.index + 1) % layout.textures.len());
+                        atlas.index = (atlas.index + 1) % layout.textures.len();
                     }
+                } else if *door_state == DoorState::Closing {
+                    if atlas.index == 0 {
+                        commands.entity(entity).remove::<DoorInteract>();
 
-                    *door_state = DoorState::Closed;
-                    if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
-                        overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
+                        for child in children {
+                            if let Ok(collider) = door_collider_closed_query.get(*child) {
+                                commands.entity(collider).remove::<Sensor>();
+                            } else if let Ok(collider) = door_collider_opened_query.get(*child) {
+                                commands.entity(collider).insert(Sensor);
+                            }
+                        }
+
+                        *door_state = DoorState::Closed;
+                        if let Ok(mut overlapping_setting) = temple_door_query.get_mut(entity) {
+                            overlapping_setting.z_offset = TEMPLE_DOOR_SWITCH_Z_OFFSET_CLOSED;
+                        }
+                    } else {
+                        // log::debug!(target: "Animation", "closing door: {} -> {}", atlas.index, (atlas.index + layout.textures.len() - 1) % layout.textures.len());
+                        atlas.index =
+                            (atlas.index + layout.textures.len() - 1) % layout.textures.len();
                     }
-                } else {
-                    // log::debug!(target: "Animation", "closing door: {} -> {}", atlas.index, (atlas.index + layout.textures.len() - 1) % layout.textures.len());
-                    atlas.index = (atlas.index + layout.textures.len() - 1) % layout.textures.len();
                 }
             }
         }

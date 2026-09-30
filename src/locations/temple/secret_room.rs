@@ -241,11 +241,8 @@ pub fn setup_secret_room(
 
     commands
         .spawn((
-            SpriteBundle {
-                texture: secret_room,
-                transform: Transform::from_xyz(0., 0., SECRET_ROOM_Z),
-                ..default()
-            },
+            Sprite::from_image(secret_room),
+            Transform::from_xyz(0., 0., SECRET_ROOM_Z),
             SecretRoom,
             RigidBody::Fixed,
             Name::new("Secret Room"),
@@ -254,12 +251,9 @@ pub fn setup_secret_room(
             // TEMP: Indicators
             let indicators = asset_server.load("textures/v4.0.0/Secret_Room/deco_indicators.png");
             parent.spawn((
-                SpriteBundle {
-                    texture: indicators,
-                    transform: Transform::from_xyz(0., 0., 0.1),
-                    visibility: Visibility::Hidden,
-                    ..default()
-                },
+                Sprite::from_image(indicators),
+                Transform::from_xyz(0., 0., 0.1),
+                Visibility::Hidden,
                 Name::new("Indicators"),
             ));
 
@@ -277,7 +271,7 @@ pub fn setup_secret_room(
 
             parent
                 .spawn((
-                    TransformBundle::default(),
+                    Transform::default(),
                     RigidBody::Fixed,
                     Name::new("Wall Colliders"),
                 ))
@@ -311,17 +305,15 @@ pub fn setup_secret_room(
             for count in 0..5 {
                 parent
                     .spawn((
-                        SpriteBundle {
-                            texture: flower_panel_spritesheet[count].clone(),
-                            transform: Transform::from_translation(
-                                FLOWER_PANEL_POSITIONS[count].into(),
-                            ),
+                        Sprite {
+                            image: flower_panel_spritesheet[count].clone(),
+                            texture_atlas: Some(TextureAtlas {
+                                layout: texture_atlases.add(flower_panel_layouts[count].clone()),
+                                index: 0,
+                            }),
                             ..default()
                         },
-                        TextureAtlas {
-                            layout: texture_atlases.add(flower_panel_layouts[count].clone()),
-                            index: 0,
-                        },
+                        Transform::from_translation(FLOWER_PANEL_POSITIONS[count].into()),
                         SpriteSheetAnimation {
                             start_index: 0,
                             end_index: flower_panel_layouts[count].clone().len() - 1,
@@ -352,25 +344,22 @@ pub fn setup_secret_room(
             }
 
             parent.spawn((
-                SpriteBundle {
-                    texture: fake_stone,
-                    transform: Transform::from_translation(FAKE_STONE_POSITION.into()),
-                    ..default()
-                },
+                Sprite::from_image(fake_stone),
+                Transform::from_translation(FAKE_STONE_POSITION.into()),
                 OverlappingEntity::new(FAKE_STONE_SWITCH_Z_OFFSET),
                 Name::new("Fake Stone"),
             ));
 
             parent.spawn((
-                SpriteBundle {
-                    texture: wall_pot_spritesheet,
-                    transform: Transform::from_translation(WALL_POT_POSITION.into()),
+                Sprite {
+                    image: wall_pot_spritesheet,
+                    texture_atlas: Some(TextureAtlas {
+                        layout: texture_atlases.add(wall_pot_layout.clone()),
+                        index: 0,
+                    }),
                     ..default()
                 },
-                TextureAtlas {
-                    layout: texture_atlases.add(wall_pot_layout.clone()),
-                    index: 0,
-                },
+                Transform::from_translation(WALL_POT_POSITION.into()),
                 SpriteSheetAnimation {
                     start_index: 0,
                     end_index: wall_pot_layout.len() - 1,
@@ -382,11 +371,8 @@ pub fn setup_secret_room(
             ));
 
             parent.spawn((
-                SpriteBundle {
-                    texture: stairs_down_ramp,
-                    transform: Transform::from_translation(STAIRS_RAMP_POSITION.into()),
-                    ..default()
-                },
+                Sprite::from_image(stairs_down_ramp),
+                Transform::from_translation(STAIRS_RAMP_POSITION.into()),
                 OverlappingEntity::new(STAIRS_RAMP_SWITCH_Z_OFFSET),
                 Name::new("Stairs Down Ramp"),
             ));
@@ -398,10 +384,7 @@ pub fn setup_secret_room(
             // Also, to avoid having this second layer above us caus we are in the stairs,
             // we only display it when we are in the SecretRoom.
             parent.spawn((
-                SpriteBundle {
-                    texture: second_layer_fake_wall,
-                    ..default()
-                },
+                Sprite::from_image(second_layer_fake_wall),
                 OverlappingEntity::new(SECOND_FAKE_WALL_SWITCH_Z_OFFSET),
                 SecondLayerFakeWall,
                 Name::new("2nd layer of the Fake Wall"),
@@ -409,15 +392,11 @@ pub fn setup_secret_room(
         });
 
     commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_translation(SECRET_ROOM_COVER_POSITION.into()),
-            sprite: Sprite {
-                custom_size: Some(SECRET_ROOM_COVER_SIZE.into()),
-                color: BACKGROUND_COLOR_INGAME, // Color::WHITE,
-                ..default()
-            },
-            ..default()
-        },
+        Sprite::from_color(
+            BACKGROUND_COLOR_INGAME, // Color::WHITE,
+            SECRET_ROOM_COVER_SIZE.into(),
+        ),
+        Transform::from_translation(SECRET_ROOM_COVER_POSITION.into()),
         SecretRoomCover,
         Name::new("Secret Room Cover"),
     ));

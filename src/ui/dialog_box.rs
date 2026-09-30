@@ -85,14 +85,14 @@ pub fn reset_dialog_box(
                     DIALOG_BOX_UPDATE_DELTA_S,
                 ));
                 let mut text = text_query.get_mut(children[0]).unwrap();
-                text.sections[0].value.clear();
+                text.clear();
             }
             Some(mut dialog_box) => {
                 // FIXME: bug - Reset the text even if there is no change
                 // Clear the DialogBox Child: the Text
                 let mut text = text_query.get_mut(children[0]).unwrap();
                 if dialog_box.text != event_text.clone() {
-                    text.sections[0].value.clear();
+                    text.clear();
                     // replace current DialogBox with a brand new one
                     *dialog_box = DialogBox::new(event_text.clone(), DIALOG_BOX_UPDATE_DELTA_S);
                 }
@@ -137,7 +137,7 @@ pub fn update_dialog_box(
                             }
                         }
                         Some(next_letter) => {
-                            text.sections[0].value.push(next_letter);
+                            text.push(next_letter);
 
                             dialog_box.progress += 1;
                             if dialog_box.progress >= dialog_box.text.len() {

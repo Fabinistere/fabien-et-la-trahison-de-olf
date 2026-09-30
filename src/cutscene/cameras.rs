@@ -18,11 +18,20 @@ pub struct CinematicCamera;
 /* ---------- Startup, OnEnter and OnExit systems  ---------- */
 
 pub fn spawn_cinematic_camera(mut commands: Commands) {
-    let mut cinematic_camera = Camera2dBundle::default();
-    cinematic_camera.projection.scale = 0.08;
-    cinematic_camera.camera.is_active = false; // will be changed in perform_camera_swap
-    cinematic_camera.camera.order = 1;
-    commands.spawn((cinematic_camera, CinematicCamera));
+    commands.spawn((
+        Camera2d,
+        // Higher order camera (UI is displayed onto this one)
+        Camera {
+            order: 1,
+            is_active: false, // will be changed in perform_camera_swap
+            ..default()
+        },
+        Projection::from(OrthographicProjection {
+            scale: 0.08, // DEBUG: cinematic camera is zoomed in
+            ..OrthographicProjection::default_2d()
+        }),
+        CinematicCamera,
+    ));
 }
 
 pub fn perform_camera_swap(

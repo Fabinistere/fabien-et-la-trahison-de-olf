@@ -69,11 +69,11 @@ pub fn animate_scroll(
     dialog_panel_resources: Res<DialogPanelResources>,
     mut commands: Commands,
     mut scroll_query: Query<
-        (&mut UiImage, &mut Scroll, &mut ScrollTimer, Entity),
+        (&mut ImageNode, &mut Scroll, &mut ScrollTimer, Entity),
         (With<MonologPanel>, Without<PlayerChoicePanel>),
     >,
 ) {
-    for (mut image, mut scroll, mut timer, entity) in scroll_query.iter_mut() {
+    for (mut node, mut scroll, mut timer, entity) in scroll_query.iter_mut() {
         timer.tick(time.delta());
 
         if timer.finished() {
@@ -91,7 +91,7 @@ pub fn animate_scroll(
                 }
             }
 
-            image.texture = dialog_panel_resources.scroll_animation[scroll.current_frame].clone();
+            node.image = dialog_panel_resources.scroll_animation[scroll.current_frame].clone();
         }
     }
 }

@@ -162,11 +162,8 @@ pub fn setup_main_room(
 
     commands
         .spawn((
-            SpriteBundle {
-                texture: main_room,
-                transform: Transform::from_xyz(0., 0., MAIN_ROOM_Z),
-                ..default()
-            },
+            Sprite::from_image(main_room),
+            Transform::from_xyz(0., 0., MAIN_ROOM_Z),
             Temple,
             RigidBody::Fixed,
             Name::new("Temple"),
@@ -197,7 +194,7 @@ pub fn setup_main_room(
 
             parent
                 .spawn((
-                    TransformBundle::default(),
+                    Transform::default(),
                     RigidBody::Fixed,
                     Name::new("Wall Colliders"),
                 ))
@@ -219,15 +216,15 @@ pub fn setup_main_room(
 
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: banner_spritesheet,
-                        transform: Transform::from_translation(BANNER_POSITION.into()),
+                    Sprite {
+                        image: banner_spritesheet,
+                        texture_atlas: Some(TextureAtlas {
+                            layout: texture_atlases.add(banner_layout),
+                            index: 0,
+                        }),
                         ..default()
                     },
-                    TextureAtlas {
-                        layout: texture_atlases.add(banner_layout),
-                        index: 0,
-                    },
+                    Transform::from_translation(BANNER_POSITION.into()),
                     SecretBanner,
                     DoorState::Closed,
                     Interactive::new(
@@ -246,16 +243,13 @@ pub fn setup_main_room(
                     ));
 
                     parent.spawn((
-                        SpriteBundle {
-                            texture: interaction_resources.interact_button.clone(),
-                            transform: Transform {
-                                translation: BANNER_INTERACT_BUTTON_POSITION.into(),
-                                scale: Vec3::splat(INTERACT_BUTTON_SCALE),
-                                ..default()
-                            },
-                            visibility: Visibility::Hidden,
+                        Sprite::from_image(interaction_resources.interact_button.clone()),
+                        Transform {
+                            translation: BANNER_INTERACT_BUTTON_POSITION.into(),
+                            scale: Vec3::splat(INTERACT_BUTTON_SCALE),
                             ..default()
                         },
+                        Visibility::Hidden,
                         InteractIcon,
                     ));
 
@@ -287,11 +281,8 @@ pub fn setup_main_room(
             */
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: throne,
-                        transform: Transform::from_translation(THRONE_POSITION.into()),
-                        ..default()
-                    },
+                    Sprite::from_image(throne),
+                    Transform::from_translation(THRONE_POSITION.into()),
                     RigidBody::Fixed,
                     Throne,
                     OverlappingEntity::new(THRONE_SWITCH_Z_OFFSET),
@@ -366,14 +357,8 @@ pub fn setup_main_room(
             for (count, pillar_position) in PILLAR_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
-                        SpriteBundle {
-                            texture: column.clone(),
-                            transform: Transform {
-                                translation: (*pillar_position).into(),
-                                ..default()
-                            },
-                            ..default()
-                        },
+                        Sprite::from_image(column.clone()),
+                        Transform::from_translation((*pillar_position).into()),
                         RigidBody::Fixed,
                         Pillar,
                         OverlappingEntity::new(PILLAR_SWITCH_Z_OFFSET),
@@ -400,13 +385,8 @@ pub fn setup_main_room(
             {
                 parent
                     .spawn((
-                        SpriteBundle {
-                            texture: chandelier.clone(),
-                            transform: Transform::from_translation(
-                                (*temple_chandelier_position).into(),
-                            ),
-                            ..default()
-                        },
+                        Sprite::from_image(chandelier.clone()),
+                        Transform::from_translation((*temple_chandelier_position).into()),
                         Chandelier,
                         Name::new(format!("Chandelier {}", count + 1)),
                     ))
@@ -416,17 +396,15 @@ pub fn setup_main_room(
                             CHANDELIER_FLAME_POSITIONS.iter().enumerate()
                         {
                             parent.spawn((
-                                SpriteBundle {
-                                    texture: small_flame_spritesheet.clone(),
-                                    transform: Transform::from_translation(
-                                        (*chandelier_flame_position).into(),
-                                    ),
+                                Sprite {
+                                    image: small_flame_spritesheet.clone(),
+                                    texture_atlas: Some(TextureAtlas {
+                                        layout: texture_atlases.add(small_flame_layout.clone()),
+                                        index: 0,
+                                    }),
                                     ..default()
                                 },
-                                TextureAtlas {
-                                    layout: texture_atlases.add(small_flame_layout.clone()),
-                                    index: 0,
-                                },
+                                Transform::from_translation((*chandelier_flame_position).into()),
                                 SpriteSheetAnimation {
                                     start_index: 0,
                                     end_index: small_flame_layout.clone().len() - 1,
@@ -447,11 +425,8 @@ pub fn setup_main_room(
             for count in 0..4 {
                 parent
                     .spawn((
-                        SpriteBundle {
-                            texture: plants[count].clone(),
-                            transform: Transform::from_translation(PLANTS_POSITIONS[count].into()),
-                            ..default()
-                        },
+                        Sprite::from_image(plants[count].clone()),
+                        Transform::from_translation(PLANTS_POSITIONS[count].into()),
                         RigidBody::Fixed,
                         // Plant,
                         OverlappingEntity::new(PLANTS_SWITCH_Z_OFFSET),
@@ -476,11 +451,8 @@ pub fn setup_main_room(
             for (count, brazier_position) in BRAZIERS_POSITIONS.iter().enumerate() {
                 parent
                     .spawn((
-                        SpriteBundle {
-                            texture: brazier_back.clone(),
-                            transform: Transform::from_translation((*brazier_position).into()),
-                            ..default()
-                        },
+                        Sprite::from_image(brazier_back.clone()),
+                        Transform::from_translation((*brazier_position).into()),
                         RigidBody::Fixed,
                         // Brazier,
                         OverlappingEntity::new(BRAZIER_Z_OFFSET),
@@ -488,15 +460,15 @@ pub fn setup_main_room(
                     ))
                     .with_children(|parent| {
                         parent.spawn((
-                            SpriteBundle {
-                                texture: medium_flame_spritesheet.clone(),
-                                transform: Transform::from_translation(BRAZIER_FLAME_OFFSET.into()),
+                            Sprite {
+                                image: medium_flame_spritesheet.clone(),
+                                texture_atlas: Some(TextureAtlas {
+                                    layout: texture_atlases.add(medium_flame_layout.clone()),
+                                    index: 0,
+                                }),
                                 ..default()
                             },
-                            TextureAtlas {
-                                layout: texture_atlases.add(medium_flame_layout.clone()),
-                                index: 0,
-                            },
+                            Transform::from_translation(BRAZIER_FLAME_OFFSET.into()),
                             SpriteSheetAnimation {
                                 start_index: 0,
                                 end_index: medium_flame_layout.clone().len() - 1,
@@ -508,10 +480,7 @@ pub fn setup_main_room(
                         ));
 
                         parent.spawn((
-                            SpriteBundle {
-                                texture: brazier_front.clone(),
-                                ..default()
-                            },
+                            Sprite::from_image(brazier_front.clone()),
                             Name::new("Brazier Front"),
                         ));
 
@@ -532,11 +501,8 @@ pub fn setup_main_room(
             // The 2 Statues
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: cat_statue.clone(),
-                        transform: Transform::from_translation(CAT_STATUE_POSITION.into()),
-                        ..default()
-                    },
+                    Sprite::from_image(cat_statue.clone()),
+                    Transform::from_translation(CAT_STATUE_POSITION.into()),
                     RigidBody::Fixed,
                     // Statue,
                     OverlappingEntity::default(),
@@ -558,11 +524,8 @@ pub fn setup_main_room(
 
             parent
                 .spawn((
-                    SpriteBundle {
-                        texture: fabien_statue.clone(),
-                        transform: Transform::from_translation(FABIEN_STATUE_POSITION.into()),
-                        ..default()
-                    },
+                    Sprite::from_image(fabien_statue.clone()),
+                    Transform::from_translation(FABIEN_STATUE_POSITION.into()),
                     RigidBody::Fixed,
                     // Statue,
                     OverlappingEntity::default(),

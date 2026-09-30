@@ -97,7 +97,7 @@ impl UiSlide {
 pub fn ui_slide_animations(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(&mut Style, &mut UiSlide, Entity)>,
+    mut query: Query<(&mut Node, &mut UiSlide, Entity)>,
 ) {
     for (mut style, mut slide_data, entity) in query.iter_mut() {
         slide_data.elapsed += time.delta();
