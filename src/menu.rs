@@ -270,7 +270,11 @@ fn setup_menu(
     let smoke_size = smoke_layout.len();
     let smoke_layout = texture_atlases.add(smoke_layout);
 
-    let french_title = asset_server.load("textures/title_screen/Francais.png");
+    let title = match Language::default() {
+        Language::Francais => asset_server.load("textures/title_screen/Francais.png"),
+        Language::English => asset_server.load("textures/title_screen/English.png"),
+        Language::FabienAncien => asset_server.load("textures/title_screen/Fabien Ancien.png"),
+    };
     let moon = asset_server.load("textures/title_screen/moon.png");
 
     let foreground = asset_server.load("textures/title_screen/static_landscape_big_picture.png");
@@ -296,6 +300,7 @@ fn setup_menu(
             parent
                 .spawn((
                     ImageNode {
+                        // FIXME: bad ratio on clouds
                         image: clouds_spritesheet,
                         texture_atlas: Some(TextureAtlas {
                             layout: clouds_layout,
@@ -334,7 +339,6 @@ fn setup_menu(
                             top: Val::Percent(16.5),
                             flex_shrink: 0.,
                             align_self: AlignSelf::FlexEnd,
-
                             ..default()
                         },
                         SpriteSheetAnimation {
@@ -383,7 +387,7 @@ fn setup_menu(
                         .with_children(|parent| {
                             parent.spawn((
                                 ImageNode {
-                                    image: french_title,
+                                    image: title,
                                     ..default()
                                 },
                                 Node {
@@ -458,44 +462,53 @@ fn setup_menu(
                     Name::new("UI - TitleScreen"),
                 ))
                 .with_children(|parent| {
-                    for (i, language) in Language::iter().enumerate() {
-                        parent
-                            .spawn((
-                                Button,
-                                ImageNode {
-                                    color: Color::NONE,
-                                    ..default()
-                                },
-                                Node {
-                                    width: Val::Px(100.),
-                                    height: Val::Px(20.),
-                                    justify_content: JustifyContent::Center,
-                                    align_items: AlignItems::Center,
-                                    position_type: PositionType::Absolute,
-                                    right: Val::Px(15.),
-                                    bottom: Val::Px(i as f32 * 40. + 5.),
-                                    ..default()
-                                },
-                                Selected(Language::default() == language),
-                                language,
-                                Name::new(language.to_string()),
-                            ))
-                            .with_children(|parent| {
-                                parent.spawn((
-                                    Text::new(language.to_string()),
-                                    TextFont {
-                                        font: font.clone(),
-                                        font_size: 20.,
-                                        ..default()
-                                    },
-                                    TextColor(if *current_language == language {
-                                        languages_button_colors.selected
-                                    } else {
-                                        languages_button_colors.normal
-                                    }),
-                                ));
-                            });
-                    }
+                    parent
+                        .spawn((
+                            Node {
+                                justify_content: JustifyContent::Center,
+                                // align_items: AlignItems::Center,
+                                right: Val::Percent(-45.),
+                                ..default()
+                            },
+                            Name::new("Languages' Button"),
+                        ))
+                        .with_children(|parent| {
+                            for (i, language) in Language::iter().enumerate() {
+                                parent
+                                    .spawn((
+                                        Button,
+                                        ImageNode {
+                                            color: Color::NONE,
+                                            ..default()
+                                        },
+                                        Node {
+                                            // width: Val::Percent(100.),
+                                            // height: Val::Percent(20.),
+                                            position_type: PositionType::Absolute,
+                                            bottom: Val::Px(i as f32 * 40. + 5.),
+                                            ..default()
+                                        },
+                                        Selected(Language::default() == language),
+                                        language,
+                                        Name::new(language.to_string()),
+                                    ))
+                                    .with_children(|parent| {
+                                        parent.spawn((
+                                            Text::new(language.to_string()),
+                                            TextFont {
+                                                font: font.clone(),
+                                                font_size: 20.,
+                                                ..default()
+                                            },
+                                            TextColor(if *current_language == language {
+                                                languages_button_colors.selected
+                                            } else {
+                                                languages_button_colors.normal
+                                            }),
+                                        ));
+                                    });
+                            }
+                        });
 
                     parent.spawn((
                         Text::new(dialogs.get(DialogId::MenuPlay, *current_language)),

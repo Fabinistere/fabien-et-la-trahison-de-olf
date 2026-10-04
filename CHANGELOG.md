@@ -13,10 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### regressions
 
-- language buttons aren't vertically centered
-- no animation in the title screen
-- the z of characters are off; hide behind cover now offset the character's z (example: fake plant wall or north hall's walls)
-- `MultipleEntities(ui::dialog_scrolls::MonologPanel)` when pressing the interactive key too fast after the dialog wall opened
+- [x] language buttons aren't vertically centered
+- [x] no animation in the title screen
+- [ ] the z of characters are off; hide behind cover now offset the character's z (example: fake plant wall or north hall's walls)
+- [ ] `MultipleEntities(ui::dialog_scrolls::MonologPanel)` when pressing the interactive key too fast after the dialog wall opened
 
 #### changes
 

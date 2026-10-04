@@ -204,7 +204,7 @@ pub fn animate_character(
 pub fn jump_frame_manor_lights_state(
     mut commands: Commands,
     mut manor_lights_query: Query<
-        (Entity, &mut Sprite, &ManorLightsPattern),
+        (Entity, &mut ImageNode, &ManorLightsPattern),
         Changed<ManorLightsPattern>,
     >,
 ) {
@@ -245,7 +245,7 @@ pub fn animate_ui_atlas(
     mut commands: Commands,
     time: Res<Time>,
     mut atlas_images: Query<
-        (Entity, &mut SpriteSheetAnimation, &mut Sprite),
+        (Entity, &mut SpriteSheetAnimation, &mut ImageNode),
         (
             Without<TempoAnimation>,
             Without<ManorLightsPattern>,
@@ -288,7 +288,11 @@ pub fn animate_ui_atlas(
 pub fn animate_manor_lights(
     time: Res<Time>,
     mut manor_lights_query: Query<
-        (&mut Sprite, &mut ManorLightsTimer, &mut ManorLightsPattern),
+        (
+            &mut ImageNode,
+            &mut ManorLightsTimer,
+            &mut ManorLightsPattern,
+        ),
         Without<TempoAnimation>,
     >,
 ) {

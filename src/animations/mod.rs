@@ -37,6 +37,7 @@ impl Plugin for AnimationPlugin {
                     sprite_sheet_animation::flexing_title
                         .after(sprite_sheet_animation::tempo_animation_timer),
                 )
+                    // .run_if(in_state(GameState::Menu)),
                     .run_if(in_menu),
             )
             .add_systems(

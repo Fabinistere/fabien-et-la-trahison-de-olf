@@ -38,9 +38,9 @@ impl Dialogs {
     Deserialize, EnumIter, Debug, Copy, Clone, Eq, PartialEq, Hash, Default, Component, Resource,
 )]
 pub enum Language {
-    #[default]
     Francais,
     English,
+    #[default]
     FabienAncien,
 }
 
