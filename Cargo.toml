@@ -8,7 +8,7 @@ authors = [
     "Sombre Roi René",
 ]
 repository = "https://github.com/Fabinistere/fabien-et-la-trahison-de-olf"
-license = "MIT OR Apache-2.0"
+license = "GPL"
 exclude = ["assets"]
 edition = "2021" # 2024
 

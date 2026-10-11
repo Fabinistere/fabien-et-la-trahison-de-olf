@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## The great migration - Bevy 0.18
 
+### Bevy `0.16`
+
+new GPL license, goodbye Apache MIT licenses that permitted others to copy my game and commercialize it without me.
+
 ### Bevy `0.15`
 
 [Migration Guide Bevy 0.14 -> 0.15](https://bevy.org/learn/migration-guides/0-14-to-0-15/)

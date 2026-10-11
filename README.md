@@ -2,7 +2,7 @@
 
 [![v0.4.0](https://img.shields.io/badge/v0.4.0-gray?style=flat&logo=github&logoColor=181717&link=https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)](https://github.com/Fabinistere/fabien-et-la-trahison-de-olf/releases/tag/v0.4.0)
 [![Bevy tracking](https://img.shields.io/badge/Bevy%20tracking-0.11-lightblue)](https://github.com/bevyengine/bevy/blob/main/docs/plugins_guidelines.md#main-branch-tracking)
-[![MIT/Apache 2.0](https://img.shields.io/badge/license-MIT%2FApache-blue.svg)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf#license)
+[![GPL](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/fabinistere/fabien-et-la-trahison-de-olf#license)
 ![Demo](https://img.shields.io/badge/Demo-gray?style=flat&logo=darkreader&logoColor=181717&link=https://fabinistere.github.io/fabien-et-la-trahison-de-olf/)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 
@@ -35,7 +35,7 @@ to see the debug log: `RUST_LOG=debug cargo run`
 - in neovim: you can use [baleia.nvim](https://github.com/m00qek/baleia.nvim)
 - in vscode: install [ANSI Colors](https://marketplace.visualstudio.com/items?itemName=iliazeus.vscode-ansi), and with your command palette `> ANSI Text: Open Preview`
 
-## Assets are excluded from git storage
+### Assets are excluded from git storage
 
 Due to the inefficiency to store image in git,
 all asset can be download here (from the latest version):
@@ -46,16 +46,16 @@ or in the correct release note (if from other version):
 
 To find previous assets, they will be indicated for each release.
 
-## License
+### License
 
-This project is free, open source and permissively licensed!
+This project is free, open source.
 
-All code in this repository is dual-licensed under either:
+- GPL 3.0 ([LICENSE-MIT](LICENSE-MIT) or [https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html))
 
-- MIT License ([LICENSE-MIT](LICENSE-MIT) or [http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT))
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
-
-See the very good reasons for including both [in the bevy's issue 2373](https://github.com/bevyengine/bevy/issues/2373).
+> [!NOTE]
+> From this [game licenses explanation page](https://www.gamedevhub.dev/guides/open-source-licenses/).
+>
+> Almost always a deal-breaker for closed-source commercial games. "Copyleft" — if any part of your shipped game incorporates GPL code, the entire game must be released under a GPL-compatible license, including all your own code and assets. For a closed-source commercial game this is almost always a deal-breaker. AGPL goes a step further and applies to network-accessible code too, which is relevant if you ship a multiplayer game with a server component. GPL code is fantastic for studying and learning from, and perfectly fine for game-jam, open-source, or modding projects.
 
 ## Note
 
