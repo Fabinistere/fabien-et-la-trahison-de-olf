@@ -9,7 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Bevy `0.16`
 
+#### regressions
+
+- [ ] egui is not always showing
+
+#### changes
+
 new GPL license, goodbye Apache MIT licenses that permitted others to copy my game and commercialize it without me.
+
+[Migration Guide Bevy 0.15 -> 0.16](https://bevy.org/learn/migration-guides/0-15-to-0-16/)
+
+- Dependencies
+  - bevy_rapier_2d `0.30` - [bevy changelog](https://github.com/dimforge/bevy_rapier/blob/v0.36.0/CHANGELOG.md#v0300-15-may-2025) and [changelog](https://github.com/dimforge/rapier/blob/master/CHANGELOG.md#v0280-08-august-2025)
+    - `ReadDefaultRapierContext` -> `ReadRapierContext` that we have to query
+  - `bevy-inspector-egui` `0.33`
+    - `WorldInspectorPlugin` needs to be added after `EguiPlugin`: `.add_plugins((EguiPlugin::default(), WorldInspectorPlugin::new()))`
+
+- Core
+  - `Query::single` now returns a `Result` instead of panicking. `get_single` -> `single`
+- ECS
+  - deprecated method `bevy::prelude::EntityCommands::<'a>::despawn_recursive`: Use entity.despawn(), which now automatically despawns recursively.
+  - Event: `send` -> `write`
+  - `Parent` => `ChildOf`plus different access
+  
+  ```rust
+  // 0.15
+  let parent = *child_of
+  // 0.16
+  let parent = child_of.parent()
+  
+  // 0.15
+  let parent = child_of.get()
+  // 0.16
+  let parent = child_of.parent()
+  ```
+
+- Audio
+  - Volume: now supports Decibels. `Volume::Linear` is equivalent to the old `f32` volume.
+- Input
+  - `KeyboardInput` now has a `text` field
 
 ### Bevy `0.15`
 

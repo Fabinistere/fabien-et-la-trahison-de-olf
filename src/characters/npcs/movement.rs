@@ -3,9 +3,9 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use bevy_ecs::query::QueryEntityError;
-use bevy_rapier2d::prelude::{
-    ActiveEvents, Collider, CollisionEvent, ReadDefaultRapierContext, Sensor, Velocity,
+use bevy_rapier2d::{
+    plugin::ReadRapierContext,
+    prelude::{ActiveEvents, Collider, CollisionEvent, Sensor, Velocity},
 };
 
 use crate::{
@@ -124,6 +124,11 @@ impl Chaser {
 #[derive(Component)]
 pub struct FollowRangeSensor;
 
+#[derive(Debug)]
+pub enum FollowEntityError {
+    MissingFollowSensor(Entity),
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                   Events                                   */
 /* -------------------------------------------------------------------------- */
@@ -199,7 +204,7 @@ pub fn npc_behavior_change(
 
 pub fn follow_event(
     mut follow_event: EventReader<FollowEvent>,
-    rapier_context: ReadDefaultRapierContext,
+    rapier_context: ReadRapierContext,
 
     mut npc_query: Query<(&mut NPCBehavior, &Children), With<NPC>>,
     follow_sensor_query: Query<Entity, (With<FollowRangeSensor>, With<Collider>, With<Sensor>)>,
@@ -208,8 +213,8 @@ pub fn follow_event(
 ) {
     for FollowEvent { npc, target } in follow_event.read() {
         let (mut behavior, npc_children) = npc_query.get_mut(*npc).unwrap();
-        let mut npc_follow_range: Result<Entity, _> = Err(QueryEntityError::NoSuchEntity(*npc));
-        // FIXME: throw the correct error not this
+        let mut npc_follow_range: Result<Entity, FollowEntityError> =
+            Err(FollowEntityError::MissingFollowSensor(*npc));
         for child in npc_children {
             if follow_sensor_query.get(*child).is_ok() {
                 npc_follow_range = Ok(*child);
@@ -218,8 +223,8 @@ pub fn follow_event(
         }
 
         let target_children = target_children_query.get(*target).unwrap();
-        // FIXME: throw the correct error not this
-        let mut target_hitbox: Result<Entity, _> = Err(QueryEntityError::NoSuchEntity(*target));
+        let mut target_hitbox: Result<Entity, FollowEntityError> =
+            Err(FollowEntityError::MissingFollowSensor(*target));
         for child in target_children {
             if character_hitbox_query.get(*child).is_ok() {
                 target_hitbox = Ok(*child);
@@ -228,7 +233,10 @@ pub fn follow_event(
         }
         *behavior = NPCBehavior::follow(
             *target,
-            rapier_context.intersection_pair(npc_follow_range.unwrap(), target_hitbox.unwrap())
+            rapier_context
+                .single()
+                .unwrap()
+                .intersection_pair(npc_follow_range.unwrap(), target_hitbox.unwrap())
                 == Some(true),
         );
     }
@@ -356,7 +364,7 @@ pub fn npc_movement(
                         location_query.get_many([*target, npc]).unwrap();
 
                     if target_location != npc_location {
-                        ev_stop_chase.send(StopChaseEvent { npc_entity: npc });
+                        ev_stop_chase.write(StopChaseEvent { npc_entity: npc });
                         log::info!("{} change zone. {:?}: chase canceled", npc_name, *target);
                         (0., 0.)
                     } else {
@@ -389,7 +397,7 @@ pub fn npc_movement(
 pub fn chase_management(
     mut collision_events: EventReader<CollisionEvent>,
     // rapier_context: ReadDefaultRapierContext,
-    character_hitbox_query: Query<(&Parent, &Name), With<CharacterHitbox>>,
+    character_hitbox_query: Query<(&ChildOf, &Name), With<CharacterHitbox>>,
     player_query: Query<Entity, With<Player>>,
     mut npc_query: Query<(&mut NPCBehavior, Option<&mut Chaser>, &Name), With<NPC>>,
     target_seeker_query: Query<&TargetSeeker>,
@@ -397,7 +405,7 @@ pub fn chase_management(
     reputation_query: Query<&Reputation>,
 
     follow_sensor_query: Query<
-        (Entity, &Parent),
+        (Entity, &ChildOf),
         (
             With<FollowRangeSensor>,
             Without<PursuitRangeSensor>,
@@ -405,7 +413,7 @@ pub fn chase_management(
         ),
     >,
     pursuit_sensor_query: Query<
-        (Entity, &Parent),
+        (Entity, &ChildOf),
         (
             With<PursuitRangeSensor>,
             Without<FollowRangeSensor>,
@@ -413,14 +421,14 @@ pub fn chase_management(
         ),
     >,
     detection_sensor_query: Query<
-        (Entity, &Parent),
+        (Entity, &ChildOf),
         (
             With<DetectionRangeSensor>,
             Without<PursuitRangeSensor>,
             Without<FollowRangeSensor>,
         ),
     >,
-    close_sensor_query: Query<(Entity, &Parent), With<CharacterCloseSensor>>,
+    close_sensor_query: Query<(Entity, &ChildOf), With<CharacterCloseSensor>>,
 
     location_query: Query<&Location>,
 
@@ -444,7 +452,7 @@ pub fn chase_management(
         ) {
             (Err(_), Ok((character, character_name)))
             | (Ok((character, character_name)), Err(_)) => {
-                match npc_query.get_mut(**character) {
+                match npc_query.get_mut(character.parent()) {
                     Err(_) => {
                         /* -------------------------------------------------------------------------- */
                         /*                             Follow Close Update                            */
@@ -456,10 +464,10 @@ pub fn chase_management(
                             (Ok((_follow_sensor, npc)), Err(_))
                             | (Err(_), Ok((_follow_sensor, npc))) => {
                                 let (mut behavior, potential_chaser, _npc_name) =
-                                    npc_query.get_mut(**npc).unwrap();
+                                    npc_query.get_mut(npc.parent()).unwrap();
                                 if potential_chaser.is_none() {
                                     if let NPCBehavior::Follow { target, close: _ } = *behavior {
-                                        if target == **character {
+                                        if target == character.parent() {
                                             // The npc has their target entering their FollowRangeSensor
                                             *behavior = NPCBehavior::Follow {
                                                 target,
@@ -488,14 +496,15 @@ pub fn chase_management(
                                 (Ok((_pursuit_sensor, npc)), Err(_))
                                 | (Err(_), Ok((_pursuit_sensor, npc))) => {
                                     let (_, potential_chaser, npc_name) =
-                                        npc_query.get_mut(**npc).unwrap();
+                                        npc_query.get_mut(npc.parent()).unwrap();
                                     match potential_chaser {
                                         None => {}
                                         Some(chaser) => {
-                                            if chaser.target == **character {
+                                            if chaser.target == character.parent() {
                                                 // The npc has their target leaving their `PursuitRangeSensor`
-                                                ev_stop_chase
-                                                    .send(StopChaseEvent { npc_entity: **npc });
+                                                ev_stop_chase.write(StopChaseEvent {
+                                                    npc_entity: npc.parent(),
+                                                });
                                                 log::info!(
                                                     "{character_name} outran {npc_name}: chase canceled"
                                                 );
@@ -517,40 +526,42 @@ pub fn chase_management(
                                 (Ok((_detection_sensor, npc)), Err(_))
                                 | (Err(_), Ok((_detection_sensor, npc))) => {
                                     let (_, potential_chaser, npc_name) =
-                                        npc_query.get(**npc).unwrap();
+                                        npc_query.get(npc.parent()).unwrap();
                                     if potential_chaser.is_none()
-                                        && target_seeker_query.get(**npc).is_ok()
-                                        && fair_play_timer_query.get(**npc).is_err()
+                                        && target_seeker_query.get(npc.parent()).is_ok()
+                                        && fair_play_timer_query.get(npc.parent()).is_err()
                                     {
                                         let TargetSeeker(target_type) =
-                                            target_seeker_query.get(**npc).unwrap();
+                                            target_seeker_query.get(npc.parent()).unwrap();
                                         // The npc has a potential target entering their DetectionRangeSensor
                                         let [npc_reputation, character_reputation] =
                                             reputation_query
-                                                .get_many([**npc, **character])
+                                                .get_many([npc.parent(), character.parent()])
                                                 .unwrap();
                                         // DOC: new name ?
                                         let is_target_type = match target_type {
                                             TargetType::Player => {
-                                                player_query.get(**character).is_ok()
+                                                player_query.get(character.parent()).is_ok()
                                             }
                                             TargetType::Enemy => !npc_reputation
                                                 .in_the_same_team(character_reputation),
                                             TargetType::Ally => npc_reputation
                                                 .in_the_same_team(character_reputation),
-                                            TargetType::Special(target) => *target == **character,
+                                            TargetType::Special(target) => {
+                                                *target == character.parent()
+                                            }
                                         };
 
                                         if is_target_type {
                                             // The Target must be in the same zone
                                             let [npc_location, target_location] = location_query
-                                                .get_many([**character, **npc])
+                                                .get_many([character.parent(), npc.parent()])
                                                 .unwrap();
 
                                             if npc_location == target_location {
-                                                ev_engage_pursuit.send(EngagePursuitEvent {
-                                                    npc_entity: **npc,
-                                                    target_entity: **character,
+                                                ev_engage_pursuit.write(EngagePursuitEvent {
+                                                    npc_entity: npc.parent(),
+                                                    target_entity: character.parent(),
                                                 });
                                                 log::info!(
                                                     "{npc_name} detected {character_name}: chase initialized"
@@ -577,16 +588,16 @@ pub fn chase_management(
                                 ) {
                                     (Ok((_close_sensor, closed_character)), Err(_))
                                     | (Err(_), Ok((_close_sensor, closed_character))) => {
-                                        if chaser.target == **closed_character
+                                        if chaser.target == closed_character.parent()
                                             && collision_event.is_started()
                                         {
                                             // The npc entered the close sensor of their target
                                             chaser.close = true;
-                                            ev_combat.send(CombatEvent {
-                                                entity: **character,
+                                            ev_combat.write(CombatEvent {
+                                                entity: character.parent(),
                                             });
-                                            ev_stop_chase.send(StopChaseEvent {
-                                                npc_entity: **character,
+                                            ev_stop_chase.write(StopChaseEvent {
+                                                npc_entity: character.parent(),
                                             });
                                             log::info!(
                                                 "Target Caught in 4K by {character:?} {npc_name}"

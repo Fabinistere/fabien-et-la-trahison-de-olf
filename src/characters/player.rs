@@ -66,7 +66,7 @@ fn player_animation(
         (Changed<Velocity>, With<Player>),
     >,
 ) {
-    if let Ok((rb_vel, mut sprite, mut player_state)) = player_query.get_single_mut() {
+    if let Ok((rb_vel, mut sprite, mut player_state)) = player_query.single_mut() {
         /* -------------------------------------------------------------------------- */
         /*                                  Animation                                 */
         /* -------------------------------------------------------------------------- */
@@ -103,7 +103,7 @@ fn player_squat(
     mut commands: Commands,
     mut player_query: Query<(Entity, &AnimationIndices, &mut Sprite), With<Player>>,
 ) {
-    if let Ok((player, indices, mut sprite)) = player_query.get_single_mut() {
+    if let Ok((player, indices, mut sprite)) = player_query.single_mut() {
         let (start_anim, _, _) = &indices.get(&CharacterState::Idle).unwrap();
         if let Some(atlas) = &mut sprite.texture_atlas {
             atlas.index = *start_anim;
@@ -118,7 +118,7 @@ fn player_movement(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut player_query: Query<(Entity, &Speed, &mut Velocity), With<Player>>,
 ) {
-    if let Ok((_player, speed, mut rb_vel)) = player_query.get_single_mut() {
+    if let Ok((_player, speed, mut rb_vel)) = player_query.single_mut() {
         let up = keyboard_input.any_pressed(key_bindings.up());
         let down = keyboard_input.any_pressed(key_bindings.down());
         let left = keyboard_input.any_pressed(key_bindings.left());

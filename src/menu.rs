@@ -110,7 +110,7 @@ impl Distribution<ManorLightsPattern> for StandardUniform {
 
 fn destroy_menu(mut commands: Commands, mut query: Query<Entity, With<Menu>>) {
     for entity in query.iter_mut() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 
@@ -126,6 +126,7 @@ fn game_start(
             state: _,
             window: _,
             repeat: _,
+            text: _,
         }) = keyboard_inputs.read().next()
         {
             if *key_code == KeyCode::Space {
@@ -171,7 +172,7 @@ fn language_button_interactions(
                 selected.0 = true;
                 text.0 = button_colors.selected;
                 *language = *button_language;
-                language_event_writer.send(LanguageChangedEvent);
+                language_event_writer.write(LanguageChangedEvent);
             }
             Interaction::Hovered => {
                 if selected.0 {
@@ -233,7 +234,7 @@ fn adjust_art_height(
         height,
     } in resize_reader.read()
     {
-        let mut style = query.single_mut();
+        let mut style = query.single_mut().unwrap();
         log::info!(
             target: "Video",
             "window's width: {} * {} / window's height {} = {}",

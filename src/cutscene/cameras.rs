@@ -38,8 +38,8 @@ pub fn perform_camera_swap(
     mut cinematic_camera_query: Query<&mut Camera, (With<CinematicCamera>, Without<PlayerCamera>)>,
     mut player_camera_query: Query<&mut Camera, With<PlayerCamera>>,
 ) {
-    let mut cinematic_camera = cinematic_camera_query.single_mut();
-    let mut player_camera = player_camera_query.single_mut();
+    let mut cinematic_camera = cinematic_camera_query.single_mut().unwrap();
+    let mut player_camera = player_camera_query.single_mut().unwrap();
 
     cinematic_camera.is_active = !cinematic_camera.is_active;
     player_camera.is_active = !player_camera.is_active;
@@ -58,7 +58,7 @@ pub fn follow_a_random_character(
     current_play_mode: Res<State<PlayMode>>,
     mut next_play_mode: ResMut<NextState<PlayMode>>,
 ) {
-    if let Ok(previous_camera_target) = camera_target_query.get_single() {
+    if let Ok(previous_camera_target) = camera_target_query.single() {
         commands
             .entity(previous_camera_target)
             .remove::<CameraFocus>();
@@ -68,24 +68,25 @@ pub fn follow_a_random_character(
     let (random_pop_star, pop_star_name) = characters_query.iter().choose(&mut rng).unwrap();
     log::info!("{pop_star_name:?} is the new pop star");
 
-    let player = player_query.single();
-    if random_pop_star == player {
-        commands.entity(player).insert(CameraFocus::default());
+    if let Ok(player) = player_query.single() {
+        if random_pop_star == player {
+            commands.entity(player).insert(CameraFocus::default());
 
-        if *current_play_mode != PlayMode::Improvisation {
-            next_play_mode.set(PlayMode::Improvisation);
-            log::info!(target:"States", "PlayMode::Improvisation sended");
-        }
-    } else {
-        commands
-            .entity(random_pop_star)
-            .insert(CameraFocus::default());
+            if *current_play_mode != PlayMode::Improvisation {
+                next_play_mode.set(PlayMode::Improvisation);
+                log::info!(target:"States", "PlayMode::Improvisation sended");
+            }
+        } else {
+            commands
+                .entity(random_pop_star)
+                .insert(CameraFocus::default());
 
-        player_is_in_control_resource.0 = true;
-        // FIXME: instant switch to PlayMode::Improvisation
-        if *current_play_mode != PlayMode::InCinematic {
-            next_play_mode.set(PlayMode::InCinematic);
-            log::info!(target:"States", "PlayMode::InCinematic sended");
+            player_is_in_control_resource.0 = true;
+            // FIXME: instant switch to PlayMode::Improvisation
+            if *current_play_mode != PlayMode::InCinematic {
+                next_play_mode.set(PlayMode::InCinematic);
+                log::info!(target:"States", "PlayMode::InCinematic sended");
+            }
         }
     }
 }
@@ -96,10 +97,10 @@ pub fn player_camera_follow(
         Query<&mut Transform, With<PlayerCamera>>,
     )>,
 ) {
-    if let Ok(t) = queries.p0().get_single() {
+    if let Ok(t) = queries.p0().single() {
         let player_transform = *t;
 
-        if let Ok(mut camera_transform) = queries.p1().get_single_mut() {
+        if let Ok(mut camera_transform) = queries.p1().single_mut() {
             camera_transform.translation = camera_transform.translation.lerp(
                 Vec3::new(
                     player_transform.translation.x,
@@ -116,9 +117,9 @@ pub fn cinematic_camera_follow(
     mut cinematic_camera: Query<&mut Transform, With<CinematicCamera>>,
     camera_target: Query<&Transform, (With<CameraFocus>, Without<CinematicCamera>)>,
 ) {
-    if let Ok(mut camera_transform) = cinematic_camera.get_single_mut() {
+    if let Ok(mut camera_transform) = cinematic_camera.single_mut() {
         // println!("cinematic_camera_follow");
-        if let Ok(pop_star_transform) = camera_target.get_single() {
+        if let Ok(pop_star_transform) = camera_target.single() {
             camera_transform.translation = camera_transform.translation.lerp(
                 Vec3::new(
                     pop_star_transform.translation.x,

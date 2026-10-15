@@ -154,7 +154,7 @@ fn freeze_player_in_dialog(
     // talker_query: Query<&mut Velocity, With<InDialog>>,
     mut player_query: Query<(&mut Velocity, &mut CharacterState), With<Player>>,
 ) {
-    let (mut rb_vel, mut character_state) = player_query.single_mut();
+    let (mut rb_vel, mut character_state) = player_query.single_mut().unwrap();
     rb_vel.linvel.x = 0.;
     rb_vel.linvel.y = 0.;
     *character_state = CharacterState::Idle;

@@ -1,4 +1,6 @@
-use bevy::{prelude::*, utils::Duration};
+use std::time::Duration;
+
+use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 use crate::{
@@ -62,7 +64,7 @@ pub fn remove_secret_room_cover(
     mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
 ) {
     for RemoveSecretRoomCoverEvent in remove_secret_room_cover_event.read() {
-        if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.get_single_mut() {
+        if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.single_mut() {
             if let Some(mut fade) = fade_opt {
                 fade.invert();
             } else {
@@ -83,7 +85,7 @@ pub fn add_secret_room_cover(
     mut secret_room_cover_query: Query<(Entity, Option<&mut Fade>), With<SecretRoomCover>>,
 ) {
     for AddSecretRoomCoverEvent in add_secret_room_cover_event.read() {
-        if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.get_single_mut() {
+        if let Ok((cover_entity, fade_opt)) = secret_room_cover_query.single_mut() {
             if let Some(mut fade) = fade_opt {
                 fade.invert();
             } else {
@@ -102,8 +104,8 @@ pub fn second_layer_fake_wall_visibility(
     player_location_query: Query<&Location, (Changed<Location>, With<Player>)>,
     mut second_layer_fake_wall_query: Query<&mut Visibility, With<SecondLayerFakeWall>>,
 ) {
-    if let Ok(player_location) = player_location_query.get_single() {
-        let mut visibility = second_layer_fake_wall_query.single_mut();
+    if let Ok(player_location) = player_location_query.single() {
+        let mut visibility = second_layer_fake_wall_query.single_mut().unwrap();
         *visibility = match player_location {
             Location::SecretRoom => Visibility::Inherited,
             _ => Visibility::Hidden,

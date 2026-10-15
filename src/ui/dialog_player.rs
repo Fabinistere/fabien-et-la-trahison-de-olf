@@ -17,7 +17,7 @@ pub fn choose_answer(
 ) {
     for (button_infos, interaction) in &choice_query {
         if *interaction == Interaction::Pressed {
-            change_state_event.send(ChangeStateEvent(button_infos.exit_state));
+            change_state_event.write(ChangeStateEvent(button_infos.exit_state));
         }
     }
 }
@@ -36,6 +36,7 @@ pub fn continue_monolog(
         state,
         window: _,
         repeat: _,
+        text: _,
     } in key_evr.read()
     {
         if *state == ButtonState::Pressed {
@@ -52,7 +53,7 @@ pub fn continue_monolog(
                                 text: _,
                                 exit_state,
                             } => {
-                                change_state_event.send(ChangeStateEvent(*exit_state));
+                                change_state_event.write(ChangeStateEvent(*exit_state));
                             }
                         }
                     }

@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::{StateInspectorPlugin, WorldInspectorPlugin};
+use bevy_inspector_egui::{
+    bevy_egui::EguiPlugin,
+    quick::{StateInspectorPlugin, WorldInspectorPlugin},
+};
 // use std::fs::File;
 // use std::io::Write;
 
@@ -23,7 +26,7 @@ pub struct DebugPlugin;
 impl Plugin for DebugPlugin {
     fn build(&self, app: &mut App) {
         if cfg!(debug_assertions) {
-            app.add_plugins((WorldInspectorPlugin::new(),))
+            app.add_plugins((EguiPlugin::default(), WorldInspectorPlugin::new()))
                 // UI gismos
                 // .add_plugins(bevy::dev_tools::ui_debug_overlay::DebugUiPlugin)
                 .register_type::<GameState>()

@@ -88,7 +88,7 @@ pub fn setup_interactions(mut commands: Commands, asset_server: Res<AssetServer>
 /// BUG: When interact with an object, a random npc who's moving can be triggered at the same time
 fn interaction_icon_events(
     mut collision_events: EventReader<CollisionEvent>,
-    interaction_sensor_query: Query<&Parent, With<InteractionSensor>>,
+    interaction_sensor_query: Query<&ChildOf, With<InteractionSensor>>,
     player_interaction_sensor_query: Query<Entity, With<PlayerInteractionSensor>>,
 
     mut interaction_icon_event: EventWriter<InteractionIconEvent>,
@@ -103,9 +103,9 @@ fn interaction_icon_events(
             player_interaction_sensor_query.get(e1),
             player_interaction_sensor_query.get(e2),
         ) {
-            interaction_icon_event.send(InteractionIconEvent {
+            interaction_icon_event.write(InteractionIconEvent {
                 entering_range: collision_event.is_started(),
-                entity: **interacted,
+                entity: interacted.parent(),
             });
         }
     }
@@ -162,25 +162,25 @@ pub fn interaction(
             if interactive.in_range {
                 match interactive.interaction_id {
                     BOX_INTERACTION_ID => {
-                        props_interaction_event.send(PropsInteractionEvent);
+                        props_interaction_event.write(PropsInteractionEvent);
                     }
                     DOOR_INTERACTION_ID => {
-                        let temple_door = temple_door_query.single();
-                        door_interact_event.send(DoorInteractEvent {
+                        let temple_door = temple_door_query.single().unwrap();
+                        door_interact_event.write(DoorInteractEvent {
                             door_entity: temple_door, // entity,
                             open_delta_s: DOOR_OPEN_DELTA_S,
                         });
                     }
                     BANNER_INTERACTION_ID => {
-                        let (secret_banner, door_state) = banner_door_query.single();
-                        door_interact_event.send(DoorInteractEvent {
+                        let (secret_banner, door_state) = banner_door_query.single().unwrap();
+                        door_interact_event.write(DoorInteractEvent {
                             door_entity: secret_banner, // entity,
                             open_delta_s: BANNER_OPEN_DELTA_S,
                         });
-                        secret_banner_event.send(SecretBannerEvent(*door_state));
+                        secret_banner_event.write(SecretBannerEvent(*door_state));
                     }
                     NPC_TALK_INTERACTION_ID => {
-                        character_interact_event.send(CharacterInteractionEvent(entity));
+                        character_interact_event.write(CharacterInteractionEvent(entity));
                     }
                     id => log::error!("Unknown interaction id {id}"),
                 }

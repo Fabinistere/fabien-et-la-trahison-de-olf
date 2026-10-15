@@ -88,7 +88,7 @@ pub fn remove_balcony_cover(
                             || (*e1 == player_hitbox && *e2 == balcony_sensor)
                         {
                             if let Ok((cover_entity, fade_opt, mut cover)) =
-                                balcony_cover_query.get_single_mut()
+                                balcony_cover_query.single_mut()
                             {
                                 if cover.on && fade_opt.is_none() {
                                     commands.entity(cover_entity).insert(Fade::new(
@@ -100,7 +100,8 @@ pub fn remove_balcony_cover(
                                     cover.on = false;
 
                                     // REFACTOR: put the balcony_up_door up
-                                    let mut door_up_visibility = balcony_door_query.single_mut();
+                                    let mut door_up_visibility =
+                                        balcony_door_query.single_mut().unwrap();
                                     *door_up_visibility = Visibility::Inherited;
                                 }
                             }

@@ -82,12 +82,12 @@ pub fn create_dialog_panel_on_key_press(
     mut next_game_state: ResMut<NextState<HUDState>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::KeyO) {
-        if let Ok((_entity, animator, _style)) = query.get_single() {
+        if let Ok((_entity, animator, _style)) = query.single() {
             if animator.tweenable().progress() >= 1. {
                 next_game_state.set(HUDState::Closed);
             }
         } else {
-            let player = player_query.single();
+            let player = player_query.single().unwrap();
 
             current_interlocutor.interlocutor = Some(player);
             next_game_state.set(HUDState::DialogWall);
@@ -100,7 +100,7 @@ pub fn close_dialog_panel(
     mut query: Query<(Entity, &mut Animator<Node>, &Node), With<DialogPanel>>,
 ) {
     // log::info!("close dialog event");
-    if let Ok((entity, mut _animator, style)) = query.get_single_mut() {
+    if let Ok((entity, mut _animator, style)) = query.single_mut() {
         let dialog_panel_tween = Tween::new(
             EaseFunction::QuadraticIn,
             Duration::from_millis(DIALOG_PANEL_ANIMATION_TIME_MS),
@@ -134,7 +134,7 @@ pub fn despawn_dialog_panel(
 ) {
     for TweenCompleted { entity, user_data } in completed_event.read() {
         if *user_data == 0 {
-            commands.entity(*entity).despawn_recursive();
+            commands.entity(*entity).despawn();
         }
     }
 }

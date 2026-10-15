@@ -181,7 +181,7 @@ fn generate_colliders(
                 ImageBuffer::from_vec(
                     image.texture_descriptor.size.width,
                     image.texture_descriptor.size.height,
-                    image.data.clone(),
+                    image.data.clone().unwrap(),
                 )
                 .unwrap(),
             ),

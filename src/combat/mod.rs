@@ -276,7 +276,7 @@ pub fn enter_combat(
 ) {
     for CombatEvent { entity } in ev_combat_enter.read() {
         log::info!("Combat Event");
-        let player = player_query.single_mut();
+        let player = player_query.single_mut().unwrap();
 
         commands.entity(player).insert(InCombat);
 
@@ -291,7 +291,7 @@ pub fn enter_combat(
         commands.entity(foe).insert(InCombat);
 
         if let Some(GroupSize(size)) = potential_group_size {
-            ev_spawn_fabicurion.send(SpawnCombatFoesEvent {
+            ev_spawn_fabicurion.write(SpawnCombatFoesEvent {
                 leader: foe,
                 group_size: *size,
             });

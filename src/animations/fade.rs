@@ -1,5 +1,6 @@
 use super::functions::linear;
-use bevy::{prelude::*, utils::Duration};
+use bevy::prelude::*;
+use std::time::Duration;
 
 pub enum FadeType {
     FadeIn,

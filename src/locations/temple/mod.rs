@@ -80,8 +80,8 @@ fn in_hall(
     player_query: Query<&Location, With<Player>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
-    player_query.get_single().is_ok()
-        && player_query.single() == &Location::Hall
+    player_query.single().is_ok()
+        && player_query.single().unwrap() == &Location::Hall
         && game_state.get() == &GameState::Playing
 }
 
@@ -89,8 +89,8 @@ fn _in_temple(
     player_query: Query<&Location, With<Player>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
-    player_query.get_single().is_ok()
-        && player_query.single() == &Location::Temple
+    player_query.single().is_ok()
+        && player_query.single().unwrap() == &Location::Temple
         && game_state.get() == &GameState::Playing
 }
 
@@ -98,8 +98,8 @@ fn _in_secret_room(
     player_query: Query<&Location, With<Player>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
-    player_query.get_single().is_ok()
-        && player_query.single() == &Location::SecretRoom
+    player_query.single().is_ok()
+        && player_query.single().unwrap() == &Location::SecretRoom
         && game_state.get() == &GameState::Playing
 }
 
@@ -107,9 +107,9 @@ fn in_temple_or_secret_room(
     player_query: Query<&Location, With<Player>>,
     game_state: Res<State<GameState>>,
 ) -> bool {
-    player_query.get_single().is_ok()
-        && (player_query.single() == &Location::SecretRoom
-            || player_query.single() == &Location::Temple)
+    player_query.single().is_ok()
+        && (player_query.single().unwrap() == &Location::SecretRoom
+            || player_query.single().unwrap() == &Location::Temple)
         && game_state.get() == &GameState::Playing
 }
 
@@ -151,7 +151,7 @@ pub fn chandeliers_opacity(
     mut chandeliers_query: Query<(&mut Sprite, &Transform), With<Chandelier>>,
     player_query: Query<&Transform, With<Player>>,
 ) {
-    let player_transform = player_query.single();
+    let player_transform = player_query.single().unwrap();
     // OPTIMIZE: we could also put the `Location` in the Chandelier struct
     // to first compare if we have to check the position
     for (mut sprite, chandelier_transform) in chandeliers_query.iter_mut() {
@@ -183,7 +183,7 @@ pub fn chandeliers_opacity(
 /// Or exclude Map elements from this system.
 pub fn y_to_z_conversion(
     mut small_entity_query: Query<
-        (&mut Transform, &OverlappingEntity, Option<&Parent>),
+        (&mut Transform, &OverlappingEntity, Option<&ChildOf>),
         Or<(Changed<Transform>, Changed<OverlappingEntity>)>,
     >,
     transform_query: Query<&Transform, Without<OverlappingEntity>>,
@@ -191,7 +191,13 @@ pub fn y_to_z_conversion(
     for (mut transform, overlapping, potential_parent) in &mut small_entity_query {
         let parent_z = match potential_parent {
             None => 0.,
-            Some(parent) => transform_query.get(**parent).unwrap().translation.z,
+            Some(child_of) => {
+                transform_query
+                    .get(child_of.parent())
+                    .unwrap()
+                    .translation
+                    .z
+            }
         };
         transform.translation.z =
             (transform.translation.y - MAP_START_Y) * Y_UNIT - MAP_DISTANCE_IN_Z - parent_z
@@ -204,7 +210,7 @@ pub fn location_event(
     mut collision_events: EventReader<CollisionEvent>,
 
     location_sensor_query: Query<(Entity, &LocationSensor)>,
-    player_hitbox_query: Query<(Entity, &Parent), With<PlayerHitbox>>,
+    player_hitbox_query: Query<(Entity, &ChildOf), With<PlayerHitbox>>,
 
     mut player_location_query: Query<&mut Location, With<Player>>,
 ) {
@@ -232,7 +238,7 @@ pub fn location_event(
                         if (*e1 == location_sensor && *e2 == player_hitbox)
                             || (*e1 == player_hitbox && *e2 == location_sensor)
                         {
-                            let mut player_location = player_location_query.single_mut();
+                            let mut player_location = player_location_query.single_mut().unwrap();
                             if *player_location != location_point.location {
                                 *player_location = location_point.location;
                             }
@@ -252,7 +258,7 @@ fn control_wall_collider(
     player_location_query: Query<&Location, (Changed<Location>, With<Player>)>,
     wall_colliders_query: Query<(Entity, &WallCollider)>,
 ) {
-    if let Ok(current_location) = player_location_query.get_single() {
+    if let Ok(current_location) = player_location_query.single() {
         for (collider, WallCollider(collider_location)) in &wall_colliders_query {
             if current_location == collider_location {
                 commands.entity(collider).remove::<Sensor>();

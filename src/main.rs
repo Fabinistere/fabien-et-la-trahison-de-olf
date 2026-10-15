@@ -172,7 +172,7 @@ fn main() {
 }
 
 fn game_setup(mut commands: Commands, mut rapier_config: Query<&mut RapierConfiguration>) {
-    let mut rapier_config = rapier_config.single_mut();
+    let mut rapier_config = rapier_config.single_mut().unwrap();
     rapier_config.gravity = Vect::ZERO;
 
     commands.spawn((
@@ -202,7 +202,7 @@ struct CastleTheme;
 fn music(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         AudioPlayer::<AudioSource>(asset_server.load("sounds/FTO_Dracula_theme.ogg")),
-        PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::new(0.10)),
+        PlaybackSettings::LOOP.with_volume(bevy::audio::Volume::Linear(0.10)),
         CastleTheme,
     ));
 

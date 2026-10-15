@@ -128,12 +128,12 @@ fn landmark_arrival(
     mut collision_events: EventReader<CollisionEvent>,
     mut commands: Commands,
 
-    character_hitbox_query: Query<(Entity, &Parent, &Name), With<CharacterHitbox>>,
+    character_hitbox_query: Query<(Entity, &ChildOf, &Name), With<CharacterHitbox>>,
     mut npc_query: Query<(Entity, &mut NPCBehavior, &Name), With<NPC>>,
     player_query: Query<Entity, With<Player>>,
 
     mut landmark_sensor_query: Query<(Entity, &mut Landmark), With<Sensor>>,
-    // parent_query: Query<&Parent>,
+    // parent_query: Query<&ChildOf>,
 ) {
     for collision_event in collision_events.read() {
         // log::info!("{:#?}", collision_event);
@@ -152,7 +152,9 @@ fn landmark_arrival(
             if let Ok((landmark_entity, mut landmark)) =
                 landmark_sensor_query.get_mut(potential_landmark)
             {
-                if let Ok((npc, mut behavior, _npc_name)) = npc_query.get_mut(**character_parent) {
+                if let Ok((npc, mut behavior, _npc_name)) =
+                    npc_query.get_mut(character_parent.parent())
+                {
                     if let NPCBehavior::LandmarkSeeking(LandmarkSeekingStatus::Location(
                         landmark_destination,
                         location,
@@ -166,14 +168,16 @@ fn landmark_arrival(
                                 if collision_event.is_started()
                                     && landmark_destination == landmark_entity
                                 {
-                                    log::info!(target: "NPC", "This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, **character_parent);
+                                    log::info!(target: "NPC", "This landmark {:?} was claimed before the NPC {:?} arrived", landmark_entity, character_parent.parent());
                                     *behavior = NPCBehavior::new_destination(
                                         &mut landmark_sensor_query,
                                         location,
                                     );
                                 } else if collision_event.is_stopped() && occupant == npc {
                                     landmark.status = LandmarkStatus::Free;
-                                    commands.entity(**character_parent).remove::<Direction>();
+                                    commands
+                                        .entity(character_parent.parent())
+                                        .remove::<Direction>();
                                 }
                             }
                             _ => {
@@ -185,12 +189,12 @@ fn landmark_arrival(
                                     if let Some(forced_direction) = landmark.direction {
                                         // log::info!("Forced Direction for {npc:?}: {forced_direction:?}",);
                                         commands
-                                            .entity(**character_parent)
+                                            .entity(character_parent.parent())
                                             .insert(forced_direction);
                                     }
                                     // TODO: Or start dialog with the other
-                                    // log::info!(target: "NPC", "{:?}, {}", **character_parent, _name);
-                                    commands.entity(**character_parent).insert(RestTime {
+                                    // log::info!(target: "NPC", "{:?}, {}", character_parent.parent(), _name);
+                                    commands.entity(character_parent.parent()).insert(RestTime {
                                         timer: Timer::new(
                                             Duration::from_secs(REST_TIMER),
                                             TimerMode::Once,
@@ -205,17 +209,19 @@ fn landmark_arrival(
                             }
                         }
                     }
-                } else if player_query.get(**character_parent).is_ok() {
+                } else if player_query.get(character_parent.parent()).is_ok() {
                     // The player enters/exits a landmark
                     match landmark.status {
                         LandmarkStatus::OccupiedBy(occupant) => {
-                            if collision_event.is_stopped() && occupant == **character_parent {
+                            if collision_event.is_stopped() && occupant == character_parent.parent()
+                            {
                                 landmark.status = LandmarkStatus::Free;
                             }
                         }
                         LandmarkStatus::Free | LandmarkStatus::Reserved => {
                             if collision_event.is_started() {
-                                landmark.status = LandmarkStatus::OccupiedBy(**character_parent)
+                                landmark.status =
+                                    LandmarkStatus::OccupiedBy(character_parent.parent())
                             }
                         }
                     }

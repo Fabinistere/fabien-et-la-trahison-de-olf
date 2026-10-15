@@ -153,7 +153,7 @@ pub fn run_cutscene(
     mut next_play_mode: ResMut<NextState<PlayMode>>,
     // pos_query: Query<&GlobalTransform>,
 ) {
-    if let Ok((cutscene_entity, mut cutscene)) = cutscene_query.get_single_mut() {
+    if let Ok((cutscene_entity, mut cutscene)) = cutscene_query.single_mut() {
         if let Some(frame) = cutscene.frames.first() {
             log::info!(target: "Cutscene", "{frame:#?}");
 
@@ -227,7 +227,7 @@ pub fn frame_timer(
     time: Res<Time>,
     mut cutscene_query: Query<(Entity, &mut FrameTime)>,
 ) {
-    if let Ok((cutscene, mut timer)) = cutscene_query.get_single_mut() {
+    if let Ok((cutscene, mut timer)) = cutscene_query.single_mut() {
         timer.timer.tick(time.delta());
         if timer.timer.finished() {
             commands.entity(cutscene).remove::<FrameTime>();

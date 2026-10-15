@@ -122,8 +122,8 @@ pub fn trigger_event_handler(
                 Err(_) => log::error!("{event_to_trigger} is not recognize as a WorldEvent"),
                 Ok(WorldEvent::FollowPlayer) => {
                     // log::info!("Follow Player Event");
-                    let player = player_query.single();
-                    follow_event.send(FollowEvent {
+                    let player = player_query.single().unwrap();
+                    follow_event.write(FollowEvent {
                         npc: interlocutor.interlocutor.unwrap(),
                         target: player,
                     });
@@ -199,7 +199,7 @@ pub fn change_dialog_state(
                         if new_state_is_available {
                             *current_state = *new_state;
                             trigger_event
-                                .send(TriggerEvents(current_node.trigger_event().to_vec()));
+                                .write(TriggerEvents(current_node.trigger_event().to_vec()));
                         }
                     }
                 }
@@ -291,7 +291,7 @@ pub fn update_dialog_panel(
                                     // Here you could compare the index with `dialogs.len()` to incorporate all choices but
                                     // lock the unsatisfied choice's condition
                                     if button_infos.ui_position < verified_choices.len() {
-                                        reset_event.send(ResetDialogBoxEvent {
+                                        reset_event.write(ResetDialogBoxEvent {
                                             dialog_box: button_entity,
                                             text: verified_choices[button_infos.ui_position]
                                                 .1
@@ -331,7 +331,7 @@ pub fn update_dialog_panel(
                                 if let Some(child_index) =
                                     possible_choices_index.into_iter().choose(&mut rand::rng())
                                 {
-                                    change_state_event.send(ChangeStateEvent(child_index));
+                                    change_state_event.write(ChangeStateEvent(child_index));
                                 } else {
                                     log::warn!("The NPC doesn't have a possible choice");
                                     // TODO: if `possible_choices_index.is_empty()`
@@ -358,13 +358,13 @@ pub fn update_monolog(
     mut reset_event: EventWriter<ResetDialogBoxEvent>,
 ) {
     if current_monolog.is_changed() {
-        let monolog_panel = monolog_panel_query.single();
+        let monolog_panel = monolog_panel_query.single().unwrap();
         let dialog_box_text = match current_monolog.texts.first() {
             None => String::new(),
             Some(first) => first.to_owned(),
         };
 
-        reset_event.send(ResetDialogBoxEvent {
+        reset_event.write(ResetDialogBoxEvent {
             dialog_box: monolog_panel,
             text: dialog_box_text,
         });

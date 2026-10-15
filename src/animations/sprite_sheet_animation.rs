@@ -333,7 +333,7 @@ pub fn flexing_title(
         (With<Title>, Without<TempoAnimation>),
     >,
 ) {
-    if let Ok((entity, mut style, mut state)) = title_query.get_single_mut() {
+    if let Ok((entity, mut style, mut state)) = title_query.single_mut() {
         match *state {
             TitleState::FlexTop => {
                 *state = TitleState::FlexBot;
